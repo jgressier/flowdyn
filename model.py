@@ -23,7 +23,7 @@ class model():
     def prim2cons(self):
         print "prim2cons method not implemented"
     
-    def flux(self):
+    def numflux(self):
         pass
     
     def timestep(self, pdata, dx, condition):
@@ -41,7 +41,7 @@ class convmodel(model):
     def prim2cons(self, pdata):
         return pdata
 
-    def flux(self, pL, pR):
+    def numflux(self, pL, pR):
         return [ self.convcoef*(pL[0]+pR[0])/2-abs(self.convcoef)*(pR[0]-pL[0])/2 ]
     
     def timestep(self, data, dx, condition):

@@ -15,15 +15,19 @@ class timemodel():
         
     def calcrhs(self, field):
         field.cons2prim()
+        field.calc_grad(self.mesh)
+        field.calc_bc_grad(self.mesh)
         field.interp_face(self.mesh, self.num)
         field.calc_bc()
         field.calc_flux()
-        field.calc_res(self.mesh)
+        return field.calc_res(self.mesh)
  
     def step():
         print "not implemented for virtual class"
 
     def solve(self, field, condition, tsave):
+        self.nit       = 0
+        self.condition = condition
         itfield = numfield(field)
         results = []
         for t in np.arange(tsave.size):
@@ -31,17 +35,29 @@ class timemodel():
             while endcycle == 0:
                 dtloc = itfield.calc_timestep(self.mesh, condition)
                 dtloc = min(dtloc)
-                if itfield.time+dtloc > tsave[t]:
+                if itfield.time+dtloc >= tsave[t]:
                     endcycle = 1
                     dtloc    = tsave[t]-itfield.time
+                self.nit += 1
                 itfield.time += dtloc
-                self.step(itfield, dtloc)
+                itfield = self.step(itfield, dtloc)
             itfield.cons2prim()
             results.append(itfield.copy())
         return results
 
     
-class timeexplicit(timemodel):
+class time_explicit(timemodel):
     def step(self, field, dtloc):
         self.calcrhs(field)
         field.add_res(dtloc)
+        return field
+    
+class time_rk2(timemodel):
+    def step(self, field, dtloc):
+        reffield = numfield(field)
+        self.calcrhs(field)
+        field.add_res(dtloc/2)
+        self.calcrhs(field)
+        reffield.residual = field.residual
+        reffield.add_res(dtloc)
+        return reffield

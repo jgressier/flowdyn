@@ -12,6 +12,7 @@ class unimesh():
         self.ncell  = ncell
         self.length = length
         self.xf     = np.linspace(0., length, ncell+1)
+        self.xc     = self.centers()
 
     def centers(self):
         "compute centers of cells in a mesh"

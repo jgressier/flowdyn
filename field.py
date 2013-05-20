@@ -42,17 +42,22 @@ class field():
 class numfield(field):
     
     def __init__(self, f):
-        print "constructor"
         self.model = f.model
         self.neq   = f.neq
         self.nelem = f.nelem
         self.qdata = [ d.copy() for d in f.qdata ]
         self.pdata = [ d.copy() for d in f.pdata ]
         self.time  = f.time
-        print self
-        
+ 
+    def calc_grad(self, mesh):
+        self.grad = []
+        for d in self.pdata:
+            g = np.zeros(mesh.ncell+1)
+            g[1:-1] = (d[1:]-d[0:-1]) / (mesh.xc[1:]-mesh.xc[0:-1])
+            self.grad.append(g)
+    
     def interp_face(self, mesh, num):
-        self.pL, self.pR = num.interp_face(mesh, self.pdata)                
+        self.pL, self.pR = num.interp_face(mesh, self.pdata, self.grad)                
     
     def calc_bc(self):
         for i in range(self.neq):
@@ -60,8 +65,13 @@ class numfield(field):
             self.pR[i][self.nelem] = self.pR[i][0]
             #print 'BC L/R',self.pL[i], self.pR[i]
     
+    def calc_bc_grad(self, mesh):
+        for i in range(self.neq):
+            self.grad[i][0] = self.grad[i][-1] = (self.pdata[i][0]-self.pdata[i][-1]) / (mesh.xc[0]+mesh.length-mesh.xc[-1])
+            #print 'BC L/R',self.pL[i], self.pR[i]
+    
     def calc_flux(self):
-            self.flux = self.model.flux(self.pL, self.pR)
+            self.flux = self.model.numflux(self.pL, self.pR)
 
     def calc_timestep(self, mesh, condition):
         return self.model.timestep(self.pdata, mesh.xf[1:self.nelem+1]-mesh.xf[0:self.nelem], condition)
@@ -71,6 +81,7 @@ class numfield(field):
         for i in range(self.neq):
             self.residual.append(-(self.flux[i][1:self.nelem+1]-self.flux[i][0:self.nelem]) \
                                   /(mesh.xf[1:self.nelem+1]-mesh.xf[0:self.nelem]))
+        return self.residual
 
     def add_res(self, time):
         for i in range(self.neq):
