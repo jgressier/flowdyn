@@ -4,7 +4,7 @@ Created on Fri May 10 17:39:03 2013
 
 @author: j.gressier
 """
-
+import math
 import numpy as np
 from field import *
 
@@ -40,7 +40,8 @@ class timemodel():
                     dtloc    = tsave[t]-itfield.time
                 self.nit += 1
                 itfield.time += dtloc
-                itfield = self.step(itfield, dtloc)
+                if dtloc > np.spacing(dtloc):
+                    itfield = self.step(itfield, dtloc)
             itfield.cons2prim()
             results.append(itfield.copy())
         return results
@@ -51,6 +52,10 @@ class time_explicit(timemodel):
         self.calcrhs(field)
         field.add_res(dtloc)
         return field
+
+#--------------------------------------------------------------------
+# RUNGE KUTTA MODELS
+#--------------------------------------------------------------------
     
 class rkmodel(timemodel):
     def step(self, field, dtloc, butcher):
@@ -98,4 +103,42 @@ class time_rk4(rkmodel):
                     np.array([1., 2., 2., 1.])/6. ]
         return rkmodel.step(self, field, dtloc, butcher)
 
+#--------------------------------------------------------------------
+# IMPLICIT MODELS
+#--------------------------------------------------------------------
 
+class implicitmodel(timemodel):
+    def step(self, field, dtloc):
+        print "not implemented for virtual implicit class"
+        
+    def calc_jacobian(self, field):
+        self.neq = field.neq
+        self.dim = self.neq * field.nelem
+        self.jacobian = np.zeros([self.dim, self.dim])
+        eps = [ math.sqrt(np.spacing(1.))*np.sum(np.abs(q))/field.nelem for q in field.qdata ] 
+        refrhs = [ qf.copy() for qf in self.calcrhs(field) ]
+        #print 'refrhs',refrhs
+        for i in range(field.nelem):
+            for q in range(self.neq):
+                dfield = numfield(field)
+                dfield.qdata[q][i] += eps[q]
+                drhs = [ qf.copy() for qf in self.calcrhs(dfield) ]
+                for qq in range(self.neq):
+                    #self.jacobian[i*self.neq+q][qq::self.neq] = (drhs[qq]-refrhs[qq])/eps[q]
+                    self.jacobian[qq::self.neq][i*self.neq+q] = (drhs[qq]-refrhs[qq])/eps[q]
+
+    def solve_implicit(self, field, dtloc, invert=np.linalg.solve):
+        diag = np.repeat(np.ones(field.nelem)/dtloc, self.neq)   # dtloc can be scalar or np.array
+        mat = np.diag(diag)-self.jacobian.transpose()
+        rhs = np.linalg.solve(mat, np.concatenate(field.residual))
+        field.residual = [ rhs[iq::self.neq]/dtloc for iq in range(self.neq) ]
+    
+class time_implicit(implicitmodel):
+    def step(self, field, dtloc):
+                
+        self.calc_jacobian(field)
+        self.calcrhs(field)
+        self.solve_implicit(field, dtloc)
+        field.add_res(dtloc)
+        return field
+    

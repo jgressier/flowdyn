@@ -86,7 +86,7 @@ class numfield(field):
     def add_res(self, time):
         for i in range(self.neq):
             #print i,self.qdata[i].size,time,self.residual[i].size
-            self.qdata[i] += time*self.residual[i]
+            self.qdata[i] += time*self.residual[i]  # time can be scalar or np.array
                     
 class scafield(field):
     def __init__(self, model, nelem=100):
