@@ -1,6 +1,10 @@
 # -*- coding: utf-8 -*-
 """
 xnum: package for spatial numerical methods
+  extrapol1()
+  extrapol2()
+  extrapol3()
+  extrapolk()
 """
 
 import numpy as np
@@ -66,6 +70,11 @@ class extrapolk(virtualmeth):
             Rdata[i][0:-1] = data[i][:] + ((1-self.kprec)*grad[i][1:]   +(1+self.kprec)*grad[i][0:-1])/2*(mesh.xf[0:-1]-mesh.xc[:])
         return Ldata, Rdata
 
+class centered(extrapolk):
+    "second order method without limitation, k=0 (Fromm)"
+    def __init__(self):
+        extrapolk.__init__(self, k=-1)
+        
 class fromm(extrapolk):
     "second order method without limitation, k=0 (Fromm)"
     def __init__(self):

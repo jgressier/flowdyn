@@ -1,8 +1,13 @@
 # -*- coding: utf-8 -*-
 """
-Created on Fri May 10 17:39:03 2013
-
-@author: j.gressier
+time integration methods (class)
+available are
+explicit or forwardeuler
+rk2
+rk3ssp
+rk4
+implicit or ba
+trapezoidal or crancknicholson
 """
 import math
 import numpy as np
@@ -47,12 +52,15 @@ class timemodel():
         return results
 
     
-class time_explicit(timemodel):
+class explicit(timemodel):
     def step(self, field, dtloc):
         self.calcrhs(field)
         field.add_res(dtloc)
         return field
 
+class forwardeuler(explicit):
+    pass
+    
 #--------------------------------------------------------------------
 # RUNGE KUTTA MODELS
 #--------------------------------------------------------------------
@@ -78,7 +86,7 @@ class rkmodel(timemodel):
             pfield.add_res(dtloc)        
         return pfield
 
-class time_rk2(timemodel):
+class rk2(timemodel):
     def step(self, field, dtloc):
         reffield = numfield(field)
         self.calcrhs(field)
@@ -88,14 +96,14 @@ class time_rk2(timemodel):
         reffield.add_res(dtloc)
         return reffield
 
-class time_rk3ssp(rkmodel):
+class rk3ssp(rkmodel):
     def step(self, field, dtloc):
         butcher = [ np.array([1.]), \
                     np.array([0.25, 0.25]), \
                     np.array([1., 1., 4.])/6. ]
         return rkmodel.step(self, field, dtloc, butcher)
 
-class time_rk4(rkmodel):
+class rk4(rkmodel):
     def step(self, field, dtloc):
         butcher = [ np.array([0.5]), \
                     np.array([0., 0.5]), \
@@ -112,6 +120,8 @@ class implicitmodel(timemodel):
         print "not implemented for virtual implicit class"
         
     def calc_jacobian(self, field):
+        if ((field.model.islinear == 1) and (hasattr(self, "jacobian_use"))):
+            return
         self.neq = field.neq
         self.dim = self.neq * field.nelem
         self.jacobian = np.zeros([self.dim, self.dim])
@@ -126,19 +136,51 @@ class implicitmodel(timemodel):
                 for qq in range(self.neq):
                     #self.jacobian[i*self.neq+q][qq::self.neq] = (drhs[qq]-refrhs[qq])/eps[q]
                     self.jacobian[qq::self.neq][i*self.neq+q] = (drhs[qq]-refrhs[qq])/eps[q]
+        self.jacobian_use = 0
 
-    def solve_implicit(self, field, dtloc, invert=np.linalg.solve):
+    def solve_implicit(self, field, dtloc, invert=np.linalg.solve, theta=1., xi=0):
+        ""
         diag = np.repeat(np.ones(field.nelem)/dtloc, self.neq)   # dtloc can be scalar or np.array
-        mat = np.diag(diag)-self.jacobian.transpose()
-        rhs = np.linalg.solve(mat, np.concatenate(field.residual))
-        field.residual = [ rhs[iq::self.neq]/dtloc for iq in range(self.neq) ]
+        mat = (1+xi)*np.diag(diag)-theta*self.jacobian.transpose()
+        rhs = np.concatenate(field.residual)
+        if xi != 0: 
+            rhs += xi* np.concatenate(field.lastresidual)
+        newrhs = np.linalg.solve(mat, rhs)
+        field.residual = [ newrhs[iq::self.neq]/dtloc for iq in range(self.neq) ]
     
-class time_implicit(implicitmodel):
-    def step(self, field, dtloc):
-                
+class implicit(implicitmodel):
+    def step(self, field, dtloc):                
         self.calc_jacobian(field)
         self.calcrhs(field)
         self.solve_implicit(field, dtloc)
         field.add_res(dtloc)
         return field
+    
+class backwardeuler(implicit):
+    pass
+
+class trapezoidal(implicitmodel):
+    def step(self, field, dtloc):                
+        self.calc_jacobian(field)
+        self.calcrhs(field)
+        self.solve_implicit(field, dtloc, theta=.5)
+        field.add_res(dtloc)
+        return field
+
+class crancknicholson(trapezoidal):
+    pass
+
+class gear(trapezoidal):
+    def step(self, field, dtloc):
+        if not hasattr(field, 'lastresidual'):      # if starting integration (missing last residual)
+            field = trapezoidal.step(self, field, dtloc)
+            field.save_res()
+            return field
+        self.calc_jacobian(field)
+        self.calcrhs(field)
+        self.solve_implicit(field, dtloc, theta=1., xi=.5)
+        field.add_res(dtloc)
+        field.save_res()
+        return field
+
     

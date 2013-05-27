@@ -11,6 +11,7 @@ class model():
         self.equation = equation  # convection, diffusion or burgers
         self.convcoef = 1.
         self.diffcoef = 0.
+        self.islinear = 0
 
     def __repr__(self):
         print "model: ", self.equation
@@ -34,6 +35,7 @@ class convmodel(model):
         self.equation = 'convection'
         self.neq      = 1
         self.convcoef = convcoef
+        self.islinear = 1
         
     def cons2prim(self, qdata):
         return qdata

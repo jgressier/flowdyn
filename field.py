@@ -87,6 +87,9 @@ class numfield(field):
         for i in range(self.neq):
             #print i,self.qdata[i].size,time,self.residual[i].size
             self.qdata[i] += time*self.residual[i]  # time can be scalar or np.array
+
+    def save_res(self):
+        self.lastresidual = [ q.copy() for q in self.residual ]
                     
 class scafield(field):
     def __init__(self, model, nelem=100):
