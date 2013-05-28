@@ -71,9 +71,9 @@ class extrapolk(virtualmeth):
         return Ldata, Rdata
 
 class centered(extrapolk):
-    "second order method without limitation, k=0 (Fromm)"
+    "second order method without limitation, k=1 (Centered)"
     def __init__(self):
-        extrapolk.__init__(self, k=-1)
+        extrapolk.__init__(self, k=1)
         
 class fromm(extrapolk):
     "second order method without limitation, k=0 (Fromm)"
