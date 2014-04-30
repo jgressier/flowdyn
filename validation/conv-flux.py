@@ -4,10 +4,7 @@ test integration methods
 """
 
 import time
-#import numpy      as np
-#import matplotlib as mp
 from pylab import *
-#from math import *
 
 from pyfvm.mesh  import *
 from pyfvm.model import *
@@ -39,13 +36,13 @@ def init_square(mesh):
     return (1+sign(-(mesh.centers()/mesh.length-.25)*(mesh.centers()/mesh.length-.75)))/2
 
 initm   = init_sinper   # 
-meshs   = [ mesh100, mesh50 ]
-cfls    = [ 2. ]
+meshs   = [ mesh100 ]
+cfls    = [ .5 ]
 # extrapol1(), extrapol2()=extrapolk(1), centered=extrapolk(-1), extrapol3=extrapol(1./3.) 
-xmeths  = [ extrapol3() ]  
+xmeths  = [ extrapol1(), extrapol2(), centered(), extrapol3()  ]  
 # explicit, rk2, rk3ssp, rk4, implicit, trapezoidal=crancknicholson
-tmeths  = [ crancknicholson ]
-legends = [ '0.5', '1.', '2.', '5.'  ]
+tmeths  = [ rk3ssp ]
+legends = [ 'O1 upwind', 'O2 upwind', 'O2 centered', 'O3'  ]
 
 solvers = []
 results = []   
@@ -58,7 +55,7 @@ for i in range(nbcalc):
     results.append(solvers[-1].solve(field0, (cfls*nbcalc)[i], tsave))
     print "cpu time of '"+legends[i]+" computation (",solvers[-1].nit,"it) :",time.clock()-start,"s"
 
-style=['o', 'x', 'D', '*', 'o', 'o']
+style=['o', 'x', 'D', '*', '+', '>', '<', 'd']
 fig=figure(1, figsize=(10,8))
 plot(meshs[0].centers(), results[0][0].qdata[0], '-')
 labels = ["initial condition"]
@@ -67,5 +64,5 @@ for t in range(1,len(tsave)):
         plot((meshs*nbcalc)[i].centers(), results[i][t].qdata[0], style[i])
         labels.append(legends[i]+", t=%.1f"%results[i][t].time)
 legend(labels, loc='upper left',prop={'size':10})  
-fig.savefig('result.png', bbox_inches='tight')
-show()
+fig.savefig('conv-flux.png', bbox_inches='tight')
+#show()
