@@ -39,9 +39,9 @@ endtime = 5
 ntime   = 1
 tsave   = linspace(0, endtime, num=ntime+1) 
 cfls    = [ .2 ]
-# extrapol1(), extrapol2()=extrapolk(1), centered=extrapolk(-1), extrapol3=extrapol(1./3.) 
+# extrapol1(), extrapol2()=extrapolk(1), centered=extrapolk(-1), extrapol3=extrapolk(1./3.) 
 xmeths  = [ extrapol2()  ]  
-# explicit, rk2, rk3ssp, rk4, implicit, trapezoidal=crancknicholson
+# explicit, rk2, rk3ssp, rk4, implicit, trapezoidal=cranknicolson
 tmeths  = [ explicit, implicit, rk2 ]
 legends = [ 'RK1', 'BDF1', 'RK2' ]
 
@@ -58,7 +58,7 @@ for i in range(nbcalc):
 
 style=['o', 'x', 'D', '*', '+', '>', '<', 'd']
 fig=figure(1, figsize=(10,8))
-fig.suptitle('integration of 2nd order flux, CFL %.1f'%cfls[0], fontsize=12)
+fig.suptitle('integration of 2nd order flux, CFL %.1f'%cfls[0], fontsize=12, y=0.93)
 plot(meshs[0].centers(), results[0][0].qdata[0], '-')
 labels = ["initial condition"]
 for t in range(1,len(tsave)):
@@ -93,7 +93,7 @@ for i in range(nbcalc):
 
 style=['o', 'x', 'D', '*', '+', '>', '<', 'd']
 fig=figure(2, figsize=(10,8))
-fig.suptitle('integration of 3rd order flux, CFL %.1f'%cfls[0], fontsize=12)
+fig.suptitle('integration of 3rd order flux, CFL %.1f'%cfls[0], fontsize=12, y=0.93)
 plot(meshs[0].centers(), results[0][0].qdata[0], '-')
 labels = ["initial condition"]
 for t in range(1,len(tsave)):

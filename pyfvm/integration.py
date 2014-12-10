@@ -167,7 +167,7 @@ class trapezoidal(implicitmodel):
         field.add_res(dtloc)
         return field
 
-class crancknicholson(trapezoidal):
+class cranknicolson(trapezoidal):
     pass
 
 class gear(trapezoidal):
