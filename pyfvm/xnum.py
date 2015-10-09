@@ -34,7 +34,7 @@ class extrapol1(virtualmeth):
         return Ldata, Rdata
         
 class extrapol2(virtualmeth):
-    "second order method without limitation"
+    "second order method without limitation, equivalent to extrapolk with k=-1"
     def __init__(self):
         self.gradmeth = 'face'
         

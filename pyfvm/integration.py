@@ -7,7 +7,7 @@ rk2
 rk3ssp
 rk4
 implicit or ba
-trapezoidal or crancknicholson
+trapezoidal or cranknichlson
 """
 import math
 import numpy as np

@@ -43,8 +43,8 @@ meshs   = [ mesh100, mesh50 ]
 cfls    = [ 2. ]
 # extrapol1(), extrapol2()=extrapolk(1), centered=extrapolk(-1), extrapol3=extrapol(1./3.) 
 xmeths  = [ extrapol3() ]  
-# explicit, rk2, rk3ssp, rk4, implicit, trapezoidal=crancknicholson
-tmeths  = [ crancknicholson ]
+# explicit, rk2, rk3ssp, rk4, implicit, trapezoidal=cranknicolson
+tmeths  = [ cranknicolson ]
 legends = [ '0.5', '1.', '2.', '5.'  ]
 
 solvers = []
