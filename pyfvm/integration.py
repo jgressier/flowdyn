@@ -137,6 +137,7 @@ class implicitmodel(timemodel):
                     #self.jacobian[i*self.neq+q][qq::self.neq] = (drhs[qq]-refrhs[qq])/eps[q]
                     self.jacobian[qq::self.neq][i*self.neq+q] = (drhs[qq]-refrhs[qq])/eps[q]
         self.jacobian_use = 0
+        return self.jacobian
 
     def solve_implicit(self, field, dtloc, invert=np.linalg.solve, theta=1., xi=0):
         ""
