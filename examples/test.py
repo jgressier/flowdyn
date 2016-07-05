@@ -18,7 +18,7 @@ from pyfvm.integration import *
 mesh100 = unimesh(ncell=100, length=1.)
 mesh50  = unimesh(ncell=50, length=1.)
 
-endtime = 5
+endtime = 0.1
 ntime   = 1
 tsave   = linspace(0, endtime, num=ntime+1) 
 
@@ -40,11 +40,11 @@ def init_square(mesh):
 
 initm   = init_sinper   # 
 meshs   = [ mesh100, mesh50 ]
-cfls    = [ 2. ]
+cfls    = [ 0.1 ]
 # extrapol1(), extrapol2()=extrapolk(1), centered=extrapolk(-1), extrapol3=extrapol(1./3.) 
 xmeths  = [ extrapol3() ]  
 # explicit, rk2, rk3ssp, rk4, implicit, trapezoidal=cranknicolson
-tmeths  = [ cranknicolson ]
+tmeths  = [ forwardeuler ]
 legends = [ '0.5', '1.', '2.', '5.'  ]
 
 solvers = []
