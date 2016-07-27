@@ -48,6 +48,6 @@ class convmodel(model):
     
     def timestep(self, data, dx, condition):
         "computation of timestep: data is not used, dx is an array of cell sizes, condition is the CFL number"
-        return condition*dx/self.convcoef
+        return condition*dx/abs(self.convcoef)
         
         
