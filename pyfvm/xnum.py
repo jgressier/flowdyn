@@ -66,6 +66,7 @@ class extrapolk(virtualmeth):
         for i in range(len(data)):
             Ldata.append(np.zeros(nc+1))
             Rdata.append(np.zeros(nc+1))
+            # gradient are numbered at face
             Ldata[i][1:]   = data[i][:] + ((1-self.kprec)*grad[i][0:-1] +(1+self.kprec)*grad[i][1:])  /2*(mesh.xf[1:]  -mesh.xc[:])
             Rdata[i][0:-1] = data[i][:] + ((1-self.kprec)*grad[i][1:]   +(1+self.kprec)*grad[i][0:-1])/2*(mesh.xf[0:-1]-mesh.xc[:])
         return Ldata, Rdata
@@ -90,3 +91,47 @@ class extrapol3(extrapolk):
     def __init__(self):
         extrapolk.__init__(self, k=1./3.)
         
+# -----------------------------------------------------------------------------
+# MUSCL van Leer schemes
+
+def minmod(a,b):
+    p = a*b
+    return np.where(p <= 0, 0, np.where( a > 0, np.minimum(a, b), np.maximum(a,b) ) )
+
+def vanalbada(a,b):
+    p = a*b
+    return np.where(p <= 0, 0,  p*(a+b)/(a**2+b**2) )
+
+def vanleer(a,b):
+    p = a*b
+    return np.where(p <= 0, 0, 2*p/(a+b) )
+
+def superbee(a,b):
+    p = a*b
+    return np.where(p <= 0, 0, np.where( a > 0, np.minimum( 2*np.minimum(a, b), np.maximum(a, b)),
+                                                np.maximum( 2*np.maximum(a, b), np.minimum(a, b)) ) )
+    #alternate formula
+    #return np.where(p <= 0, 0, np.where( a > 0, np.maximum( np.minimum(2*a, b), np.minimum(a, 2*b)),
+    #                                            np.minimum( np.maximum(2*a, b), np.maximum(a, 2*b)) ) )
+
+class muscl(virtualmeth):
+    "second order MUSCL method"
+    def __init__(self, limiter=minmod):
+        self.gradmeth = 'face'
+        self.limiter  = limiter
+        print limiter
+        
+    def interp_face(self, mesh, data, grad):
+        "returns 2x (L/R) neq list of (ncell+1) nparray / except bound"
+        nc = data[0].size
+        if (mesh.ncell <> nc): print self.__class__+"/interp_face error: mismatch sizes"
+        Ldata = []
+        Rdata = []
+        for i in range(len(data)):
+            Ldata.append(np.zeros(nc+1))
+            Rdata.append(np.zeros(nc+1))
+            # if limiter not symmetric, use centered gradient first
+            Ldata[i][1:]   = data[i][:] + self.limiter( grad[i][1:],   grad[i][0:-1] ) *(mesh.xf[1:]  -mesh.xc[:])
+            Rdata[i][0:-1] = data[i][:] + self.limiter( grad[i][0:-1], grad[i][1:]   ) *(mesh.xf[0:-1]-mesh.xc[:])
+        return Ldata, Rdata
+
