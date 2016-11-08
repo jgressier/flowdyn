@@ -58,6 +58,7 @@ for i in range(nbcalc):
 
 style=['o', 'x', 'D', '*', '+', '>', '<', 'd']
 fig=figure(1, figsize=(10,8))
+clf()
 fig.suptitle('integration of 2nd order flux, CFL %.1f'%cfls[0], fontsize=12, y=0.93)
 plot(meshs[0].centers(), results[0][0].qdata[0], '-')
 labels = ["initial condition"]
@@ -93,6 +94,7 @@ for i in range(nbcalc):
 
 style=['o', 'x', 'D', '*', '+', '>', '<', 'd']
 fig=figure(2, figsize=(10,8))
+clf()
 fig.suptitle('integration of 3rd order flux, CFL %.1f'%cfls[0], fontsize=12, y=0.93)
 plot(meshs[0].centers(), results[0][0].qdata[0], '-')
 labels = ["initial condition"]
