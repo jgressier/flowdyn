@@ -125,24 +125,26 @@ class implicitmodel(timemodel):
         self.neq = field.neq
         self.dim = self.neq * field.nelem
         self.jacobian = np.zeros([self.dim, self.dim])
+        #self.jact     = np.zeros([self.dim, self.dim])
         eps = [ math.sqrt(np.spacing(1.))*np.sum(np.abs(q))/field.nelem for q in field.qdata ] 
         refrhs = [ qf.copy() for qf in self.calcrhs(field) ]
         #print 'refrhs',refrhs
-        for i in range(field.nelem):
+        for i in range(field.nelem):    # for all variables (nelem*neq)
             for q in range(self.neq):
                 dfield = numfield(field)
                 dfield.qdata[q][i] += eps[q]
                 drhs = [ qf.copy() for qf in self.calcrhs(dfield) ]
                 for qq in range(self.neq):
-                    #self.jacobian[i*self.neq+q][qq::self.neq] = (drhs[qq]-refrhs[qq])/eps[q]
-                    self.jacobian[qq::self.neq][i*self.neq+q] = (drhs[qq]-refrhs[qq])/eps[q]
+                    #self.jacobian[i*self.neq+q,qq::self.neq] = (drhs[qq]-refrhs[qq])/eps[q] # working
+                    self.jacobian[qq::self.neq,i*self.neq+q] = (drhs[qq]-refrhs[qq])/eps[q]
         self.jacobian_use = 0
+        #print self.jacobian - self.jact.transpose()
         return self.jacobian
 
     def solve_implicit(self, field, dtloc, invert=np.linalg.solve, theta=1., xi=0):
         ""
         diag = np.repeat(np.ones(field.nelem)/dtloc, self.neq)   # dtloc can be scalar or np.array
-        mat = (1+xi)*np.diag(diag)-theta*self.jacobian.transpose()
+        mat = (1+xi)*np.diag(diag)-theta*self.jacobian#.transpose()
         rhs = np.concatenate(field.residual)
         if xi != 0: 
             rhs += xi* np.concatenate(field.lastresidual)
