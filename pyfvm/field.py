@@ -14,15 +14,17 @@ class field():
       model : number of equations
       nelem : number of cells (conservative and primitive data)
       qdata : list of neq nparray - conservative data 
-      pdata : list of neq nparray - primitive    data 
+      pdata : list of neq nparray - primitive    data
+      bc    : type of boundary condition - "p"=periodic / "d"=Dirichlet 
     """
-    def __init__(self, model, nelem=100):
+    def __init__(self, model, bc, nelem=100):
         self.model = model
         self.neq   = model.neq
         self.nelem = nelem
         self.qdata = []
         self.time  = 0.
-        for i in range(self.neq):
+        self.bc    = bc        
+        for i in range(self.neq+1):
             self.qdata.append(np.zeros(nelem))
         self.pdata  = []
             
@@ -33,7 +35,7 @@ class field():
         self.qdata = self.model.prim2cons(self.pdata) 
         
     def copy(self):
-        new = field(self.model, self.nelem)
+        new = field(self.model, self.bc, self.nelem)
         new.time  = self.time
         new.qdata = [ d.copy() for d in self.qdata ]
         new.pdata = [ d.copy() for d in self.qdata ]
@@ -45,9 +47,11 @@ class numfield(field):
         self.model = f.model
         self.neq   = f.neq
         self.nelem = f.nelem
+        self.bc    = f.bc        
         self.qdata = [ d.copy() for d in f.qdata ]
         self.pdata = [ d.copy() for d in f.pdata ]
         self.time  = f.time
+
  
     def calc_grad(self, mesh):
         self.grad = []
@@ -61,9 +65,20 @@ class numfield(field):
     
     def calc_bc(self):
         for i in range(self.neq):
-            self.pL[i][0]          = self.pL[i][self.nelem]
-            self.pR[i][self.nelem] = self.pR[i][0]
-            #print 'BC L/R',self.pL[i], self.pR[i]
+            if self.bc == 'p':     #periodic boundary conditions
+                for i in range(self.neq):
+                    self.pL[i][0]          = self.pL[i][self.nelem] #=0
+                    self.pR[i][self.nelem] = self.pR[i][0] #= 0
+                    #print 'BC L/R',self.pL[i], self.pR[i]
+            elif self.bc == 'd':   #dirichlet boundary conditions
+                self.pL[0][0]          = 1.0 
+                self.pL[1][0]          = 0.0                  #user defined value to match the initial conditions
+                self.pL[2][0]          = 2.5                  #user defined value to match the initial conditions
+                self.pL[3][0]          = 1.0                  #user defined value to match the initial conditions
+                self.pR[0][self.nelem] = 0.125                #user defined value to match the initial conditions
+                self.pR[1][self.nelem] = 0.0                  #user defined value to match the initial conditions
+                self.pR[2][self.nelem] = 2.0                  #user defined value to match the initial conditions
+                self.pR[3][self.nelem] = 0.1                  #user defined value to match the initial conditions
     
     def calc_bc_grad(self, mesh):
         for i in range(self.neq):
@@ -92,8 +107,8 @@ class numfield(field):
         self.lastresidual = [ q.copy() for q in self.residual ]
                     
 class scafield(field):
-    def __init__(self, model, nelem=100):
-        field.__init__(self, model, nelem=nelem)
+    def __init__(self, model, bc, nelem=100):
+        field.__init__(self, model, bc, nelem=nelem)
             
     def scadata(self):
         return self.data[0]
