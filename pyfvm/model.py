@@ -47,7 +47,7 @@ class convmodel(model):
     def numflux(self, pL, pR):
         return [ self.convcoef*(pL[0]+pR[0])/2-abs(self.convcoef)*(pR[0]-pL[0])/2 ]
     
-    def timestep(self, data, dx, condition):
+    def timestep(self, pdata, dx, condition):
         "computation of timestep: data is not used, dx is an array of cell sizes, condition is the CFL number"
         return condition*dx/abs(self.convcoef)
         
@@ -184,9 +184,11 @@ class eulermodel(model):
 
         return nflux
 
-    def timestep(self, data, dx, condition):
+    def timestep(self, pdata, dx, condition):
         "computation of timestep: data is not used, dx is an array of cell sizes, condition is the CFL number"
-#        dt = [condition]             #if I want to impose a specific timestep
-        dt = condition*dx/dx  
+#        dt = CFL * dx / ( |u| + c )
+        dt = np.zeros(len(dx)) #test use zeros instead
+        for c in range(len(dx)):
+            dt[c] = condition*dx[c]/ (pdata[1][c] + math.sqrt(self.gamma*pdata[3][c]/pdata[0][c]) )  
              
         return dt        

@@ -22,11 +22,12 @@ class field():
         self.neq   = model.neq
         self.nelem = nelem
         self.qdata = []
+        self.pdata = []
         self.time  = 0.
         self.bc    = bc        
         for i in range(self.neq+1):
             self.qdata.append(np.zeros(nelem))
-        self.pdata  = []
+            self.pdata.append(np.zeros(nelem))
             
     def cons2prim(self):
         self.pdata = self.model.cons2prim(self.qdata)
@@ -38,7 +39,7 @@ class field():
         new = field(self.model, self.bc, self.nelem)
         new.time  = self.time
         new.qdata = [ d.copy() for d in self.qdata ]
-        new.pdata = [ d.copy() for d in self.qdata ]
+        new.pdata = [ d.copy() for d in self.pdata ]
         return new
         
 class numfield(field):
@@ -89,7 +90,11 @@ class numfield(field):
             self.flux = self.model.numflux(self.pL, self.pR)
 
     def calc_timestep(self, mesh, condition):
-        return self.model.timestep(self.pdata, mesh.xf[1:self.nelem+1]-mesh.xf[0:self.nelem], condition)
+        if not self.pdata:
+            #print self.qdata    #test
+            return self.model.timestep(self.qdata, mesh.xf[1:self.nelem+1]-mesh.xf[0:self.nelem], condition)
+        else:
+            return self.model.timestep(self.pdata, mesh.xf[1:self.nelem+1]-mesh.xf[0:self.nelem], condition)
         
     def calc_res(self, mesh):
         self.residual = []
