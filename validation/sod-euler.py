@@ -15,8 +15,9 @@ from pyfvm.field import *
 from pyfvm.xnum  import *
 from pyfvm.integration import *
 
-mesh100 = unimesh(ncell=100, length=1.)
-mesh50  = unimesh(ncell=50, length=1.)
+mesh50   = unimesh(ncell=50, length=1.)
+mesh100  = unimesh(ncell=100, length=1.)
+mesh1000 = unimesh(ncell=1000, length=1.)
 
 mymodel = eulermodel()
 
@@ -174,21 +175,21 @@ def exactSod(mesh,tf): # tf is the endtime
 endtime = 0.2
 ntime   = 1
 tsave   = linspace(0, endtime, num=ntime+1)
-cfls    = [ 0.001 ]
+cfls    = [ 0.1 ]
 # extrapol1(), extrapol2()=extrapolk(1), centered=extrapolk(-1), extrapol3=extrapolk(1./3.)
 #xmeths  = [ extrapol1(), extrapol2(), centered(), extrapol3() ]
-xmeths  = [ extrapol1()]
+xmeths  = [ muscl() ]
 # explicit, rk2, rk3ssp, rk4, implicit, trapezoidal=cranknicolson
-tmeths  = [ rk3ssp ]
+tmeths  = [ rk4 ]
 #legends = [ 'O1 upwind', 'O2 upwind', 'O2 centered', 'O3 extrapol' ]
-legends = [ 'O1 upwind' ]
+legends = [ 'O1 muscl' ]
 #boundary condition bc : type of boundary condition - "p"=periodic / "d"=Dirichlet
 bc = 'd'
 
 gamma      = 1.4
 meshs      = [ mesh100 ]
 initm      = initSod
-exactPdata = exactSod(mesh100,endtime)
+exactPdata = exactSod(meshs[0],endtime)
 
 solvers = []
 results = []
@@ -225,7 +226,7 @@ for t in range(1,len(tsave)):
 legend(labels, loc='upper right',prop={'size':10})
 fig.savefig('density.png', bbox_inches='tight')
 #show()
-#
+# 
 # VELOCITY
 #
 fig = figure(2, figsize=(10,8))
@@ -286,7 +287,3 @@ for t in range(1,len(tsave)):
 legend(labels, loc='upper right',prop={'size':10})
 fig.savefig('pressure.png', bbox_inches='tight')
                            
-        
-   
-
-

@@ -34,6 +34,7 @@ class timemodel():
         self.nit       = 0
         self.condition = condition
         itfield = numfield(field)
+        itfield.cons2prim()
         results = []
         for t in np.arange(tsave.size):
             endcycle = 0
@@ -186,4 +187,102 @@ class gear(trapezoidal):
         field.save_res()
         return field
 
-    
+#--------------------------------------------------------------------
+# LOW STORAGE MODELS; rk1 / rk22 / rk3lsw / rk3ssp / rk4
+#--------------------------------------------------------------------       
+
+class LowStorageRKmodel(timemodel):
+
+    def __init__(self, mesh, num):
+        self.mesh = mesh
+        self.num  = num
+
+    def solve(self, field, condition, tsave):
+        self.nit       = 0
+        self.condition = condition
+        self.neq = field.neq #to have the number of equations available
+        self.nelem = field.nelem #to have the number of elements available
+        self.new_rhs=np.zeros((self.nstage,self.neq,self.nelem))       
+
+        itfield = numfield(field)
+        itfield.cons2prim()
+        results = []
+        for t in np.arange(tsave.size):
+            endcycle = 0
+            while endcycle == 0:
+                dtloc  = itfield.calc_timestep(self.mesh, condition)
+                dtglob = min(dtloc)
+                self.nit += 1
+                itfield.nit = self.nit
+                itfield.time += dtglob
+                if itfield.time+dtglob >= tsave[t]:
+                    endcycle = 1
+                    dtglob    = tsave[t]-itfield.time
+                if dtglob > np.spacing(dtglob):
+                    self.new_rhs[:,:,:]=0.0
+                    for irkstep in range(self.nstage):
+                        itfield = self.step(itfield,dtglob,irkstep) 
+                        itfield.cons2prim()
+            results.append(itfield.copy())
+        return results
+
+    def step(self, field, dt,irkstep):
+        self.calcrhs(field)
+        for j in range(self.neq):
+            for k in range(self.nelem):
+                self.new_rhs[irkstep,j,k] = field.residual[j][k]           
+        self.add_res(field,dt, irkstep)
+        return field
+
+    def add_res(self,field, dt, irkstep):      
+        for rk_coeff_index in range(irkstep+1):
+            for i in range(self.neq):
+                field.qdata[i] += dt * self.RKcoeff[irkstep, rk_coeff_index] * self.new_rhs[rk_coeff_index,i,:]  # time can be scalar or np.array           
+
+class LSrk1(LowStorageRKmodel):
+    def __init__(self, mesh, num):
+
+        self.mesh    = mesh
+        self.num     = num
+        self.nstage  = 1
+        self.RKcoeff = np.array ([[1.]])
+
+class LSrk22(LowStorageRKmodel):
+    def __init__(self, mesh, num):
+
+        self.mesh    = mesh
+        self.num     = num
+        self.nstage  = 2
+        self.RKcoeff = np.array ([[0.5, 0.],
+                                  [-0.5, 1.]])
+
+class LSrk3ssp(LowStorageRKmodel):
+    def __init__(self, mesh, num):
+
+        self.mesh    = mesh
+        self.num     = num
+        self.nstage  = 3
+        self.RKcoeff = np.array([[1., 0., 0.],
+                                 [-3./4., 1./4., 0.],
+                                 [-1./12., -1./12., 2./3.]])
+
+class LSrk3lsw(LowStorageRKmodel):
+    def __init__(self, mesh, num):
+
+        self.mesh    = mesh
+        self.num     = num
+        self.nstage  = 3
+        self.RKcoeff = np.array ([[8./15., 0., 0.],
+                                  [-17./60., 5./12., 0.],
+                                  [0., -5./12., 3./4.]])
+
+class LSrk4(LowStorageRKmodel):
+    def __init__(self, mesh, num):
+
+        self.mesh    = mesh
+        self.num     = num
+        self.nstage  = 4
+        self.RKcoeff = np.array([[1./2., 0., 0., 0.],
+                                 [-1./2., 1./2., 0., 0.],
+                                 [0., -1./2., 1., 0.],
+                                 [1./6., 1./3., -2./3., 1./6.]])                                                       

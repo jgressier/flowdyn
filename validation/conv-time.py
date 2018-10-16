@@ -45,12 +45,14 @@ xmeths  = [ extrapol2() ]
 # explicit, rk2, rk3ssp, rk4, implicit, trapezoidal=cranknicolson
 tmeths  = [ explicit, implicit, rk2 ]
 legends = [ 'RK1', 'BDF1', 'RK2' ]
+#boundary condition bc : type of boundary condition - "p"=periodic / "d"=Dirichlet
+bc = 'p'
 
 solvers = []
 results = []
 nbcalc  = max(len(cfls), len(tmeths), len(xmeths), len(meshs))
 for i in range(nbcalc):
-    field0 = scafield(mymodel, (meshs*nbcalc)[i].ncell)
+    field0 = scafield(mymodel, bc, (meshs*nbcalc)[i].ncell)
     field0.qdata[0] = initm((meshs*nbcalc)[i])
     solvers.append((tmeths*nbcalc)[i]((meshs*nbcalc)[i], (xmeths*nbcalc)[i]))
     start = time.clock()
