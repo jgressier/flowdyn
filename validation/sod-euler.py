@@ -184,7 +184,26 @@ tmeths  = [ rk4 ]
 #legends = [ 'O1 upwind', 'O2 upwind', 'O2 centered', 'O3 extrapol' ]
 legends = [ 'O1 muscl' ]
 #boundary condition bc : type of boundary condition - "p"=periodic / "d"=Dirichlet
-bc = 'd'
+bc       = 'd'
+bcvalues = []
+neq      = 3
+for i in range(neq+1):
+    bcvalues.append(np.zeros(2))
+
+# Left Boundary
+
+bcvalues[0][0] = 1.0      # density  rho
+bcvalues[1][0] = 0.0      # velocity u       
+bcvalues[2][0] = 2.5      # int. nrg e            
+bcvalues[3][0] = 1.0      # pressure p            
+
+# Right Boundary
+
+bcvalues[0][1] = 0.125    # density  rho            
+bcvalues[1][1] = 0.0      # velocity u            
+bcvalues[2][1] = 2.0      # int. nrg e             
+bcvalues[3][1] = 0.1      # pressure p            
+
 
 gamma      = 1.4
 meshs      = [ mesh100 ]
@@ -195,7 +214,7 @@ solvers = []
 results = []
 nbcalc  = max(len(cfls), len(tmeths), len(xmeths), len(meshs))
 for i in range(nbcalc):
-    field0 = scafield(mymodel, bc, (meshs*nbcalc)[i].ncell)
+    field0 = scafield(mymodel, bc, bcvalues, (meshs*nbcalc)[i].ncell)
     field0.qdata = initm((meshs*nbcalc)[i])
     solvers.append((tmeths*nbcalc)[i]((meshs*nbcalc)[i], (xmeths*nbcalc)[i]))
     start = time.clock()
@@ -223,7 +242,7 @@ for t in range(1,len(tsave)):
         rho=results[i][t].qdata[0]
         plot((meshs*nbcalc)[i].centers(), rho, style[i])
         labels.append(legends[i]+", t=%.1f"%results[i][t].time)
-legend(labels, loc='upper right',prop={'size':10})
+legend(labels, loc='lower center',prop={'size':10})
 fig.savefig('density.png', bbox_inches='tight')
 #show()
 # 
@@ -244,7 +263,7 @@ for t in range(1,len(tsave)):
         u = results[i][t].qdata[1]/results[i][t].qdata[0] 
         plot((meshs*nbcalc)[i].centers(), u, style[i])
         labels.append(legends[i]+", t=%.1f"%results[i][t].time)
-legend(labels, loc='upper right',prop={'size':10})
+legend(labels, loc='lower center',prop={'size':10})
 fig.savefig('velocity.png', bbox_inches='tight')
 #
 # INTERNAL ENERGY
@@ -264,7 +283,7 @@ for t in range(1,len(tsave)):
         e = (results[i][t].qdata[2]-0.5*results[i][t].qdata[1]**2/results[i][t].qdata[0])/results[i][t].qdata[0]
         plot((meshs*nbcalc)[i].centers(), e, style[i])
         labels.append(legends[i]+", t=%.1f"%results[i][t].time)
-legend(labels, loc='upper right',prop={'size':10})
+legend(labels, loc='lower center',prop={'size':10})
 fig.savefig('internalenergy.png', bbox_inches='tight')
 #
 # PRESSURE
@@ -284,6 +303,6 @@ for t in range(1,len(tsave)):
         p = (gamma-1.0)*(results[i][t].qdata[2]-0.5*results[i][t].qdata[1]**2/results[i][t].qdata[0])
         plot((meshs*nbcalc)[i].centers(), p, style[i])
         labels.append(legends[i]+", t=%.1f"%results[i][t].time)
-legend(labels, loc='upper right',prop={'size':10})
+legend(labels, loc='lower center',prop={'size':10})
 fig.savefig('pressure.png', bbox_inches='tight')
                            

@@ -17,7 +17,7 @@ class field():
       pdata : list of neq nparray - primitive    data
       bc    : type of boundary condition - "p"=periodic / "d"=Dirichlet 
     """
-    def __init__(self, model, bc, nelem=100):
+    def __init__(self, model, bc, bcvalues = [], nelem=100):
         self.model = model
         self.neq   = model.neq
         self.nelem = nelem
@@ -25,6 +25,7 @@ class field():
         self.pdata = []
         self.time  = 0.
         self.bc    = bc        
+        self.bcvalues = bcvalues        
         for i in range(self.neq+1):
             self.qdata.append(np.zeros(nelem))
             self.pdata.append(np.zeros(nelem))
@@ -36,7 +37,7 @@ class field():
         self.qdata = self.model.prim2cons(self.pdata) 
         
     def copy(self):
-        new = field(self.model, self.bc, self.nelem)
+        new = field(self.model, self.bc, self.bcvalues, self.nelem)
         new.time  = self.time
         new.qdata = [ d.copy() for d in self.qdata ]
         new.pdata = [ d.copy() for d in self.pdata ]
@@ -48,7 +49,8 @@ class numfield(field):
         self.model = f.model
         self.neq   = f.neq
         self.nelem = f.nelem
-        self.bc    = f.bc        
+        self.bc    = f.bc
+        self.bcvalues = f.bcvalues        
         self.qdata = [ d.copy() for d in f.qdata ]
         self.pdata = [ d.copy() for d in f.pdata ]
         self.time  = f.time
@@ -72,14 +74,9 @@ class numfield(field):
                     self.pR[i][self.nelem] = self.pR[i][0] #= 0
                     #print 'BC L/R',self.pL[i], self.pR[i]
             elif self.bc == 'd':   #dirichlet boundary conditions
-                self.pL[0][0]          = 1.0 
-                self.pL[1][0]          = 0.0                  #user defined value to match the initial conditions
-                self.pL[2][0]          = 2.5                  #user defined value to match the initial conditions
-                self.pL[3][0]          = 1.0                  #user defined value to match the initial conditions
-                self.pR[0][self.nelem] = 0.125                #user defined value to match the initial conditions
-                self.pR[1][self.nelem] = 0.0                  #user defined value to match the initial conditions
-                self.pR[2][self.nelem] = 2.0                  #user defined value to match the initial conditions
-                self.pR[3][self.nelem] = 0.1                  #user defined value to match the initial conditions
+                for i in range(len(self.pL)):
+                    self.pL[i][0]          = self.bcvalues[i][0] 
+                    self.pR[i][self.nelem] = self.bcvalues[i][1]                 
     
     def calc_bc_grad(self, mesh):
         for i in range(self.neq):
@@ -112,8 +109,8 @@ class numfield(field):
         self.lastresidual = [ q.copy() for q in self.residual ]
                     
 class scafield(field):
-    def __init__(self, model, bc, nelem=100):
-        field.__init__(self, model, bc, nelem=nelem)
+    def __init__(self, model, bc, bcvalues = [], nelem=100):
+        field.__init__(self, model, bc, bcvalues, nelem=nelem)
             
     def scadata(self):
         return self.data[0]
