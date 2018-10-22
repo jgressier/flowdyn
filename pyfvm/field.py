@@ -17,7 +17,7 @@ class field():
       pdata : list of neq nparray - primitive    data
       bc    : type of boundary condition - "p"=periodic / "d"=Dirichlet 
     """
-    def __init__(self, model, bc, bcvalues = [], nelem=100):
+    def __init__(self, model, bc, nelem=100, bcvalues = []):
         self.model = model
         self.neq   = model.neq
         self.nelem = nelem
@@ -37,8 +37,11 @@ class field():
         self.qdata = self.model.prim2cons(self.pdata) 
         
     def copy(self):
-        new = field(self.model, self.bc, self.bcvalues, self.nelem)
+        new = field(self.model, self.bc, self.nelem, self.bcvalues)
         new.time  = self.time
+        new.bc    = self.bc
+        new.bcvalues = self.bcvalues
+        new.nelem = self.nelem
         new.qdata = [ d.copy() for d in self.qdata ]
         new.pdata = [ d.copy() for d in self.pdata ]
         return new
@@ -109,8 +112,8 @@ class numfield(field):
         self.lastresidual = [ q.copy() for q in self.residual ]
                     
 class scafield(field):
-    def __init__(self, model, bc, bcvalues = [], nelem=100):
-        field.__init__(self, model, bc, bcvalues, nelem=nelem)
+    def __init__(self, model, bc, nelem=100, bcvalues = []):
+        field.__init__(self, model, bc, nelem=nelem, bcvalues=bcvalues)
             
     def scadata(self):
         return self.data[0]
