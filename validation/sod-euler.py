@@ -173,9 +173,9 @@ def exactSod(mesh,tf): # tf is the endtime
 
 # Set of computations
 endtime = 0.2
-ntime   = 1
+ntime   = 3
 tsave   = linspace(0, endtime, num=ntime+1)
-cfls    = [ 0.1 ]
+cfls    = [ 0.5 ]
 # extrapol1(), extrapol2()=extrapolk(1), centered=extrapolk(-1), extrapol3=extrapolk(1./3.)
 #xmeths  = [ extrapol1(), extrapol2(), centered(), extrapol3() ]
 xmeths  = [ muscl() ]
@@ -214,7 +214,7 @@ solvers = []
 results = []
 nbcalc  = max(len(cfls), len(tmeths), len(xmeths), len(meshs))
 for i in range(nbcalc):
-    field0 = scafield(mymodel, bc, bcvalues, (meshs*nbcalc)[i].ncell)
+    field0 = scafield(mymodel, bc, (meshs*nbcalc)[i].ncell, bcvalues)
     field0.qdata = initm((meshs*nbcalc)[i])
     solvers.append((tmeths*nbcalc)[i]((meshs*nbcalc)[i], (xmeths*nbcalc)[i]))
     start = time.clock()
