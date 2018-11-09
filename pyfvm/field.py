@@ -17,7 +17,7 @@ class field():
       pdata : list of neq nparray - primitive    data
       bc    : type of boundary condition - "p"=periodic / "d"=Dirichlet 
     """
-    def __init__(self, model, bc, nelem=100, bcvalues = []):
+    def __init__(self, model, bc='p', nelem=100, bcvalues = []):
         self.model = model
         self.neq   = model.neq
         self.nelem = nelem
@@ -79,7 +79,9 @@ class numfield(field):
             elif self.bc == 'd':   #dirichlet boundary conditions
                 for i in range(len(self.pL)):
                     self.pL[i][0]          = self.bcvalues[i][0] 
-                    self.pR[i][self.nelem] = self.bcvalues[i][1]                 
+                    self.pR[i][self.nelem] = self.bcvalues[i][1]
+            else:
+                raise NameError("unknown BC condition: "+self.bc)
     
     def calc_bc_grad(self, mesh):
         for i in range(self.neq):
