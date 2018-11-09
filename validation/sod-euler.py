@@ -180,7 +180,7 @@ cfls    = [ 0.5 ]
 #xmeths  = [ extrapol1(), extrapol2(), centered(), extrapol3() ]
 xmeths  = [ muscl() ]
 # explicit, rk2, rk3ssp, rk4, implicit, trapezoidal=cranknicolson
-tmeths  = [ rk4 ]
+tmeths  = [ AsyncLSrk4 ]
 #legends = [ 'O1 upwind', 'O2 upwind', 'O2 centered', 'O3 extrapol' ]
 legends = [ 'O1 muscl' ]
 #boundary condition bc : type of boundary condition - "p"=periodic / "d"=Dirichlet
@@ -242,7 +242,7 @@ for t in range(1,len(tsave)):
         rho=results[i][t].qdata[0]
         plot((meshs*nbcalc)[i].centers(), rho, style[i])
         labels.append(legends[i]+", t=%.1f"%results[i][t].time)
-legend(labels, loc='lower center',prop={'size':10})
+legend(labels, loc='lower left',prop={'size':10})
 fig.savefig('density.png', bbox_inches='tight')
 #show()
 # 
@@ -263,7 +263,7 @@ for t in range(1,len(tsave)):
         u = results[i][t].qdata[1]/results[i][t].qdata[0] 
         plot((meshs*nbcalc)[i].centers(), u, style[i])
         labels.append(legends[i]+", t=%.1f"%results[i][t].time)
-legend(labels, loc='lower center',prop={'size':10})
+legend(labels, loc='upper left',prop={'size':10})
 fig.savefig('velocity.png', bbox_inches='tight')
 #
 # INTERNAL ENERGY
@@ -283,7 +283,7 @@ for t in range(1,len(tsave)):
         e = (results[i][t].qdata[2]-0.5*results[i][t].qdata[1]**2/results[i][t].qdata[0])/results[i][t].qdata[0]
         plot((meshs*nbcalc)[i].centers(), e, style[i])
         labels.append(legends[i]+", t=%.1f"%results[i][t].time)
-legend(labels, loc='lower center',prop={'size':10})
+legend(labels, loc='upper left',prop={'size':10})
 fig.savefig('internalenergy.png', bbox_inches='tight')
 #
 # PRESSURE
@@ -303,6 +303,6 @@ for t in range(1,len(tsave)):
         p = (gamma-1.0)*(results[i][t].qdata[2]-0.5*results[i][t].qdata[1]**2/results[i][t].qdata[0])
         plot((meshs*nbcalc)[i].centers(), p, style[i])
         labels.append(legends[i]+", t=%.1f"%results[i][t].time)
-legend(labels, loc='lower center',prop={'size':10})
+legend(labels, loc='lower left',prop={'size':10})
 fig.savefig('pressure.png', bbox_inches='tight')
                            
