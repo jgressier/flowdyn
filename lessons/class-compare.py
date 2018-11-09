@@ -53,6 +53,9 @@ tmeths  = [ rk4 ]
 
 legends = [ '400 pts', '200 pts', '100 pts' ]
 
+#boundary condition bc : type of boundary condition - "p"=periodic / "d"=Dirichlet
+bc = 'p'
+
 solvers = []
 results = []
 errors1 = []
@@ -60,7 +63,7 @@ errors2 = []
 nbcalc     = max(len(cfls), len(tmeths), len(xmeths), len(meshs))
 
 for i in range(nbcalc):
-    field0 = scafield(mymodel, (meshs*nbcalc)[i].ncell)
+    field0 = scafield(mymodel, bc, (meshs*nbcalc)[i].ncell)
     field0.qdata[0] = initm((meshs*nbcalc)[i])
     solvers.append((tmeths*nbcalc)[i]((meshs*nbcalc)[i], (xmeths*nbcalc)[i]))
     start = time.clock()

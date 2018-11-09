@@ -43,8 +43,11 @@ xmeth  = extrapol1()
 # explicit, rk2, rk3ssp, rk4, implicit, trapezoidal=cranknicolson
 tmeth  = explicit
 
+#boundary condition bc : type of boundary condition - "p"=periodic / "d"=Dirichlet
+bc = 'p'
+
 # initialization
-field0          = scafield(mymodel, mesh.ncell)
+field0          = scafield(mymodel, bc, mesh.ncell)
 field0.qdata[0] = init(mesh)
 
 # solver integration

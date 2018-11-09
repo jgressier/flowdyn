@@ -45,13 +45,16 @@ xmeths   = [ extrapol1(), extrapol2(), extrapol3() ]
 legends  = [ 'O1', 'O2', 'O3' ]
 # explicit, rk2, rk3ssp, rk4, implicit, trapezoidal=cranknicolson
 
+#boundary condition bc : type of boundary condition - "p"=periodic / "d"=Dirichlet
+bc = 'p'
+
 results = []
 labels  = []
 nbcalc  = max(len(xmeths), len(meshs))
 
 for i in range(nbcalc):
     lmesh = (meshs*nbcalc)[i]
-    field0 = scafield(mymodel, lmesh.ncell)
+    field0 = scafield(mymodel, bc, lmesh.ncell)
     field0.qdata[0] = my_init(lmesh)
     solver = implicit(lmesh, (xmeths*nbcalc)[i])
     jac    = solver.calc_jacobian(numfield(field0))
@@ -76,13 +79,16 @@ meshs   = [ mesh100, mgmesh ]
 xmeths   = [ extrapol3() ]
 legends  = [ 'mesh100', 'mgmesh' ]
 
+#boundary condition bc : type of boundary condition - "p"=periodic / "d"=Dirichlet
+bc = 'p'
+
 results = []
 labels  = []
 nbcalc  = max(len(xmeths), len(meshs))
 
 for i in range(nbcalc):
     lmesh = (meshs*nbcalc)[i]
-    field0 = scafield(mymodel, lmesh.ncell)
+    field0 = scafield(mymodel, bc, lmesh.ncell)
     field0.qdata[0] = my_init(lmesh)
     solver = implicit(lmesh, (xmeths*nbcalc)[i])
     jac    = solver.calc_jacobian(numfield(field0))
