@@ -214,7 +214,6 @@ class LowStorageRKmodel(timemodel):
                 dtglob = min(dtloc)
                 self.nit += 1
                 itfield.nit = self.nit
-                itfield.time += dtglob
                 if itfield.time+dtglob >= tsave[t]:
                     endcycle = 1
                     dtglob    = tsave[t]-itfield.time
@@ -223,6 +222,7 @@ class LowStorageRKmodel(timemodel):
                     for irkstep in range(self.nstage):
                         itfield = self.step(itfield,dtglob,irkstep) 
                         itfield.cons2prim()
+                itfield.time += dtglob
             results.append(itfield.copy())
         return results
 
@@ -323,7 +323,6 @@ class AsyncLowStorageRKmodel(timemodel):
                 dtglob = DT[minclass] #global synchronization time step #if set to min(dtloc), should run as classic solve() 
                 self.nit += 1
                 itfield.nit = self.nit
-                itfield.time += dtglob
                 if itfield.time+dtglob >= tsave[t]:
                     endcycle = 1
                     DT[minclass] =  tsave[t]-itfield.time     #if time is greater than total time
@@ -342,6 +341,7 @@ class AsyncLowStorageRKmodel(timemodel):
                         for irkstep in range(self.nstage):
                             itfield = self.step(itfield, idtloc, irkstep, iclass, iasync) 
                             itfield.cons2prim()
+                itfield.time += dtglob
             results.append(itfield.copy())
         return results
 
@@ -466,16 +466,16 @@ class AsyncLowStorageRKmodel(timemodel):
         maxclass = max(cell_class)
 
         nc = maxclass-minclass
-        #print "nc",nc
+        print "number of classes",nc+1
 
         for i in np.arange(self.nelem):
             cell_class[i] = cell_class[i] - minclass
-        #print "cell_class",cell_class
+        print "cell_class",cell_class
 
         DT = np.zeros(nc+1)
         for k in np.arange(0,nc+1):
             DT[k] = pow(2,nc-k)*dtmin         #timestep for each class k
-        #print "DT",DT
+        print "DT",DT
 
         classes   = [x for x in range(nc+1)]  #list of cells per classes
         adjcells  = [x for x in range(nc+1)]  #list of adjacent cells per classes
