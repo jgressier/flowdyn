@@ -466,16 +466,16 @@ class AsyncLowStorageRKmodel(timemodel):
         maxclass = max(cell_class)
 
         nc = maxclass-minclass
-        print "number of classes",nc+1
+#        print "number of classes",nc+1
 
         for i in np.arange(self.nelem):
             cell_class[i] = cell_class[i] - minclass
-        print "cell_class",cell_class
+#        print "cell_class",cell_class
 
         DT = np.zeros(nc+1)
         for k in np.arange(0,nc+1):
             DT[k] = pow(2,nc-k)*dtmin         #timestep for each class k
-        print "DT",DT
+#        print "DT",DT
 
         classes   = [x for x in range(nc+1)]  #list of cells per classes
         adjcells  = [x for x in range(nc+1)]  #list of adjacent cells per classes

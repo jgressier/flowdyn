@@ -28,7 +28,7 @@ class model():
     def numflux(self):
         pass
     
-    def timestep(self, pdata, dx, condition):
+    def timestep(self, data, dx, condition):
         pass
 
 class convmodel(model):
@@ -47,9 +47,43 @@ class convmodel(model):
     def numflux(self, pL, pR):
         return [ self.convcoef*(pL[0]+pR[0])/2-abs(self.convcoef)*(pR[0]-pL[0])/2 ]
     
-    def timestep(self, pdata, dx, condition):
+    def timestep(self, data, dx, condition):
         "computation of timestep: data is not used, dx is an array of cell sizes, condition is the CFL number"
         return condition*dx/abs(self.convcoef)
+
+class burgersinvmodel(model):
+    def __init__(self):
+        self.equation = 'burgersinv'
+        self.neq      = 1
+        self.islinear = 0
+        
+    def cons2prim(self, qdata):
+        return qdata
+        
+    def prim2cons(self, pdata):
+        return pdata
+
+    def numflux(self, pL, pR):
+        nflux = []
+        for i in range(self.neq):
+            nflux.append(np.zeros(len(pL[i]))) #test use zeros instead
+            for c in range(len(pL[i])):
+                #1st order Upwind scheme
+                vhalf = (pL[i][c]+pR[i][c])/2   
+                if vhalf > 0:
+                    nflux[i][c] = pL[i][c]**2/2
+                elif vhalf < 0:
+                    nflux[i][c] = pR[i][c]**2/2  
+        return nflux
+    
+    def timestep(self, data, dx, condition):
+        "computation of timestep: data is not used, dx is an array of cell sizes, condition is the CFL number"
+#        dt = CFL * dx / |u|
+        dt = np.zeros(len(dx)) #test use zeros instead
+        for c in range(len(dx)):
+            dt[c] = condition*dx[c]/ abs(data[0][c])  
+             
+        return dt 
         
 class eulermodel(model):
     def __init__(self):
@@ -184,11 +218,11 @@ class eulermodel(model):
 
         return nflux
 
-    def timestep(self, pdata, dx, condition):
-        "computation of timestep: data is not used, dx is an array of cell sizes, condition is the CFL number"
+    def timestep(self, data, dx, condition):
+        "computation of timestep: data(=pdata) is not used, dx is an array of cell sizes, condition is the CFL number"
 #        dt = CFL * dx / ( |u| + c )
         dt = np.zeros(len(dx)) #test use zeros instead
         for c in range(len(dx)):
-            dt[c] = condition*dx[c]/ (pdata[1][c] + math.sqrt(self.gamma*pdata[3][c]/pdata[0][c]) )  
+            dt[c] = condition*dx[c]/ (data[1][c] + math.sqrt(self.gamma*data[3][c]/data[0][c]) )  
              
         return dt        

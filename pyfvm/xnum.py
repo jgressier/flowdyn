@@ -119,7 +119,7 @@ class muscl(virtualmeth):
     def __init__(self, limiter=minmod):
         self.gradmeth = 'face'
         self.limiter  = limiter
-        print limiter
+#        print limiter
         
     def interp_face(self, mesh, data, grad):
         "returns 2x (L/R) neq list of (ncell+1) nparray / except bound"

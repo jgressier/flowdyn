@@ -186,8 +186,7 @@ legends = [ 'O1 muscl' ]
 #boundary condition bc : type of boundary condition - "p"=periodic / "d"=Dirichlet
 bc       = 'd'
 bcvalues = []
-neq      = 3
-for i in range(neq+1):
+for i in range(mymodel.neq+1):
     bcvalues.append(np.zeros(2))
 
 # Left Boundary
@@ -244,7 +243,7 @@ for t in range(1,len(tsave)):
         labels.append(legends[i]+", t=%.1f"%results[i][t].time)
 legend(labels, loc='lower left',prop={'size':10})
 fig.savefig('density.png', bbox_inches='tight')
-#show()
+show()
 # 
 # VELOCITY
 #
