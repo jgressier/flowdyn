@@ -18,6 +18,8 @@ from pyfvm.integration import *
 mesh50   = unimesh(ncell=50, length=1.)
 mesh100  = unimesh(ncell=100, length=1.)
 mesh1000 = unimesh(ncell=1000, length=1.)
+nmesh    = nonunimesh(length=5., nclass=2, ncell0=10, periods=1) #fine,corase,fine
+rmesh    = meshramzi(size=10, nclass = 3, length=5.)
 
 mymodel = eulermodel()
 
@@ -234,7 +236,7 @@ rho0 = results[0][0].qdata[0]
 plot(meshs[0].centers(), rho0, '-.')
 # Exact solution
 plot(meshs[0].centers(), exactPdata[0], '-')
-labels = ["initial condition","exact condition"+", t=%.1f"%results[0][len(tsave)-1].time]
+labels = ["initial condition","exact solution"+", t=%.1f"%results[0][len(tsave)-1].time]
 # Numerical solution
 for t in range(1,len(tsave)):
     for i in range(nbcalc):

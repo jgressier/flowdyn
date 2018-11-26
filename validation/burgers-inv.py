@@ -18,6 +18,8 @@ from pyfvm.integration import *
 mesh50   = unimesh(ncell=50, length=5.)
 mesh100  = unimesh(ncell=100, length=5.)
 mesh1000 = unimesh(ncell=1000, length=5.)
+nmesh    = nonunimesh(length=5., nclass=2, ncell0=10, periods=1) #fine,corase,fine
+rmesh    = meshramzi(size=10, nclass = 3, length=5.)
 
 mymodel = burgersinvmodel()  #it takes as an argument a timestep dtmax which is the maximum timestep we need to capture the phenomena in the case study  
 
@@ -169,7 +171,7 @@ fig.suptitle('Density profile along the Sod shock-tube, CFL %.3f'%cfls[0], fonts
 plot(meshs[0].centers(), results[0][0].qdata[0], '-')
 # Exact solution
 plot(meshs[0].centers(), exactPdata[1], '-')
-labels = ["initial condition","exact condition"+", t=%.1f"%results[0][len(tsave)-1].time]
+labels = ["initial condition","exact solution"+", t=%.1f"%results[0][len(tsave)-1].time]
 # Numerical solution
 for t in range(1,len(tsave)):
     for i in range(nbcalc):
