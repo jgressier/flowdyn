@@ -21,7 +21,7 @@ mesh1000 = unimesh(ncell=1000, length=5.)
 nmesh    = nonunimesh(length=5., nclass=2, ncell0=10, periods=1) #fine,corase,fine
 rmesh    = meshramzi(size=10, nclass = 3, length=5.)
 
-mymodel = burgersinvmodel()  #it takes as an argument a timestep dtmax which is the maximum timestep we need to capture the phenomena in the case study  
+mymodel  = burgersinvmodel()  #it takes as an argument a timestep dtmax which is the maximum timestep we need to capture the phenomena in the case study  
 
 # TODO : make init method for scafield 
 # sinus packet

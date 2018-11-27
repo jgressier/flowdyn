@@ -1,0 +1,382 @@
+\documentclass[border=10pt]{standalone}
+%%%<
+\usepackage{verbatim}
+\usepackage{filecontents}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% SYNC CFL %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{filecontents}{sync_cfl_l1.dat}
+dof        l1_err      level
+12         1.1755e-01  1
+24         1.6643e-02  2
+48         2.1728e-03  3
+96         2.7550e-04  4
+192        3.5637e-05  5
+384        4.6816e-06  6
+\end{filecontents}
+\begin{filecontents}{sync_cfl_l2.dat}
+dof        l2_err     level
+12         1.2327e-01  1
+24         1.7246e-02  2
+48         2.2786e-03  3
+96         3.0150e-04  4
+192        4.1136e-05  5
+384        5.9223e-06  6
+\end{filecontents}
+\begin{filecontents}{sync_cfl_linf.dat}
+dof        linf_err     level
+12         1.4152e-01  1
+24         2.4881e-02  2
+48         4.3264e-03  3
+96         8.3449e-04  4
+192        1.7950e-04  5
+384        4.1729e-05  6
+\end{filecontents}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% SYNC CFL/2 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{filecontents}{sync_cfl_over_2_l1.dat}
+	dof        l1_err      level
+	12         1.1689e-01  1
+	24         1.6642e-02  2
+	48         2.1728e-03  3
+	96         2.7550e-04  4
+	192        3.5637e-05  5
+	384        4.6816e-06  6
+\end{filecontents}
+\begin{filecontents}{sync_cfl_over_2_l2.dat}
+	dof        l2_err     level
+	12         1.2287e-01  1
+	24         1.7245e-02  2
+	48         2.2786e-03  3
+	96         3.0150e-04  4
+	192        4.1136e-05  5
+	384        5.9223e-06  6
+\end{filecontents}
+\begin{filecontents}{sync_cfl_over_2_linf.dat}
+	dof        linf_err     level
+	12         1.4168e-01  1
+	24         2.4881e-02  2
+	48         4.3264e-03  3
+	96         8.3449e-04  4
+	192        1.7950e-04  5
+	384        4.1729e-05  6
+\end{filecontents}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% ASYNC0 CFL/2 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{filecontents}{async0_l1.dat}
+dof        l1_err      level
+12         3.5153e-02  1
+24         3.1779e-03  2
+48         3.6748e-04  3
+96         4.8237e-05  4
+192        6.7616e-06  5
+384        9.4595e-07  6
+\end{filecontents}
+\begin{filecontents}{async0_l2.dat}
+dof        l2_err     level
+12         3.9939e-02  1
+24         4.4348e-03  2
+48         6.8529e-04  3
+96         1.2065e-04  4
+192        2.1941e-05  5
+384        4.0041e-06  6
+\end{filecontents}
+\begin{filecontents}{async0_linf.dat}
+dof        linf_err     level
+12         5.6475e-02  1
+24         9.2260e-03  2
+48         2.2687e-03  3
+96         5.7449e-04  4
+192        1.4701e-04  5
+384        3.7681e-05  6
+\end{filecontents}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% ASYNC2 CFL/2 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{filecontents}{async2_l1.dat}
+	dof        l1_err      level
+	12         5.2478e-02  1
+	24         5.5750e-03  2
+	48         6.2298e-04  3
+	96         9.1062e-05  4
+	192        1.3009e-05  5
+	384        1.7895e-06  6
+\end{filecontents}
+\begin{filecontents}{async2_l2.dat}
+	dof        l2_err     level
+	12         6.0982e-02  1
+	24         5.8571e-03  2
+	48         8.1838e-04  3
+	96         1.3422e-04  4
+	192        2.3249e-05  5
+	384        4.1244e-06  6
+\end{filecontents}
+\begin{filecontents}{async2_linf.dat}
+	dof        linf_err     level
+	12         9.0758e-02  1
+	24         7.8038e-03  2
+	48         2.2795e-03  3
+	96         5.8506e-04  4
+	192        1.4876e-04  5
+	384        3.7919e-05  6
+\end{filecontents}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\usepackage{pgfplots}
+\usepackage{pgfplotstable}
+\pgfplotsset{width=7cm,compat=1.8}
+\begin{comment}
+:Title: Convergence Plot
+:Tags: PGFPlotstable;Mathematics;Manual
+:Author: Christian Feuersänger
+:Slug: convergence-plot
+
+We assume that we did some scientfic experiment.
+The scientific experiment yielded three
+input data tables: one table for each involved parameter
+d = 2, d = 3, d = 4. The data tables contain "degrees
+of freedom" and some accuracy measurement "l2_err". In addition,
+they might contain some meta-data
+(in our case a column "level").
+
+What we want is to produce three plots, each dof versus l2_err,
+in a loglog plot. We expect that
+the result is a line in a loglog plot, and we are interested in
+its slope log e(N) = -a log(N) because that
+characterizes our experiment.
+
+The code is from the PGFPlots 1.10 manual:
+"3.3 Solving a Real Use Case: Scientific Data Analysis".
+\end{comment}
+\begin{document}
+	
+\begin{tikzpicture}
+\begin{loglogaxis}[
+    title=extrapol3-RK4,
+    xlabel={Number of cells},
+    ylabel={$L_1$ Error},
+    grid=major,
+    legend entries={sync CFL,async0,async2,sync CFL$/2$},
+    legend style = {font=\footnotesize}
+]
+\addplot[mark=*, color=blue] table {sync_cfl_l1.dat};
+\addplot[mark=square, color=red!80!black] table {async0_l1.dat};
+\addplot[mark=square, color=green!50!black] table {async2_l1.dat};
+\addplot[mark=square, color=blue] table {sync_cfl_over_2_l1.dat};
+
+%sync_l1 blue
+\addplot[color=blue, dashed] table[
+x=dof,
+y={create col/linear regression={y=l1_err,
+		variance list={384,192,96,48,24,12}}}]
+{sync_cfl_l1.dat}
+% save two points on the regression line
+% for drawing the slope triangle
+coordinate [pos=0.65] (A)
+coordinate [pos=0.85]  (B)
+;
+% save the slope parameter:
+\xdef\slope{\pgfplotstableregressiona}
+
+% draw the opposite and adjacent sides
+% of the triangle
+\draw (A) [color=blue] -|  (B)
+node [yshift=.7cm, xshift=.5cm,color=blue]
+{\pgfmathprintnumber{\slope}};
+
+%async0_l1 red
+\addplot[color=red!80!black, dashed] table[
+x=dof,
+y={create col/linear regression={y=l1_err,
+		variance list={384,192,96,48,24,12}}}]
+{async0_l1.dat}
+% save two points on the regression line
+% for drawing the slope triangle
+coordinate [pos=0.8] (A)
+coordinate [pos=0.55]  (B)
+;
+% save the slope parameter:
+\xdef\slope{\pgfplotstableregressiona}
+
+% draw the opposite and adjacent sides
+% of the triangle
+\draw (A) [color=red!80!black] -|  (B)
+node [yshift=-.8cm, xshift=-.5cm,color=red!80!black]
+{\pgfmathprintnumber{\slope}};
+
+%async2_l1 green
+\addplot[color=green!50!black, dashed] table[
+x=dof,
+y={create col/linear regression={y=l1_err,
+		variance list={384,192,96,48,24,12}}}]
+{async2_l1.dat}
+% save two points on the regression line
+% for drawing the slope triangle
+coordinate [pos=0.001] (A)
+coordinate [pos=0.25]  (B)
+;
+% save the slope parameter:
+\xdef\slope{\pgfplotstableregressiona}
+
+% draw the opposite and adjacent sides
+% of the triangle
+\draw (A) [color=green!50!black] -|  (B)
+node [yshift=.9cm, xshift=.3cm,color=green!50!black]
+{\pgfmathprintnumber{\slope}};
+
+
+\end{loglogaxis}
+\end{tikzpicture}
+
+\begin{tikzpicture}
+\begin{loglogaxis}[
+title=extrapol3-RK4,
+xlabel={Number of cells},
+ylabel={$L_2$ Error},
+grid=major,
+legend entries={sync CFL,async0,async2,sync CFL$/2$},
+legend style = {font=\footnotesize}
+]
+\addplot[mark=*, color=blue] table {sync_cfl_l2.dat};
+\addplot[mark=square, color=red!80!black] table {async0_l2.dat};
+\addplot[mark=square, color=green!50!black] table {async2_l2.dat};
+\addplot[mark=square, color=blue] table {sync_cfl_over_2_l2.dat};
+
+%sync_l2 blue
+\addplot[color=blue, dashed] table[
+x=dof,
+y={create col/linear regression={y=l2_err,
+		variance list={384,192,96,48,24,12}}}]
+{sync_cfl_l2.dat}
+% save two points on the regression line
+% for drawing the slope triangle
+coordinate [pos=0.65] (A)
+coordinate [pos=0.85]  (B)
+;
+% save the slope parameter:
+\xdef\slope{\pgfplotstableregressiona}
+
+% draw the opposite and adjacent sides
+% of the triangle
+\draw (A) [color=blue] -|  (B)
+node [yshift=.7cm, xshift=.5cm,color=blue]
+{\pgfmathprintnumber{\slope}};
+
+%async0_l2 red
+\addplot[color=red!80!black, dashed] table[
+x=dof,
+y={create col/linear regression={y=l2_err,
+		variance list={384,192,96,48,24,12}}}]
+{async0_l2.dat}
+% save two points on the regression line
+% for drawing the slope triangle
+coordinate [pos=0.8] (A)
+coordinate [pos=0.55]  (B)
+;
+% save the slope parameter:
+\xdef\slope{\pgfplotstableregressiona}
+
+% draw the opposite and adjacent sides
+% of the triangle
+\draw (A) [color=red!80!black] -|  (B)
+node [yshift=-.8cm, xshift=-.5cm,color=red!80!black]
+{\pgfmathprintnumber{\slope}};
+
+%async2_l2 green
+\addplot[color=green!50!black, dashed] table[
+x=dof,
+y={create col/linear regression={y=l2_err,
+		variance list={384,192,96,48,24,12}}}]
+{async2_l2.dat}
+% save two points on the regression line
+% for drawing the slope triangle
+coordinate [pos=0.001] (A)
+coordinate [pos=0.25]  (B)
+;
+% save the slope parameter:
+\xdef\slope{\pgfplotstableregressiona}
+
+% draw the opposite and adjacent sides
+% of the triangle
+\draw (A) [color=green!50!black] -|  (B)
+node [yshift=.9cm, xshift=.3cm,color=green!50!black]
+{\pgfmathprintnumber{\slope}};
+
+
+\end{loglogaxis}
+\end{tikzpicture}
+
+
+\begin{tikzpicture}
+\begin{loglogaxis}[
+title=extrapol3-RK4,
+xlabel={Number of cells},
+ylabel={$L_\infty$ Error},
+grid=major,
+legend entries={sync CFL,async0,async2,sync CFL$/2$},
+legend style = {font=\footnotesize}
+]
+\addplot[mark=*, color=blue] table {sync_cfl_linf.dat};
+\addplot[mark=square, color=red!80!black] table {async0_linf.dat};
+\addplot[mark=square, color=green!50!black] table {async2_linf.dat};
+\addplot[mark=square, color=blue] table {sync_cfl_over_2_linf.dat};
+
+%sync_linf blue
+\addplot[color=blue, dashed] table[
+x=dof,
+y={create col/linear regression={y=linf_err,
+		variance list={384,192,96,48,24,12}}}]
+{sync_cfl_linf.dat}
+% save two points on the regression line
+% for drawing the slope triangle
+coordinate [pos=0.65] (A)
+coordinate [pos=0.85]  (B)
+;
+% save the slope parameter:
+\xdef\slope{\pgfplotstableregressiona}
+
+% draw the opposite and adjacent sides
+% of the triangle
+\draw (A) [color=blue] -|  (B)
+node [yshift=.7cm, xshift=.5cm,color=blue]
+{\pgfmathprintnumber{\slope}};
+
+%async0_linf red
+\addplot[color=red!80!black, dashed] table[
+x=dof,
+y={create col/linear regression={y=linf_err,
+		variance list={384,192,96,48,24,12}}}]
+{async0_linf.dat}
+% save two points on the regression line
+% for drawing the slope triangle
+coordinate [pos=0.8] (A)
+coordinate [pos=0.55]  (B)
+;
+% save the slope parameter:
+\xdef\slope{\pgfplotstableregressiona}
+
+% draw the opposite and adjacent sides
+% of the triangle
+\draw (A) [color=red!80!black] -|  (B)
+node [yshift=-.8cm, xshift=-.5cm,color=red!80!black]
+{\pgfmathprintnumber{\slope}};
+
+%async2_linf green
+\addplot[color=green!50!black, dashed] table[
+x=dof,
+y={create col/linear regression={y=linf_err,
+		variance list={384,192,96,48,24,12}}}]
+{async2_linf.dat}
+% save two points on the regression line
+% for drawing the slope triangle
+coordinate [pos=0.001] (A)
+coordinate [pos=0.25]  (B)
+;
+% save the slope parameter:
+\xdef\slope{\pgfplotstableregressiona}
+
+% draw the opposite and adjacent sides
+% of the triangle
+\draw (A) [color=green!50!black] -|  (B)
+node [yshift=.9cm, xshift=.3cm,color=green!50!black]
+{\pgfmathprintnumber{\slope}};
+
+
+\end{loglogaxis}
+\end{tikzpicture}
+
+
+\end{document}
