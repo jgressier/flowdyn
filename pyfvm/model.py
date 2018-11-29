@@ -81,7 +81,7 @@ class burgersinvmodel(model):
 #        dt = CFL * dx / |u|
         dt = np.zeros(len(dx)) #test use zeros instead
         for c in range(len(dx)):
-            dt[c] = condition*dx[c]/ abs(data[0][c])  
+            dt[c] = condition*dx[c]/ abs(data[0][c])
              
         return dt 
         

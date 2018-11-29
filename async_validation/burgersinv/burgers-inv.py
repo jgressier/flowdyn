@@ -35,8 +35,7 @@ nmesh    = nonunimesh(length=5., nclass=2, ncell0=ncellmin, periods=1) #fine,cor
 rmesh    = meshramzi(size=10, nclass = 4, length=5.)
 umesh100 = unimesh(ncell=101, length=1.)
 
-mymodel  = burgersinvmodel()  #it takes as an argument a timestep dtmax which is the maximum timestep we need to capture the phenomena in the case study  
-
+mymodel  = burgersinvmodel()
 # TODO : make init method for scafield 
 # sinus packet
 
@@ -174,8 +173,6 @@ def classify(cfl, dx, data, bc):
 endtime  = 2.
 ntime    = 1
 tsave    = linspace(0, endtime, num=ntime+1)
-cfls     = [ 0.5 ]
-maxclass = 2
 #type of asynchronous synchronisation sequence: 0 :=> [2 2 1 2 2 1 0] | 1 :=> [0 1 2 2 1 2 2] | 2 :=> [0 1 1 2 2 2 2]
 asyncsq = 0   
 # extrapol1(), extrapol2()=extrapolk(1), centered=extrapolk(-1), extrapol3=extrapol(1./3.), muscl(limiter=minmod) 
@@ -270,6 +267,7 @@ nc = max(classes)
 
 cfls[1]  = cflmin/(2**nc)
 
+# Rest of the runs for sync with cflmin/(2**nc) and async with cflmin
 for i in range(1,nbcalc):
     field0 = scafield(mymodel, bc, (meshs*nbcalc)[i].ncell, bcvalues)
     field0.qdata[0] = initm((meshs*nbcalc)[i])                                  #initial solution
@@ -287,6 +285,8 @@ classes = classify(cflmin, meshs[0].dx(), results[-1][1].qdata, bc)
 outdir = './'
 if not os.path.exists(outdir):
     os.makedirs(outdir)
+suffix =  tmeths[-1].__name__ + '_' + xmeths[0].__class__.__name__+'_asyncsq'+str(asyncsq)
+
 #---------------------------------Plotting the characteristics of burgers equation-------------------------
 tend = 0.2                                         #total time for the figure
 fig2=plt.figure(1, figsize=(10,8))
@@ -334,14 +334,12 @@ for t in range(1,len(tsave)):
         labels.append(legends[i]+", CFL=%.2f"%cfls[i])
 legend(labels, loc='best', prop={'size':16})
 
-suffix =  tmeths[-1].__name__ + '_' + xmeths[0].__class__.__name__+'_asyncsq'+str(asyncsq)
 pdfname = 'u_burg_'+suffix+'.pdf'
 
 fig.savefig(outdir+pdfname, bbox_inches='tight')
 plt.show()
-#--------------------------------------------------------Plotting u-uref------------------------------------
-# uref = results[0][0].qdata[0]        #init as reference data
-uref = exact_step(initm,meshs[0],endtime)[1] #exact as reference data
+#--------------------------------------------------------Plotting (u-uref)/uref------------------------------------
+uref = exactPdata[1] #exact as reference data
 style=['-b','ob','-or', '-or', '-.or', ':or']
 mec = ['b','b','r','r','r','r']
 markerfill = ['none','none','none','none','none','none','none']
@@ -357,12 +355,12 @@ labels =[]
 for t in range(1,len(tsave)):    #first t gives us the initial condition
     for i in range(nbcalc):      #if first method is the reference method
         utest = results[i][t].qdata[0]
-        error = np.abs(uref-utest)
+        error = np.abs((uref-utest)/uref)
         ax1.plot((meshs*nbcalc)[i].centers(), error, style[i], markersize=markersizes[i], fillstyle=markerfill[i], markeredgecolor = mec[i])
 #        labels.append(legends[i]+", t=%.2f"%results[i][t].time+", CFL=%.2f"%cfls[i])
         labels.append(legends[i]+", CFL=%.2f"%cfls[i])
 ax1.set_xlabel(r'$x$',fontsize=axisfontsize)
-ax1.set_ylabel(r'$\abs{U-U_\text{ref}}$', color='k',fontsize=axisfontsize)
+ax1.set_ylabel(r'$\abs{\frac{U-U_\text{ref}}{U_\text{ref}}}$', color='k',fontsize=axisfontsize)
 # ax1.set_ylim([min(uref)-0.02,max(uref)+0.02])        #in order to show the markers
 ax1.tick_params('both', colors='k',labelsize=18)
 #ax1.set_xlim([0,meshs[0].length])             #in order to show the squares
@@ -371,7 +369,7 @@ ax1.xaxis.set_ticks(np.arange(0,meshs[0].length+0.1,step))
 #--------------------------------------------------------Plotting the classes------------------------------------
 
 x = (meshs*nbcalc)[0].xf                                             # the length of the nodes list is len(results)+1
-y = [float(i) for i in np.append(classes,classes[-1])]         #appends the class of the final cell in the end to match lengths
+y = [float(i) for i in np.append(classes,classes[-1])]               #appends the class of the final cell in the end to match lengths
 pos = np.where(np.abs(np.diff(y)) == 1)[0]                           #gets the indices where we have a change of class
 x = np.insert(x, pos+1, np.nan)                                      #inserts in that index+1 a np.nan value that will prevent plotting it
 y = np.insert(y, pos+1, np.nan)             

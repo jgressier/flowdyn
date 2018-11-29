@@ -175,7 +175,7 @@ def exactSod(mesh,tf): # tf is the endtime
 
 # Set of computations
 endtime = 0.2
-ntime   = 3
+ntime   = 1
 tsave   = linspace(0, endtime, num=ntime+1)
 cfls    = [ 0.5 ]
 # extrapol1(), extrapol2()=extrapolk(1), centered=extrapolk(-1), extrapol3=extrapolk(1./3.)
@@ -207,7 +207,7 @@ bcvalues[3][1] = 0.1      # pressure p
 
 
 gamma      = 1.4
-meshs      = [ mesh100 ]
+meshs      = [ rmesh ]
 initm      = initSod
 exactPdata = exactSod(meshs[0],endtime)
 
@@ -266,6 +266,7 @@ for t in range(1,len(tsave)):
         labels.append(legends[i]+", t=%.1f"%results[i][t].time)
 legend(labels, loc='upper left',prop={'size':10})
 fig.savefig('velocity.png', bbox_inches='tight')
+show()
 #
 # INTERNAL ENERGY
 #
@@ -286,6 +287,7 @@ for t in range(1,len(tsave)):
         labels.append(legends[i]+", t=%.1f"%results[i][t].time)
 legend(labels, loc='upper left',prop={'size':10})
 fig.savefig('internalenergy.png', bbox_inches='tight')
+show()
 #
 # PRESSURE
 #
@@ -305,5 +307,5 @@ for t in range(1,len(tsave)):
         plot((meshs*nbcalc)[i].centers(), p, style[i])
         labels.append(legends[i]+", t=%.1f"%results[i][t].time)
 legend(labels, loc='lower left',prop={'size':10})
-fig.savefig('pressure.png', bbox_inches='tight')
-                           
+fig.savefig('pressure.png', bbox_inches='tight')            
+show()
