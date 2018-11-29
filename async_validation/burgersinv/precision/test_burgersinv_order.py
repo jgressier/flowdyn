@@ -17,6 +17,138 @@ from pyfvm.field import *
 from pyfvm.xnum  import *
 from pyfvm.integration import *
 
+# TODO : make init method for scafield 
+# sinus packet
+
+def init_sinpack(mesh):
+    return sin(2*2*pi/mesh.length*mesh.centers())*(1+sign(-(mesh.centers()/mesh.length-.25)*(mesh.centers()/mesh.length-.75)))/2        
+    
+# periodic wave
+def init_cos(mesh):
+    k = 2 # nombre d'onde
+    omega = k*pi/mesh.length
+    return 1.-cos(omega*mesh.centers())
+    
+def init_sin(mesh):
+    k = 2 # nombre d'onde
+    omega = k*pi/mesh.length
+    return sin(omega*mesh.centers())
+    
+# square signal
+def init_square(mesh):
+    return (3+sign(-(mesh.centers()/mesh.length-.25)*(mesh.centers()/mesh.length-.75)))/2
+    
+def init_hat(mesh):
+    hat = np.zeros(len(mesh.centers()))
+    xc = 0.5*mesh.length #center of hat
+    y = 0.04             #height
+    r = 0.4              #radius
+    x1 = xc-r            #start of hat
+    x2 = xc+r            #end of hat
+    a1 = y/r
+    b1 = -a1*x1
+    a2 = -y/r
+    b2 = -a2*x2
+    k=0
+    for i in mesh.centers():
+        if x1 < i <= xc:
+            hat[k]=a1*i+b1
+        elif xc < i < x2:
+            hat[k]=a2*i+b2
+        k+=1
+
+    hat += 1.0
+
+    return hat
+
+def init_step(mesh):
+    step = np.zeros(len(mesh.centers()))
+    ul   = 2.0
+    ur   = 1.0
+    xr   = 1.0
+    x    = mesh.centers()
+    for i in range(len(x)):
+        if x[i] < xr:
+            step[i] = ul
+        elif xr <= x[i] <= 2.0:
+            step[i] = 3.0-x[i] 
+        elif x[i] > 2.0:
+            step[i] = ur
+    return step
+
+def exact_step(init,mesh,t):
+    x  = mesh.centers() #original mesh
+    u0 = init(mesh)     #depends on x0
+    x1 = (x + u0*t)     #solution x for the characteristics
+
+    alpha = 1.0
+    ul    = 2.0
+    ur    = 1.0
+    xr    = 1.0
+    tstar = 1.0/alpha 
+    xstar = xr + ur * tstar
+    s     = 0.5 * (ul+ur)
+    u     = init(mesh)
+    x    -= xr
+
+    if t < tstar:
+        for i in range(len(x)):
+            if x[i] < ul*t:
+                u[i] = ul
+            elif x[i] >= ul*t and x[i] <= xr + ur*t:
+                u[i] = (ul-alpha*x[i])/(ur-alpha*t)
+            else:
+                u[i] = ur
+    else:
+        shock_pos = xstar + s * (t-tstar)
+        for i in range(len(x)):
+            if x[i] < shock_pos:
+                u[i] = ul
+            else: 
+                u[i] = ur
+
+    return x1, u
+def classify(cfl, dx, data, bc):
+
+    dt = mymodel.timestep(data, dx, cfl)
+
+    dtmin = min(dt) #minimum Dt of all cells
+    dtmax = max(dt) #calculated maximum Dt of all cells
+    #print "dtmin",dtmin,"dtmax",dtmax
+
+    nc = int(np.log2(dtmax/dtmin))  
+    cell_class = np.full(len(dx),nc,dtype=int) #list of classes per cells initialize as maximum class
+
+    for i in np.arange(len(dx)):
+        cell_class[i] = nc-int(np.log2(dt[i]/dtmin))
+    next = True
+    while next == True:
+        next = False
+        #Forcing the same class for first and last cells to comply with periodic boundary conditions
+        if bc == 'p':
+            minclass = min(cell_class[0],cell_class[len(dx)-1])
+            cell_class[0]            = minclass
+            cell_class[len(dx)-1] = minclass
+
+        for i in np.arange(len(dx)-1):
+
+            iclass0 = cell_class[i]   #icv0 = i
+            iclass1 = cell_class[i+1] #icv1 = i+1
+            cldif   = iclass1-iclass0
+
+            if abs(cldif) > 1:
+                if cldif<0:
+                    cell_class[i+1]=iclass0 - 1
+                else:
+                    cell_class[i]=iclass1 - 1
+                next = True
+        pass
+    minclass = min(cell_class)
+    maxclass = max(cell_class)
+    nc = maxclass-minclass
+
+    return cell_class
+
 mpl.rcParams['figure.dpi']      = 100
 mpl.rcParams['savefig.dpi']     = 150
 mpl.rcParams['text.usetex']     = True
@@ -24,7 +156,7 @@ mpl.rcParams['font.family']     = 'serif'
 
 plt.rc('text.latex', preamble=r'\usepackage{amsmath} \usepackage{mathtools}  \usepackage{physics}')
 
-cflmin    = 1.
+cflmin    = 0.125
 nlevels   = 4
 time_method  = 'rk4'
 space_method = 'muscl'
@@ -38,114 +170,49 @@ level_arr  = np.zeros(nlevels)
 
 for level in range(nlevels):
 
-    ncellmin  = 4
+    ncellmin  = 2
     iteration = 2**(level-1)
     
     cflmin   /= iteration
     ncellmin *= iteration
     
-    nmesh    = nonunimesh(length=5., nclass=2, ncell0=ncellmin, periods=1) #fine,corase,fine
-    
-    endtime = 6.
-    ntime   = 1
-    tsave   = linspace(0, endtime, num=ntime+1)
-    
-    mymodel = burgersinvmodel(dtmax=1.,dynamic=1)  #it takes as an argument a timestep dtmax which is the maximum timestep we need to capture the phenomena in the case study  
-    
-    # TODO : make init method for scafield 
-    # sinus packet
-    def init_sinpack(mesh):
-        return sin(2*2*pi/mesh.length*mesh.centers())*(1+sign(-(mesh.centers()/mesh.length-.25)*(mesh.centers()/mesh.length-.75)))/2        
+    nmesh    = nonunimesh(length=5., nclass=4, ncell0=ncellmin, periods=1) #fine,corase,fine
         
-    # periodic wave
-    def init_cos(mesh):
-        k = 2 # nombre d'onde
-        omega = k*pi/mesh.length
-        return 1.-cos(omega*mesh.centers())
-        
-    def init_sin(mesh):
-        k = 2 # nombre d'onde
-        omega = k*pi/mesh.length
-        return sin(omega*mesh.centers())
-        
-    # square signal
-    def init_square(mesh):
-        return (3+sign(-(mesh.centers()/mesh.length-.25)*(mesh.centers()/mesh.length-.75)))/2
-        
-    def init_hat(mesh):
-        hat = np.zeros(len(mesh.centers()))
-        xc = 0.5*mesh.length #center of hat
-        y = 0.04             #height
-        r = 0.4              #radius
-        x1 = xc-r            #start of hat
-        x2 = xc+r            #end of hat
-        a1 = y/r
-        b1 = -a1*x1
-        a2 = -y/r
-        b2 = -a2*x2
-        k=0
-        for i in mesh.centers():
-            if x1 < i <= xc:
-                hat[k]=a1*i+b1
-            elif xc < i < x2:
-                hat[k]=a2*i+b2
-            k+=1
-        return hat
+    mymodel = burgersinvmodel()  #it takes as an argument a timestep dtmax which is the maximum timestep we need to capture the phenomena in the case study  
+
+    # Set of computations
+    endtime  = 1.75
+    ntime    = 1
+    tsave    = linspace(0, endtime, num=ntime+1)
+    cfls     = [ 0.5 ]
+    maxclass = 2
+    #type of asynchronous synchronisation sequence: 0 :=> [2 2 1 2 2 1 0] | 1 :=> [0 1 2 2 1 2 2] | 2 :=> [0 1 1 2 2 2 2]
+    asyncsq = 0   
+    # extrapol1(), extrapol2()=extrapolk(1), centered=extrapolk(-1), extrapol3=extrapol(1./3.), muscl(limiter=minmod) 
+    xmeths  = [ muscl() ]
+    # explicit, rk2, rk3ssp, rk4, implicit, trapezoidal=cranknicolson
+    tmeths  = [ LSrk4 ]
+    #legends = [ 'O1 upwind', 'O2 upwind', 'O2 centered', 'O3 extrapol' ]
+    legends = [ 'O1 muscl' ]
+    #boundary condition bc : type of boundary condition - "p"=periodic / "d"=Dirichlet / Neumann: 'n'
+    bc       = 'd'
+    bcvalues = []
+    for i in range(mymodel.neq+1):
+        bcvalues.append(np.zeros(2))
     
-    def init_step(mesh):
-        step = np.zeros(len(mesh.centers()))
-        ul   = 1.0
-        ur   = 0.0
-        xr   = 1.0
-        x    = mesh.centers()
-        for i in range(len(x)):
-            if x[i] < xr:
-                step[i] = ul
-            elif xr <= x[i] <= 2.0:
-                step[i] = 2.0-x[i] 
-            elif x[i] > 2.0:
-                step[i] = ur
-        return step
+    # Left Boundary
     
-    def exact(init,mesh,t):
-        x  = mesh.centers() #original mesh
-        u0 = init(mesh)     #depends on x0
-        x1 = (x + u0*t)     #solution x for the characteristics
+    bcvalues[0][0] = 2.0    #u        
     
-        alpha = 1.0
-        ul    = 1.0
-        ur    = 0.0
-        xr    = 1.0
-        tstar = 1.0/alpha 
-        xstar = xr + ur * tstar
-        s     = 0.5 * (ul+ur)
-        u     = init(mesh)
-        x    -= xr
+    # Right Boundary
     
-        if t < tstar:
-            for i in range(len(x)):
-                if x[i] < t:
-                    u[i] = ul
-                elif x[i] >= ul*t and x[i] <= xr + ur*t:
-                    u[i] = (ul-alpha*x[i])/(1.0-alpha*t)
-                else:
-                    u[i] = ur
-        else:
-            shock_pos = xstar + s * (t-tstar)
-            for i in range(len(x)):
-                if x[i] < shock_pos:
-                    u[i] = ul
-                else: 
-                    u[i] = ur
+    bcvalues[0][1] = 1.0    #u                     
     
-        return x1, u
-        
-    initm = init_step
-    meshs = [ nmesh ]
+    meshs      = [ nmesh ]
+    initm      = init_step
+    exact      = exact_step(initm,meshs[0],endtime)
     
-    maxclass = 2   #the maximum number of classes
     boundary = 'd' #periodic: 'p' | dirichlet: 'd' |neumann: 'n'
-    asyncsq  = 0   #type of asynchronous synchronisation sequence: 0 :=> [2 2 1 2 2 1 0] | 1 :=> [0 1 2 2 1 2 2] | 2 :=> [0 1 1 2 2 2 2]
     
     # extrapol1(), extrapol2()=extrapolk(1), centered=extrapolk(-1), extrapol3=extrapol(1./3.), muscl(limiter=minmod) 
     if space_method == 'extrapol1':
@@ -165,35 +232,35 @@ for level in range(nlevels):
 
     if time_method == 'rk1':
     
-        tmeths  = [forwardeuler, forwardeuler, async_rk1]
-        legends = ['rk1', 'rk1', 'async_rk1']
+        tmeths  = [forwardeuler, forwardeuler, AsyncLSrk1]
+        legends = ['LSrk1', 'LSrk1', 'AsyncLSrk1']
     
     # -----------------------------TEST async rk22------------------------------------------------
     
     elif time_method == 'rk2':
     
-        tmeths  = [rk2, rk2, async_rk22]
-        legends = ['rk2', 'rk2', 'async_rk22']
+        tmeths  = [LSrk2, LSrk2, AsyncLSrk22]
+        legends = ['LSrk2', 'LSrk2', 'AsyncLSrk22']
     
     # -----------------------------TEST async rk3ssp----------------------------------------------
     
     elif time_method == 'rk3ssp':
     
-        tmeths  = [rk3ssp, rk3ssp, async_rk3ssp]
-        legends = ['rk3ssp', 'rk3ssp', 'async_rk3ssp']
+        tmeths  = [LSrk3ssp, LSrk3ssp, AsyncLSrk3ssp]
+        legends = ['LSrk3ssp', 'LSrk3ssp', 'AsyncLSrk3ssp']
     
     # -----------------------------TEST async rk3lsw-----------------------------------------------
     
     elif time_method == 'rk3lsw':
     
-        tmeths  = [sync_rk3lsw, sync_rk3lsw, async_rk3lsw]
-        legends = ['sync_rk3lsw', 'sync_rk3lsw', 'async_rk3lsw']
+        tmeths  = [LSrk3lsw, LSrk3lsw, AsyncLSrk3lsw]
+        legends = ['LSrk3lsw', 'LSrk3lsw', 'AsyncLSrk3lsw']
     
     # -----------------------------TEST async rk4-----------------------------------------------
     elif time_method == 'rk4':
     
-        tmeths  = [rk4, rk4, async_rk4]
-        legends = ['rk4', 'rk4', 'async rk4']
+        tmeths  = [LSrk4, LSrk4, AsyncLSrk4]
+        legends = ['LSrk4', 'LSrk4', 'AsyncLSrk4']
     
     #----------------------------------------------------------------------------------------------
     
@@ -202,24 +269,43 @@ for level in range(nlevels):
     classes = []  
     nbcalc  = max(len(cfls), len(tmeths), len(xmeths), len(meshs))
     
-    for i in range(nbcalc):
-        field0 = scafield(mymodel, maxclass, boundary, asyncsq, (meshs*nbcalc)[i].ncell)
+    # First sync run with cflmin
+    i=0
+    field0 = scafield(mymodel, bc, (meshs*nbcalc)[i].ncell, bcvalues)
+    field0.qdata[0] = initm((meshs*nbcalc)[i])                                  #initial solution
+    solvers.append((tmeths*nbcalc)[i]((meshs*nbcalc)[i], (xmeths*nbcalc)[i]))
+    start = time.clock()
+    results.append(solvers[-1].solve(field0, (cfls*nbcalc)[i], tsave)) #qdata
+    print "cpu time of '"+legends[i]+" computation (",solvers[-1].nit,"it) :",time.clock()-start,"s"
+    print "Final time of solution", results[i][1].time
+
+    classes = classify(cflmin, meshs[0].dx(), results[0][1].qdata, bc)
+    nc = max(classes)
+    
+    cfls[1]  = cflmin*(2**nc)
+    
+    for i in range(1,nbcalc):
+        field0 = scafield(mymodel, bc, (meshs*nbcalc)[i].ncell, bcvalues)
         field0.qdata[0] = initm((meshs*nbcalc)[i])                                  #initial solution
         solvers.append((tmeths*nbcalc)[i]((meshs*nbcalc)[i], (xmeths*nbcalc)[i]))
         start = time.clock()
-        results.append(solvers[-1].solve(field0, (cfls*nbcalc)[i], tsave))         #qdata and class
+        results.append(solvers[-1].solve(field0, (cfls*nbcalc)[i], tsave)) #qdata
+        print "cpu time of '"+legends[i]+" computation (",solvers[-1].nit,"it) :",time.clock()-start,"s"
+        print "Final time of solution", results[i][1].time
     
+    classes = classify(cflmin, meshs[0].dx(), results[-1][1].qdata, bc)
+
     #Calling results[i][j][k] 
     #i=0,nbcalc || which method 
     #j=0,1      || 0:field, 1:class
     #k=0,1      || 0:initial, 1:current
-    uref = exact(initm,meshs[0],endtime)[1] #exact as reference data
+    uref = exact_step(initm,meshs[0],endtime)[1] #exact as reference data
     #-----------------------------Error calculation for all time integration methods---------------------------------
-    mass0 = np.sum(results[0][0][0].qdata[0]*meshs[0].dx())
+    mass0 = np.sum(results[0][0].qdata[0]*meshs[0].dx())
     error = []
     mass = []
     for i in range(nbcalc):           #for every time method
-        u = results[i][0][1].qdata[0]
+        u = results[i][1].qdata[0]
         dx = (meshs*nbcalc)[i].dx() 
         m = np.sum(u*dx)
         mass.append(m)
@@ -345,7 +431,7 @@ texfile = '\
 \\addplot[color=blue, dashed] table[\n\
 x=dof,\n\
 y={create col/linear regression={y=l1_err,\n\
-		variance list={384,192,96,48,24,12}}}]\n\
+        variance list={384,192,96,48,24,12}}}]\n\
 {'+txtname_sync_clfmax_l1+'}\n\
 % save two points on the regression line\n\
 % for drawing the slope triangle\n\
@@ -365,7 +451,7 @@ node [yshift=.7cm, xshift=.5cm,color=blue]\n\
 \\addplot[color=red!80!black, dashed] table[\n\
 x=dof,\n\
 y={create col/linear regression={y=l1_err,\n\
-		variance list={384,192,96,48,24,12}}}]\n\
+        variance list={384,192,96,48,24,12}}}]\n\
 {'+txtname_async_clfmin_l1+'}\n\
 % save two points on the regression line\n\
 % for drawing the slope triangle\n\
@@ -401,7 +487,7 @@ node [yshift=-.8cm, xshift=-.5cm,color=red!80!black]\n\
 \\addplot[color=blue, dashed] table[\n\
 x=dof,\n\
 y={create col/linear regression={y=l2_err,\n\
-		variance list={384,192,96,48,24,12}}}]\n\
+        variance list={384,192,96,48,24,12}}}]\n\
 {'+txtname_sync_clfmax_l2+'}\n\
 % save two points on the regression line\n\
 % for drawing the slope triangle\n\
@@ -421,7 +507,7 @@ node [yshift=.7cm, xshift=.5cm,color=blue]\n\
 \\addplot[color=red!80!black, dashed] table[\n\
 x=dof,\n\
 y={create col/linear regression={y=l2_err,\n\
-		variance list={384,192,96,48,24,12}}}]\n\
+        variance list={384,192,96,48,24,12}}}]\n\
 {'+txtname_async_clfmin_l2+'}\n\
 % save two points on the regression line\n\
 % for drawing the slope triangle\n\
@@ -458,7 +544,7 @@ node [yshift=-.8cm, xshift=-.5cm,color=red!80!black]\n\
 \\addplot[color=blue, dashed] table[\n\
 x=dof,\n\
 y={create col/linear regression={y=linf_err,\n\
-		variance list={384,192,96,48,24,12}}}]\n\
+        variance list={384,192,96,48,24,12}}}]\n\
 {'+txtname_sync_clfmax_linf+'}\n\
 % save two points on the regression line\n\
 % for drawing the slope triangle\n\
@@ -478,7 +564,7 @@ node [yshift=.7cm, xshift=.5cm,color=blue]\n\
 \\addplot[color=red!80!black, dashed] table[\n\
 x=dof,\n\
 y={create col/linear regression={y=linf_err,\n\
-		variance list={384,192,96,48,24,12}}}]\n\
+        variance list={384,192,96,48,24,12}}}]\n\
 {'+txtname_async_clfmin_linf+'}\n\
 % save two points on the regression line\n\
 % for drawing the slope triangle\n\

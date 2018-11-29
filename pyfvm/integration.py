@@ -312,7 +312,7 @@ class AsyncLowStorageRKmodel(timemodel):
         itfield = numfield(field)
         itfield.cons2prim()
         results = []
-        flag = True
+        flag = False
         for t in np.arange(tsave.size):
             endcycle = 0
             while endcycle == 0:

@@ -23,7 +23,7 @@ mpl.rcParams['font.family']     = 'serif'
 
 plt.rc('text.latex', preamble=r'\usepackage{amsmath} \usepackage{mathtools}  \usepackage{physics}')
 
-cflmin    = 1.
+cflmin    = 0.125
 ncellmin  = 10
 level     = 1
 iteration = 2**(level-1)
@@ -260,12 +260,12 @@ solvers.append((tmeths*nbcalc)[i]((meshs*nbcalc)[i], (xmeths*nbcalc)[i]))
 start = time.clock()
 results.append(solvers[-1].solve(field0, (cfls*nbcalc)[i], tsave)) #qdata
 print "cpu time of '"+legends[i]+" computation (",solvers[-1].nit,"it) :",time.clock()-start,"s"
-print "Final time of solution", results[i][1].time, results[0][1].qdata
+print "Final time of solution", results[i][1].time
 
 classes = classify(cflmin, meshs[0].dx(), results[0][1].qdata, bc)
 nc = max(classes)
 
-cfls[1]  = cflmin/(2**nc)
+cfls[1]  = cflmin*(2**nc)
 
 # Rest of the runs for sync with cflmin/(2**nc) and async with cflmin
 for i in range(1,nbcalc):
