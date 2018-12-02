@@ -312,7 +312,7 @@ class AsyncLowStorageRKmodel(timemodel):
         itfield = numfield(field)
         itfield.cons2prim()
         results = []
-        flag = False
+        # flag = False
         for t in np.arange(tsave.size):
             endcycle = 0
             while endcycle == 0:
@@ -324,14 +324,13 @@ class AsyncLowStorageRKmodel(timemodel):
                 maxclass = max(cell_class) #finest class
                 dtglob = DT[minclass] #global synchronization time step #if set to min(dtloc), should run as classic solve() 
 
-                if flag is True:          # test 
-                    print "time steps:    ", np.array_str(DT)              #test 
-                    print "cell classes:  ", classes                       #test
-                    print "cells' class:  ", np.array_str(cell_class)      #test
-                    print "interface:     ", interface
-                    print "async sequence ", self.async_seq
-                    raw_input('Press <ENTER> to continue')                 #test
-                    flag = False  
+                # if flag is True:          # test 
+                #     print "time steps:    ", np.array_str(DT)              #test 
+                #     print "cell classes:  ", classes                       #test
+                #     print "cells' class:  ", np.array_str(cell_class)      #test
+                #     print "interface:     ", interface
+                #     raw_input('Press <ENTER> to continue')                 #test
+                #     flag = False  
 
                 self.nit += 1
                 itfield.nit = self.nit

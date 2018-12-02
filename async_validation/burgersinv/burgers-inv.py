@@ -23,7 +23,7 @@ mpl.rcParams['font.family']     = 'serif'
 
 plt.rc('text.latex', preamble=r'\usepackage{amsmath} \usepackage{mathtools}  \usepackage{physics}')
 
-cflmin    = 0.125
+cflmin    = 1.
 ncellmin  = 10
 level     = 1
 iteration = 2**(level-1)
@@ -170,7 +170,7 @@ def classify(cfl, dx, data, bc):
     return cell_class
 
 # Set of computations
-endtime  = 2.
+endtime  = 1.5
 ntime    = 1
 tsave    = linspace(0, endtime, num=ntime+1)
 #type of asynchronous synchronisation sequence: 0 :=> [2 2 1 2 2 1 0] | 1 :=> [0 1 2 2 1 2 2] | 2 :=> [0 1 1 2 2 2 2]
@@ -199,7 +199,7 @@ meshs      = [ rmesh ]
 initm      = init_step
 exactPdata = exact_step(initm,meshs[0],endtime)
 
-print len(meshs[0].dx()), meshs[0].dx()
+# print len(meshs[0].dx()), meshs[0].dx()
 
 # explicit, rk2, rk3ssp, rk4, implicit, trapezoidal=cranknicolson
 
@@ -265,7 +265,7 @@ print "Final time of solution", results[i][1].time
 classes = classify(cflmin, meshs[0].dx(), results[0][1].qdata, bc)
 nc = max(classes)
 
-cfls[1]  = cflmin*(2**nc)
+cfls[1]  = cflmin/(2**nc)
 
 # Rest of the runs for sync with cflmin/(2**nc) and async with cflmin
 for i in range(1,nbcalc):
@@ -337,7 +337,6 @@ legend(labels, loc='best', prop={'size':16})
 pdfname = 'u_burg_'+suffix+'.pdf'
 
 fig.savefig(outdir+pdfname, bbox_inches='tight')
-plt.show()
 #--------------------------------------------------------Plotting (u-uref)/uref------------------------------------
 uref = exactPdata[1] #exact as reference data
 style=['-b','ob','-or', '-or', '-.or', ':or']
@@ -412,21 +411,21 @@ for i in range(nbcalc):           #for every time method
     Suw_L2     = 0.
     Surefw_L2  = 0.
     udif = u-uref
-#Calculating inf error
+    #Calculating inf error
     Suw_inf = max(abs(udif))
     Surefw_inf = max(abs(uref))
     for c in range(len((meshs*nbcalc)[i].centers())):
         Sw  += dx[c]
-#Calculating L1 norm error
+        #Calculating L1 norm error
         Suw_L1 += abs(udif[c])*dx[c]
         Surefw_L1 += abs(uref[c])*dx[c]
-#Calculating L2 norm error
+        #Calculating L2 norm error
         Suw_L2 += (udif[c])**2*dx[c]
         Surefw_L2 += (uref[c])**2*dx[c]
     print "------------------------------%s------------------------------------" %(legends[i])
-#Printing the mass
+    #Printing the mass
     print "the mass integral of method %s with CFL= %.2f is %.15f" %(legends[i], cfls[i], mass[i])
-#Printing the errors
+    #Printing the errors
     error_L1 = Suw_L1/(Sw*Surefw_L1)
     print "the relative L1 error of method %s with CFL= %.2f is %.15f" %(legends[i], cfls[i], error_L1)
     error_L2 = sqrt(Suw_L2/(Sw*Surefw_L2))

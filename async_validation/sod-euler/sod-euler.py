@@ -191,9 +191,6 @@ def classify(cfl, dx, data, bc):
 
     dt = mymodel.timestep(data, dx, cfl)
 
-    print dt
-    raw_input()
-
     dtmin = min(dt) #minimum Dt of all cells
     dtmax = max(dt) #calculated maximum Dt of all cells
     #print "dtmin",dtmin,"dtmax",dtmax
@@ -232,7 +229,7 @@ def classify(cfl, dx, data, bc):
     return cell_class
 
 # Set of computations
-endtime = 0.2
+endtime = 0.8
 ntime   = 1
 tsave   = linspace(0, endtime, num=ntime+1)
 #type of asynchronous synchronisation sequence: 0 :=> [2 2 1 2 2 1 0] | 1 :=> [0 1 2 2 1 2 2] | 2 :=> [0 1 1 2 2 2 2]
@@ -270,7 +267,7 @@ meshs      = [ rmesh ]
 initm      = initSod
 exactPdata = exactSod(meshs[0],endtime)
 
-print len(meshs[0].dx()), meshs[0].dx()
+# print len(meshs[0].dx()), meshs[0].dx()
 
 # explicit, rk2, rk3ssp, rk4, implicit, trapezoidal=cranknicolson
 
@@ -332,7 +329,7 @@ solvers.append((tmeths*nbcalc)[i]((meshs*nbcalc)[i], (xmeths*nbcalc)[i]))
 start = time.clock()
 results.append(solvers[-1].solve(field0, (cfls*nbcalc)[i], tsave)) #qdata
 print "cpu time of '"+legends[i]+" computation (",solvers[-1].nit,"it) :",time.clock()-start,"s"
-print "Final time of solution", results[i][1].time, results[0][1].qdata[0]
+print "Final time of solution", results[i][1].time
 
 classes = classify(cflmin, meshs[0].dx(), results[0][1].pdata, bc)
 nc = max(classes)
