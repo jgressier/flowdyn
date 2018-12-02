@@ -318,7 +318,10 @@ legends = ['rk4', 'rk4', 'AsyncLSrk4']
 solvers = []
 results = []  
 classes = []  
+
 nbcalc  = max(len(cfls), len(tmeths), len(xmeths), len(meshs))
+initial = list(np.empty(4))
+test    = [[] for i in range(nbcalc)]
 
 
 # First sync run with cflmin
@@ -343,10 +346,16 @@ for i in range(1,nbcalc):
     solvers.append((tmeths*nbcalc)[i]((meshs*nbcalc)[i], (xmeths*nbcalc)[i]))
     start = time.clock()
     results.append(solvers[-1].solve(field0, (cfls*nbcalc)[i], tsave)) #qdata
+
     print "cpu time of '"+legends[i]+" computation (",solvers[-1].nit,"it) :",time.clock()-start,"s"
     print "Final time of solution", results[i][1].time
 
 classes = classify(cflmin, meshs[0].dx(), results[-1][1].pdata, bc)
+# Initial solution
+initial[0] = results[0][0].qdata[0]
+initial[1] = results[0][0].qdata[1]/results[0][0].qdata[0]
+initial[2] = (results[0][0].qdata[2]-0.5*results[0][0].qdata[1]**2/results[0][0].qdata[0])/results[0][0].qdata[0]
+initial[3] = (gamma-1.0)*(results[0][0].qdata[2]-0.5*results[0][0].qdata[1]**2/results[0][0].qdata[0])
 
 #Calling results[i][k] 
 #i=0,nbcalc || which method 
@@ -384,312 +393,104 @@ step = meshs[0].length/10.
 style = ['o', 'x', 'D', '*', '+', '>', '<', 'd']
 
 
-#-----------------------------------------------------------------------------------------
-# ***************************************DENSITY***************************************
-#-----------------------------------------------------------------------------------------
-fig = figure(1, figsize=(10,8))
-grid(linestyle='--', color='0.5')
-fig.suptitle('Density profile along the Sod shock-tube, CFL %.3f'%cfls[0], fontsize=12, y=0.93)
-plt.ylabel(r"$\rho$",fontsize=axisfontsize)
-plt.xlabel(r"$x$",fontsize=axisfontsize)
-# Initial solution
-rho0 = results[0][0].qdata[0]
-plot(meshs[0].centers(), rho0, '-.')
-# Exact solution
-plot(meshs[0].centers(), exactPdata[0], 'g-')
-labels = ["initial condition","exact solution"+", t=%.1f"%results[0][len(tsave)-1].time]
-# Numerical solution
-for t in range(1,len(tsave)):
-    for i in range(nbcalc):
-        rho=results[i][t].qdata[0]
-        plot((meshs*nbcalc)[i].centers(), rho, style[i])
-        labels.append(legends[i]+", t=%.1f"%results[i][t].time)
-legend(labels, loc='lower left',prop={'size':10})
-fig.savefig('density.png', bbox_inches='tight')
-#-------------------------------------------Plotting (rho-rhoref/rhoref)------------------------------------
-rhoref = exactPdata[0] #exact as reference data
-style=['-b','ob','-or', '-or', '-.or', ':or']
-mec = ['b','b','r','r','r','r']
-markerfill = ['none','none','none','none','none','none','none']
-markersizes = [10 ,10, 10, 10, 10, 10, 10]
-fig, ax1 = plt.subplots(figsize=(10,8))
-plt.grid()
-#plt.title("Asynchronous vs Forward Euler for non-uniform mesh")
-#plt.xlim(0,meshs[0].length)
-#plt.xticks(arange(0,meshs[0].length+0.1,0.1))
-labels =[]
-for t in range(1,len(tsave)):    #first t gives us the initial condition
-    for i in range(nbcalc):      #if first method is the reference method
-        rhotest = results[i][t].qdata[0]
-        error = np.abs((rhoref-rhotest)/rhoref)
-        ax1.plot((meshs*nbcalc)[i].centers(), error, style[i], markersize=markersizes[i], fillstyle=markerfill[i], markeredgecolor = mec[i])
-#        labels.append(legends[i]+", t=%.2f"%results[i][t].time+", CFL=%.2f"%cfls[i])
-        labels.append(legends[i]+", CFL=%.2f"%cfls[i])
-ax1.set_xlabel(r'$x$',fontsize=axisfontsize)
-# ax1.set_ylabel(r'$\abs{U-U_\text{ref}}$', color='k',fontsize=axisfontsize)
-ax1.set_ylabel(r'$\abs{\frac{\rho-\rho_\text{ref}}{\rho_\text{ref}}}$', color='k',fontsize=axisfontsize)
-# ax1.set_ylim([min(uref)-0.02,max(uref)+0.02])        #in order to show the markers
-ax1.tick_params('both', colors='k',labelsize=18)
-#ax1.set_xlim([0,meshs[0].length])             #in order to show the squares
-ax1.xaxis.set_ticks(np.arange(0,meshs[0].length+0.1,step))
-#--------------------------------------------------------Plotting the classes------------------------------------
-x = (meshs*nbcalc)[0].xf                                             # the length of the nodes list is len(results)+1
-y = [float(i) for i in np.append(classes,classes[-1])]               #appends the class of the final cell in the end to match lengths
-pos = np.where(np.abs(np.diff(y)) == 1)[0]                           #gets the indices where we have a change of class
-x = np.insert(x, pos+1, np.nan)                                      #inserts in that index+1 a np.nan value that will prevent plotting it
-y = np.insert(y, pos+1, np.nan)             
-pos = np.where(np.isnan(y))[0]                                       #gets the indices of nan values
-xadd = x[pos+1]                                                      #will add the xf of the index(nan)+1
-yadd = y[pos-1]                                                      #will add the previous class in index(nan)-1 
-k=0
-for i in pos:
-    x = np.insert(x, i+k, xadd[k])                                   
-    y = np.insert(y, i+k, yadd[k])
-    k += 1
-ax2 = ax1.twinx()
-ax2.plot(x,y,'-k|',markersize=7)
-ax2.set_ylabel('classes', color='k',fontsize=20)
-ax2.tick_params('y', colors='k',labelsize=18)
-ax2.yaxis.set_ticks(np.arange(0, max(y)+1, 1))
-ax2.set_ylim([-0.02,max(y)+0.02])             #in order to show the cells
-ax2.set_xlim([0,meshs[0].length])             
-ax2.xaxis.set_ticks(np.arange(0,meshs[0].length+0.1,step))
 
-ax1.legend(labels, loc='best',prop={'size':16})  
-pdfname = 'error_rho_'+suffix+'.pdf'
-fig.savefig(outdir+pdfname, bbox_inches='tight')
-plt.show()
-#-----------------------------------------------------------------------------------------
-# ***************************************VELOCITY***************************************
-#-----------------------------------------------------------------------------------------
-fig = figure(2, figsize=(10,8))
-grid(linestyle='--', color='0.5')
-fig.suptitle('Velocity profile along the Sod shock-tube, CFL %.3f'%cfls[0], fontsize=12, y=0.93)
-plt.ylabel(r"$U$",fontsize=axisfontsize)
-plt.xlabel(r"$x$",fontsize=axisfontsize)
-# Initial solution
-u0 = results[0][0].qdata[1]/results[0][0].qdata[0]
-plot(meshs[0].centers(), u0, '-.')             
-# Exact solution
-plot(meshs[0].centers(), exactPdata[1], 'g-')
-labels = ["initial condition","exact condition"+", t=%.1f"%results[0][len(tsave)-1].time]
-# Numerical solution
-for t in range(1,len(tsave)):
-    for i in range(nbcalc):
-        u = results[i][t].qdata[1]/results[i][t].qdata[0] 
-        plot((meshs*nbcalc)[i].centers(), u, style[i])
-        labels.append(legends[i]+", t=%.1f"%results[i][t].time)
-legend(labels, loc='upper left',prop={'size':10})
-fig.savefig('velocity.png', bbox_inches='tight')
-#-------------------------------------------------Plotting u-uref------------------------------------
-uref = exactPdata[1] #exact as reference data
-style=['-b','ob','-or', '-or', '-.or', ':or']
-mec = ['b','b','r','r','r','r']
-markerfill = ['none','none','none','none','none','none','none']
-markersizes = [10 ,10, 10, 10, 10, 10, 10]
-fig, ax1 = plt.subplots(figsize=(10,8))
-plt.grid()
-#plt.title("Asynchronous vs Forward Euler for non-uniform mesh")
-#plt.xlim(0,meshs[0].length)
-#plt.xticks(arange(0,meshs[0].length+0.1,0.1))
-labels =[]
-for t in range(1,len(tsave)):    #first t gives us the initial condition
-    for i in range(nbcalc):      #if first method is the reference method
-        utest = results[i][t].qdata[1]/results[i][t].qdata[0] 
-        error = np.abs(uref-utest)
-        ax1.plot((meshs*nbcalc)[i].centers(), error, style[i], markersize=markersizes[i], fillstyle=markerfill[i], markeredgecolor = mec[i])
-#        labels.append(legends[i]+", t=%.2f"%results[i][t].time+", CFL=%.2f"%cfls[i])
-        labels.append(legends[i]+", CFL=%.2f"%cfls[i])
-ax1.set_xlabel(r'$x$',fontsize=axisfontsize)
-ax1.set_ylabel(r'$\abs{U-U_\text{ref}}$', color='k',fontsize=axisfontsize)
-# ax1.set_ylabel(r'$\abs{\frac{\rho-\rho_\text{ref}}{\rho_\text{ref}}}$', color='k',fontsize=axisfontsize)
-# ax1.set_ylim([min(uref)-0.02,max(uref)+0.02])        #in order to show the markers
-ax1.tick_params('both', colors='k',labelsize=18)
-#ax1.set_xlim([0,meshs[0].length])             #in order to show the squares
-ax1.xaxis.set_ticks(np.arange(0,meshs[0].length+0.1,step))
-#--------------------------------------------------------Plotting the classes------------------------------------
-x = (meshs*nbcalc)[0].xf                                             # the length of the nodes list is len(results)+1
-y = [float(i) for i in np.append(classes,classes[-1])]               #appends the class of the final cell in the end to match lengths
-pos = np.where(np.abs(np.diff(y)) == 1)[0]                           #gets the indices where we have a change of class
-x = np.insert(x, pos+1, np.nan)                                      #inserts in that index+1 a np.nan value that will prevent plotting it
-y = np.insert(y, pos+1, np.nan)             
-pos = np.where(np.isnan(y))[0]                                       #gets the indices of nan values
-xadd = x[pos+1]                                                      #will add the xf of the index(nan)+1
-yadd = y[pos-1]                                                      #will add the previous class in index(nan)-1 
-k=0
-for i in pos:
-    x = np.insert(x, i+k, xadd[k])                                   
-    y = np.insert(y, i+k, yadd[k])
-    k += 1
-ax2 = ax1.twinx()
-ax2.plot(x,y,'-k|',markersize=7)
-ax2.set_ylabel('classes', color='k',fontsize=20)
-ax2.tick_params('y', colors='k',labelsize=18)
-ax2.yaxis.set_ticks(np.arange(0, max(y)+1, 1))
-ax2.set_ylim([-0.02,max(y)+0.02])             #in order to show the cells
-ax2.set_xlim([0,meshs[0].length])             
-ax2.xaxis.set_ticks(np.arange(0,meshs[0].length+0.1,step))
+# *************************PLOTTING PRIME DATA AND ERRORS*********************************
+symbol   = [r'\rho',r'u',r'e',r'p']
+quantity = ['Density', 'Velocity', 'Internal energy', 'Pressure']
+file     = ['density', 'velocity', 'internal_energy', 'pressure']
+for eq in range(mymodel.neq+1):
 
-ax1.legend(labels, loc='best',prop={'size':16})  
-pdfname = 'error_u_'+suffix+'.pdf'
-fig.savefig(outdir+pdfname, bbox_inches='tight')
-plt.show()
-#-----------------------------------------------------------------------------------------
-# ***************************************INTERNAL ENERGY***************************************
-#-----------------------------------------------------------------------------------------
-fig = figure(3, figsize=(10,8))
-grid(linestyle='--', color='0.5')
-fig.suptitle('Internal Energy profile along the Sod shock-tube, CFL %.3f'%cfls[0], fontsize=12, y=0.93)
-plt.ylabel(r"$e$",fontsize=axisfontsize)
-plt.xlabel(r"$x$",fontsize=axisfontsize)
-# Initial solution
-e0 = (results[0][0].qdata[2]-0.5*results[0][0].qdata[1]**2/results[0][0].qdata[0])/results[0][0].qdata[0]
-plot(meshs[0].centers(), e0, '-.')
-# Exact solution
-plot(meshs[0].centers(), exactPdata[2], 'g-')
-labels = ["initial condition","exact condition"+", t=%.1f"%results[0][len(tsave)-1].time]
-# Numerical solution
-for t in range(1,len(tsave)):
-    for i in range(nbcalc):
-        e = (results[i][t].qdata[2]-0.5*results[i][t].qdata[1]**2/results[i][t].qdata[0])/results[i][t].qdata[0]
-        plot((meshs*nbcalc)[i].centers(), e, style[i])
-        labels.append(legends[i]+", t=%.1f"%results[i][t].time)
-legend(labels, loc='upper left',prop={'size':10})
-fig.savefig('internalenergy.png', bbox_inches='tight')
-#--------------------------------------------------Plotting (e-eref)/eref------------------------------------
-eref = exactPdata[2] #exact as reference data
-style=['-b','ob','-or', '-or', '-.or', ':or']
-mec = ['b','b','r','r','r','r']
-markerfill = ['none','none','none','none','none','none','none']
-markersizes = [10 ,10, 10, 10, 10, 10, 10]
-fig, ax1 = plt.subplots(figsize=(10,8))
-plt.grid()
-#plt.title("Asynchronous vs Forward Euler for non-uniform mesh")
-#plt.xlim(0,meshs[0].length)
-#plt.xticks(arange(0,meshs[0].length+0.1,0.1))
-labels =[]
-for t in range(1,len(tsave)):    #first t gives us the initial condition
-    for i in range(nbcalc):      #if first method is the reference method
-        etest = (results[i][t].qdata[2]-0.5*results[i][t].qdata[1]**2/results[i][t].qdata[0])/results[i][t].qdata[0]
-        error = np.abs((eref-etest)/eref)
-        ax1.plot((meshs*nbcalc)[i].centers(), error, style[i], markersize=markersizes[i], fillstyle=markerfill[i], markeredgecolor = mec[i])
-#        labels.append(legends[i]+", t=%.2f"%results[i][t].time+", CFL=%.2f"%cfls[i])
-        labels.append(legends[i]+", CFL=%.2f"%cfls[i])
-ax1.set_xlabel(r'$x$',fontsize=axisfontsize)
-# ax1.set_ylabel(r'$\abs{U-U_\text{ref}}$', color='k',fontsize=axisfontsize)
-ax1.set_ylabel(r'$\abs{\frac{e-e_\text{ref}}{e_\text{ref}}}$', color='k',fontsize=axisfontsize)
-# ax1.set_ylim([min(uref)-0.02,max(uref)+0.02])        #in order to show the markers
-ax1.tick_params('both', colors='k',labelsize=18)
-#ax1.set_xlim([0,meshs[0].length])             #in order to show the squares
-ax1.xaxis.set_ticks(np.arange(0,meshs[0].length+0.1,step))
-#--------------------------------------------------------Plotting the classes------------------------------------
-x = (meshs*nbcalc)[0].xf                                             # the length of the nodes list is len(results)+1
-y = [float(i) for i in np.append(classes,classes[-1])]               #appends the class of the final cell in the end to match lengths
-pos = np.where(np.abs(np.diff(y)) == 1)[0]                           #gets the indices where we have a change of class
-x = np.insert(x, pos+1, np.nan)                                      #inserts in that index+1 a np.nan value that will prevent plotting it
-y = np.insert(y, pos+1, np.nan)             
-pos = np.where(np.isnan(y))[0]                                       #gets the indices of nan values
-xadd = x[pos+1]                                                      #will add the xf of the index(nan)+1
-yadd = y[pos-1]                                                      #will add the previous class in index(nan)-1 
-k=0
-for i in pos:
-    x = np.insert(x, i+k, xadd[k])                                   
-    y = np.insert(y, i+k, yadd[k])
-    k += 1
-ax2 = ax1.twinx()
-ax2.plot(x,y,'-k|',markersize=7)
-ax2.set_ylabel('classes', color='k',fontsize=20)
-ax2.tick_params('y', colors='k',labelsize=18)
-ax2.yaxis.set_ticks(np.arange(0, max(y)+1, 1))
-ax2.set_ylim([-0.02,max(y)+0.02])             #in order to show the cells
-ax2.set_xlim([0,meshs[0].length])             
-ax2.xaxis.set_ticks(np.arange(0,meshs[0].length+0.1,step))
+    ref   = exactPdata[eq] #exact as reference data
 
-ax1.legend(labels, loc='best',prop={'size':16})  
-pdfname = 'error_e_'+suffix+'.pdf'
-fig.savefig(outdir+pdfname, bbox_inches='tight')
-plt.show()
-#-----------------------------------------------------------------------------------------
-# ***************************************PRESSURE***************************************
-#-----------------------------------------------------------------------------------------
-fig = figure(4, figsize=(10,8))
-grid(linestyle='--', color='0.5')
-fig.suptitle('Pressure profile along the Sod shock-tube, CFL %.3f'%cfls[0], fontsize=12, y=0.93)
-plt.ylabel(r"$p$",fontsize=axisfontsize)
-plt.xlabel(r"$x$",fontsize=axisfontsize)
-# Initial solution
-p0 = (gamma-1.0)*(results[0][0].qdata[2]-0.5*results[0][0].qdata[1]**2/results[0][0].qdata[0])
-plot(meshs[0].centers(), p0, '-.')
-# Exact solution
-plot(meshs[0].centers(), exactPdata[3], 'g-') 
-labels = ["initial condition","exact condition"+", t=%.1f"%results[0][len(tsave)-1].time]
-# Numerical solution
-for t in range(1,len(tsave)):
-    for i in range(nbcalc):
-        p = (gamma-1.0)*(results[i][t].qdata[2]-0.5*results[i][t].qdata[1]**2/results[i][t].qdata[0])
-        plot((meshs*nbcalc)[i].centers(), p, style[i])
-        labels.append(legends[i]+", t=%.1f"%results[i][t].time)
-legend(labels, loc='lower left',prop={'size':10})
-fig.savefig('pressure.png', bbox_inches='tight')
-#-----------------------------------------------Plotting (p-pref)/pref------------------------------------
-pref = exactPdata[3] #exact as reference data
-style=['-b','ob','-or', '-or', '-.or', ':or']
-mec = ['b','b','r','r','r','r']
-markerfill = ['none','none','none','none','none','none','none']
-markersizes = [10 ,10, 10, 10, 10, 10, 10]
-fig, ax1 = plt.subplots(figsize=(10,8))
-plt.grid()
-#plt.title("Asynchronous vs Forward Euler for non-uniform mesh")
-#plt.xlim(0,meshs[0].length)
-#plt.xticks(arange(0,meshs[0].length+0.1,0.1))
-labels =[]
-for t in range(1,len(tsave)):    #first t gives us the initial condition
-    for i in range(nbcalc):      #if first method is the reference method
-        ptest = (gamma-1.0)*(results[i][t].qdata[2]-0.5*results[i][t].qdata[1]**2/results[i][t].qdata[0])
-        error = np.abs((pref-ptest)/pref)
-        ax1.plot((meshs*nbcalc)[i].centers(), error, style[i], markersize=markersizes[i], fillstyle=markerfill[i], markeredgecolor = mec[i])
-#        labels.append(legends[i]+", t=%.2f"%results[i][t].time+", CFL=%.2f"%cfls[i])
-        labels.append(legends[i]+", CFL=%.2f"%cfls[i])
-ax1.set_xlabel(r'$x$',fontsize=axisfontsize)
-# ax1.set_ylabel(r'$\abs{U-U_\text{ref}}$', color='k',fontsize=axisfontsize)
-ax1.set_ylabel(r'$\abs{\frac{p-p_\text{ref}}{p_\text{ref}}}$', color='k',fontsize=axisfontsize)
-# ax1.set_ylim([min(uref)-0.02,max(uref)+0.02])        #in order to show the markers
-ax1.tick_params('both', colors='k',labelsize=18)
-#ax1.set_xlim([0,meshs[0].length])             #in order to show the squares
-ax1.xaxis.set_ticks(np.arange(0,meshs[0].length+0.1,step))
-#--------------------------------------------------------Plotting the classes------------------------------------
-x = (meshs*nbcalc)[0].xf                                             # the length of the nodes list is len(results)+1
-y = [float(i) for i in np.append(classes,classes[-1])]               #appends the class of the final cell in the end to match lengths
-pos = np.where(np.abs(np.diff(y)) == 1)[0]                           #gets the indices where we have a change of class
-x = np.insert(x, pos+1, np.nan)                                      #inserts in that index+1 a np.nan value that will prevent plotting it
-y = np.insert(y, pos+1, np.nan)             
-pos = np.where(np.isnan(y))[0]                                       #gets the indices of nan values
-xadd = x[pos+1]                                                      #will add the xf of the index(nan)+1
-yadd = y[pos-1]                                                      #will add the previous class in index(nan)-1 
-k=0
-for i in pos:
-    x = np.insert(x, i+k, xadd[k])                                   
-    y = np.insert(y, i+k, yadd[k])
-    k += 1
-ax2 = ax1.twinx()
-ax2.plot(x,y,'-k|',markersize=7)
-ax2.set_ylabel('classes', color='k',fontsize=20)
-ax2.tick_params('y', colors='k',labelsize=18)
-ax2.yaxis.set_ticks(np.arange(0, max(y)+1, 1))
-ax2.set_ylim([-0.02,max(y)+0.02])             #in order to show the cells
-ax2.set_xlim([0,meshs[0].length])             
-ax2.xaxis.set_ticks(np.arange(0,meshs[0].length+0.1,step))
+    #-------------------------solving each Euler equation----------------------------------
+    fig = figure(1, figsize=(10,8))
+    grid(linestyle='--', color='0.5')
+    fig.suptitle(quantity[eq]+' profile along the Sod shock-tube, CFL %.3f'%cfls[0], fontsize=12, y=0.93)
+    plt.ylabel(r'$'+symbol[eq]+r'$',fontsize=axisfontsize)
+    plt.xlabel(r"$x$",fontsize=axisfontsize)
 
-ax1.legend(labels, loc='best',prop={'size':16})  
-pdfname = 'error_p_'+suffix+'.pdf'
-fig.savefig(outdir+pdfname, bbox_inches='tight')
-plt.show()
+    plot(meshs[0].centers(), initial[eq], '-.')
+    # Exact solution
+    plot(meshs[0].centers(), exactPdata[eq], 'g-')
+    labels = ["initial condition","exact solution"+", t=%.1f"%results[0][len(tsave)-1].time]
+    # Numerical solution
+    for t in range(1,len(tsave)):
+        for i in range(nbcalc):
 
-#-----------------------------Mass calculation for all pdata---------------------------------
-quantity = ['rho','u','e','p']
-for eq in range(mymodel.neq):
+            test[i].append(results[i][-1].qdata[0])
+            test[i].append(results[i][-1].qdata[1]/results[i][-1].qdata[0])
+            test[i].append((results[i][-1].qdata[2]-0.5*results[i][-1].qdata[1]**2/results[i][-1].qdata[0])/results[i][-1].qdata[0])
+            test[i].append((gamma-1.0)*(results[i][-1].qdata[2]-0.5*results[i][-1].qdata[1]**2/results[i][-1].qdata[0]))
+
+            plot((meshs*nbcalc)[i].centers(), test[i][eq], style[i])
+            labels.append(legends[i]+", t=%.1f"%results[i][t].time)
+    legend(labels, loc='lower left',prop={'size':10})
+    fig.savefig(file[eq]+'.png', bbox_inches='tight')
+
+    #-------------------------------------------Plotting (ref-test)/ref------------------------------------
+    style =['-b','ob','-or', '-or', '-.or', ':or']
+    mec   = ['b','b','r','r','r','r']
+    markerfill = ['none','none','none','none','none','none','none']
+    markersizes = [10 ,10, 10, 10, 10, 10, 10]
+    fig, ax1 = plt.subplots(figsize=(10,8))
+    plt.grid()
+    #plt.title("Asynchronous vs Forward Euler for non-uniform mesh")
+    #plt.xlim(0,meshs[0].length)
+    #plt.xticks(arange(0,meshs[0].length+0.1,0.1))
+    labels =[]
+    for t in range(1,len(tsave)):    #first t gives us the initial condition
+        for i in range(nbcalc):      #if first method is the reference method
+
+            if not np.all(ref):
+                error = np.abs(ref-test[i][eq])
+                ylabel = r'$\abs{'+symbol[eq]+r'-'+symbol[eq]+r'_\text{ref}}$'
+            else:
+                error = np.abs((ref-test[i][eq])/ref)
+                ylabel = r'$\abs{\frac{'+symbol[eq]+r'-'+symbol[eq]+r'_\text{ref}}{'+symbol[eq]+r'_\text{ref}}}$'
+
+            ax1.plot((meshs*nbcalc)[i].centers(), error, style[i], markersize=markersizes[i], fillstyle=markerfill[i], markeredgecolor = mec[i])
+    #        labels.append(legends[i]+", t=%.2f"%results[i][t].time+", CFL=%.2f"%cfls[i])
+            labels.append(legends[i]+", CFL=%.2f"%cfls[i])
+
+    ax1.set_xlabel(r'$x$',fontsize=axisfontsize)
+    # ax1.set_ylabel(r'$\abs{U-U_\text{ref}}$', color='k',fontsize=axisfontsize)
+    ax1.set_ylabel(ylabel, color='k',fontsize=axisfontsize)
+    # ax1.set_ylim([min(uref)-0.02,max(uref)+0.02])        #in order to show the markers
+    ax1.tick_params('both', colors='k',labelsize=18)
+    #ax1.set_xlim([0,meshs[0].length])             #in order to show the squares
+    ax1.xaxis.set_ticks(np.arange(0,meshs[0].length+0.1,step))
+
+    #--------------------------------------------------------Plotting the classes------------------------------------
+    x = (meshs*nbcalc)[0].xf                                             # the length of the nodes list is len(results)+1
+    y = [float(i) for i in np.append(classes,classes[-1])]               #appends the class of the final cell in the end to match lengths
+    pos = np.where(np.abs(np.diff(y)) == 1)[0]                           #gets the indices where we have a change of class
+    x = np.insert(x, pos+1, np.nan)                                      #inserts in that index+1 a np.nan value that will prevent plotting it
+    y = np.insert(y, pos+1, np.nan)             
+    pos = np.where(np.isnan(y))[0]                                       #gets the indices of nan values
+    xadd = x[pos+1]                                                      #will add the xf of the index(nan)+1
+    yadd = y[pos-1]                                                      #will add the previous class in index(nan)-1 
+    k=0
+    for i in pos:
+        x = np.insert(x, i+k, xadd[k])                                   
+        y = np.insert(y, i+k, yadd[k])
+        k += 1
+    ax2 = ax1.twinx()
+    ax2.plot(x,y,'-k|',markersize=7)
+    ax2.set_ylabel('classes', color='k',fontsize=20)
+    ax2.tick_params('y', colors='k',labelsize=18)
+    ax2.yaxis.set_ticks(np.arange(0, max(y)+1, 1))
+    ax2.set_ylim([-0.02,max(y)+0.02])             #in order to show the cells
+    ax2.set_xlim([0,meshs[0].length])             
+    ax2.xaxis.set_ticks(np.arange(0,meshs[0].length+0.1,step))
+
+    ax1.legend(labels, loc='best',prop={'size':16})  
+    pdfname = 'error_rho_'+suffix+'.pdf'
+    fig.savefig(outdir+pdfname, bbox_inches='tight')
+    plt.show()
+
+    #-----------------------------Mass calculation for all pdata---------------------------------
     print "********************************************************************"
-    print "*                              %s                                  *" %quantity[eq]
+    print "*                           %s                                " %quantity[eq]
     print "********************************************************************"
     mass0 = np.sum(results[0][0].pdata[eq]*meshs[0].dx())
     print "the mass integral of the initial condition is %.15f" %(mass0)
@@ -707,18 +508,18 @@ for eq in range(mymodel.neq):
         Surefw_inf = 0.
         Suw_L2     = 0.
         Surefw_L2  = 0.
-        udif = u-uref
+        udif = u-ref
         #Calculating inf error
         Suw_inf = max(abs(udif))
-        Surefw_inf = max(abs(uref))
+        Surefw_inf = max(abs(ref))
         for c in range(len((meshs*nbcalc)[i].centers())):
             Sw  += dx[c]
             #Calculating L1 norm error
             Suw_L1 += abs(udif[c])*dx[c]
-            Surefw_L1 += abs(uref[c])*dx[c]
+            Surefw_L1 += abs(ref[c])*dx[c]
             #Calculating L2 norm error
             Suw_L2 += (udif[c])**2*dx[c]
-            Surefw_L2 += (uref[c])**2*dx[c]
+            Surefw_L2 += (ref[c])**2*dx[c]
         print "------------------------------%s------------------------------------" %(legends[i])
         #Printing the mass
         print "the mass integral of method %s with CFL= %.2f is %.15f" %(legends[i], cfls[i], mass[i])
@@ -731,10 +532,10 @@ for eq in range(mymodel.neq):
         print "the relative inf error of method %s with CFL= %.2f is %.15f" %(legends[i], cfls[i], error_inf)
         error.append([cfls[i],error_L1,error_L2 ,error_inf])
 
-    txtname = 'error_' + quantity[eq] + '_' + suffix +'.txt'
+    txtname = 'error_' + symbol[eq] + '_' + suffix +'.txt'
     error   = np.array(error[:])
     np.savetxt(outdir+txtname, error, delimiter='\t', header='L1, L2, inf', fmt='%12.8e') 
 
-    txtname = 'mass_' + quantity[eq] + '_' + suffix + '.txt'
+    txtname = 'mass_' + symbol[eq] + '_' + suffix + '.txt'
     np.savetxt(outdir+txtname, mass[3:]-mass0, delimiter='\t', header='mass', fmt='%12.8e')
     print
