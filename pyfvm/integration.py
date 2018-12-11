@@ -214,7 +214,6 @@ class LowStorageRKmodel(timemodel):
                 dtglob = min(dtloc)
                 self.nit += 1
                 itfield.nit = self.nit
-                itfield.time += dtglob
                 if itfield.time+dtglob >= tsave[t]:
                     endcycle = 1
                     dtglob    = tsave[t]-itfield.time
@@ -223,6 +222,7 @@ class LowStorageRKmodel(timemodel):
                     for irkstep in range(self.nstage):
                         itfield = self.step(itfield,dtglob,irkstep) 
                         itfield.cons2prim()
+                itfield.time += dtglob
             results.append(itfield.copy())
         return results
 
@@ -298,13 +298,13 @@ class AsyncLowStorageRKmodel(timemodel):
         self.num     = num
 
     def solve(self, field, condition, tsave):
-        self.nit       = 0
-        self.condition = condition
-        self.bc = field.bc
-        self.asyncsq = 0
-        self.neq = field.neq #to have the number of equations available
-        self.nelem = field.nelem #to have the number of elements available
-        self.new_rhs=np.zeros((self.nstage,self.neq,self.nelem))       
+        self.nit        = 0
+        self.condition  = condition
+        self.bc         = field.bc
+        self.asyncsq    = 0
+        self.neq        = field.neq #to have the number of equations available
+        self.nelem      = field.nelem #to have the number of elements available
+        self.new_rhs    = np.zeros((self.nstage,self.neq,self.nelem))       
         self.async_flux = np.zeros((self.neq,self.nelem+1))
 
         global adjcells, incells, interface, classes, cell_class, minclass, maxclass
@@ -312,18 +312,28 @@ class AsyncLowStorageRKmodel(timemodel):
         itfield = numfield(field)
         itfield.cons2prim()
         results = []
+        # flag = False
         for t in np.arange(tsave.size):
             endcycle = 0
             while endcycle == 0:
                 dtloc  = itfield.calc_timestep(self.mesh, condition)
-                # Computation of Async arrays
-                [nc, DT, classes, cell_class, adjcells,interface,self.async_seq] = self.cell_classify(dtloc)
+                # Computation of async arrays
+                [nc, DT, classes, cell_class, adjcells,interface, self.async_seq] = self.cell_classify(dtloc)
+                self.cell_class = cell_class
                 minclass = min(cell_class) #coarsest class
                 maxclass = max(cell_class) #finest class
                 dtglob = DT[minclass] #global synchronization time step #if set to min(dtloc), should run as classic solve() 
+
+                # if flag is True:          # test 
+                #     print "time steps:    ", np.array_str(DT)              #test 
+                #     print "cell classes:  ", classes                       #test
+                #     print "cells' class:  ", np.array_str(cell_class)      #test
+                #     print "interface:     ", interface
+                #     raw_input('Press <ENTER> to continue')                 #test
+                #     flag = False  
+
                 self.nit += 1
                 itfield.nit = self.nit
-                itfield.time += dtglob
                 if itfield.time+dtglob >= tsave[t]:
                     endcycle = 1
                     DT[minclass] =  tsave[t]-itfield.time     #if time is greater than total time
@@ -331,7 +341,7 @@ class AsyncLowStorageRKmodel(timemodel):
                     for k in range(minclass,nc):              #set every class k timestep as well
                         DT[k+1] = 0.5 * DT[k]                 #as the half of the previous
                 if dtglob > np.spacing(dtglob):
-                    self.new_rhs[:,:,:]=0.0
+                    self.new_rhs[:,:,:]  = 0.0
                     self.async_flux[:,:] = 0.0
                     #
                     # Local asynchronous timesteps
@@ -342,6 +352,7 @@ class AsyncLowStorageRKmodel(timemodel):
                         for irkstep in range(self.nstage):
                             itfield = self.step(itfield, idtloc, irkstep, iclass, iasync) 
                             itfield.cons2prim()
+                itfield.time += dtglob
             results.append(itfield.copy())
         return results
 
@@ -466,16 +477,16 @@ class AsyncLowStorageRKmodel(timemodel):
         maxclass = max(cell_class)
 
         nc = maxclass-minclass
-        #print "nc",nc
+#        print "number of classes",nc+1
 
         for i in np.arange(self.nelem):
             cell_class[i] = cell_class[i] - minclass
-        #print "cell_class",cell_class
+#        print "cell_class",cell_class
 
         DT = np.zeros(nc+1)
         for k in np.arange(0,nc+1):
             DT[k] = pow(2,nc-k)*dtmin         #timestep for each class k
-        #print "DT",DT
+#        print "DT",DT
 
         classes   = [x for x in range(nc+1)]  #list of cells per classes
         adjcells  = [x for x in range(nc+1)]  #list of adjacent cells per classes
@@ -661,7 +672,7 @@ class AsyncLSrk22(AsyncLowStorageRKmodel):
         self.mesh    = mesh
         self.num     = num
         self.nstage  = 2
-        self.RKcoeff = np.array ([[0.5, 0.],
+        self.RKcoeff = np.array ([[0.5,  0.],
                                   [-0.5, 1.]])
 
         self.beta = np.zeros(self.nstage)
@@ -675,8 +686,8 @@ class AsyncLSrk3ssp(AsyncLowStorageRKmodel):
         self.mesh    = mesh
         self.num     = num
         self.nstage  = 3
-        self.RKcoeff = np.array([[1., 0., 0.],
-                                 [-3./4., 1./4., 0.],
+        self.RKcoeff = np.array([[    1. ,     0. ,    0.],
+                                 [-3./4. ,  1./4. ,    0.],
                                  [-1./12., -1./12., 2./3.]])
 
         self.beta = np.zeros(self.nstage)
@@ -690,9 +701,9 @@ class AsyncLSrk3lsw(AsyncLowStorageRKmodel):
         self.mesh    = mesh
         self.num     = num
         self.nstage  = 3
-        self.RKcoeff = np.array ([[8./15., 0., 0.],
-                                  [-17./60., 5./12., 0.],
-                                  [0., -5./12., 3./4.]])
+        self.RKcoeff = np.array ([[ 8./15. ,     0. ,    0.],
+                                  [-17./60.,  5./12.,    0.],
+                                  [      0., -5./12., 3./4.]])
 
         self.beta = np.zeros(self.nstage)
         for i in range(self.nstage):
@@ -702,13 +713,16 @@ class AsyncLSrk3lsw(AsyncLowStorageRKmodel):
 class AsyncLSrk4(AsyncLowStorageRKmodel):
     def __init__(self, mesh, num):
 
+        AsyncLowStorageRKmodel.__init__(self, mesh, num)
+
         self.mesh    = mesh
         self.num     = num
         self.nstage  = 4
-        self.RKcoeff = np.array([[1./2., 0., 0., 0.],
-                                 [-1./2., 1./2., 0., 0.],
-                                 [0., -1./2., 1., 0.],
-                                 [1./6., 1./3., -2./3., 1./6.]])  
+        self.RKcoeff = np.array([[ 1./2.,     0.,     0.,    0.],
+                                 [-1./2.,  1./2.,     0.,    0.],
+                                 [    0., -1./2.,     1.,    0.],
+                                 [ 1./6.,  1./3., -2./3., 1./6.]]) 
+
 
         self.beta = np.zeros(self.nstage)
         for i in range(self.nstage):

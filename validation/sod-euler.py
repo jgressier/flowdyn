@@ -18,6 +18,8 @@ from pyfvm.integration import *
 mesh50   = unimesh(ncell=50, length=1.)
 mesh100  = unimesh(ncell=100, length=1.)
 mesh1000 = unimesh(ncell=1000, length=1.)
+nmesh    = nonunimesh(length=5., nclass=2, ncell0=10, periods=1) #fine,corase,fine
+rmesh    = meshramzi(size=10, nclass = 3, length=5.)
 
 mymodel = eulermodel()
 
@@ -173,7 +175,7 @@ def exactSod(mesh,tf): # tf is the endtime
 
 # Set of computations
 endtime = 0.2
-ntime   = 3
+ntime   = 1
 tsave   = linspace(0, endtime, num=ntime+1)
 cfls    = [ 0.5 ]
 # extrapol1(), extrapol2()=extrapolk(1), centered=extrapolk(-1), extrapol3=extrapolk(1./3.)
@@ -186,8 +188,7 @@ legends = [ 'O1 muscl' ]
 #boundary condition bc : type of boundary condition - "p"=periodic / "d"=Dirichlet
 bc       = 'd'
 bcvalues = []
-neq      = 3
-for i in range(neq+1):
+for i in range(mymodel.neq+1):
     bcvalues.append(np.zeros(2))
 
 # Left Boundary
@@ -206,7 +207,7 @@ bcvalues[3][1] = 0.1      # pressure p
 
 
 gamma      = 1.4
-meshs      = [ mesh100 ]
+meshs      = [ rmesh ]
 initm      = initSod
 exactPdata = exactSod(meshs[0],endtime)
 
@@ -235,7 +236,7 @@ rho0 = results[0][0].qdata[0]
 plot(meshs[0].centers(), rho0, '-.')
 # Exact solution
 plot(meshs[0].centers(), exactPdata[0], '-')
-labels = ["initial condition","exact condition"+", t=%.1f"%results[0][len(tsave)-1].time]
+labels = ["initial condition","exact solution"+", t=%.1f"%results[0][len(tsave)-1].time]
 # Numerical solution
 for t in range(1,len(tsave)):
     for i in range(nbcalc):
@@ -244,7 +245,7 @@ for t in range(1,len(tsave)):
         labels.append(legends[i]+", t=%.1f"%results[i][t].time)
 legend(labels, loc='lower left',prop={'size':10})
 fig.savefig('density.png', bbox_inches='tight')
-#show()
+show()
 # 
 # VELOCITY
 #
@@ -265,6 +266,7 @@ for t in range(1,len(tsave)):
         labels.append(legends[i]+", t=%.1f"%results[i][t].time)
 legend(labels, loc='upper left',prop={'size':10})
 fig.savefig('velocity.png', bbox_inches='tight')
+show()
 #
 # INTERNAL ENERGY
 #
@@ -285,6 +287,7 @@ for t in range(1,len(tsave)):
         labels.append(legends[i]+", t=%.1f"%results[i][t].time)
 legend(labels, loc='upper left',prop={'size':10})
 fig.savefig('internalenergy.png', bbox_inches='tight')
+show()
 #
 # PRESSURE
 #
@@ -304,5 +307,5 @@ for t in range(1,len(tsave)):
         plot((meshs*nbcalc)[i].centers(), p, style[i])
         labels.append(legends[i]+", t=%.1f"%results[i][t].time)
 legend(labels, loc='lower left',prop={'size':10})
-fig.savefig('pressure.png', bbox_inches='tight')
-                           
+fig.savefig('pressure.png', bbox_inches='tight')            
+show()

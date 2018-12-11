@@ -1,2 +1,6 @@
 # compiled python files
 *.pyc
+*.png
+*.dat
+*.txt
+*.pdf
