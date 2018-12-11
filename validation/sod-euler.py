@@ -306,6 +306,6 @@ for t in range(1,len(tsave)):
         p = (gamma-1.0)*(results[i][t].qdata[2]-0.5*results[i][t].qdata[1]**2/results[i][t].qdata[0])
         plot((meshs*nbcalc)[i].centers(), p, style[i])
         labels.append(legends[i]+", t=%.1f"%results[i][t].time)
-legend(labels, loc='lower left',prop={'size':10})
+legend(labels, loc='best', prop={'size':10})
 fig.savefig('pressure.png', bbox_inches='tight')            
 show()
