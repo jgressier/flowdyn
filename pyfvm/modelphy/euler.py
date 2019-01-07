@@ -1,96 +1,43 @@
 # -*- coding: utf-8 -*-
 """
-Created on Fri May 10 16:36:35 2013
+    The ``base`` module of modelphy library
+    =========================
+ 
+    Provides ...
+ 
+    :Example:
+ 
+    >>> import hades.aero.Isentropic as Is
+    >>> Is.TiTs_Mach(1.)
+    1.2
+    >>> Is.TiTs_Mach(2., gamma=1.6)
+    2.2
+ 
+    Available functions
+    -------------------
+ 
+    Provides ...
+ """
 
-@author: j.gressier
-"""
 import numpy as np
 import math
+import pyfvm.modelphy.base as base
 
-class model():
-    def __init__(self, equation='convection'):
-        self.equation = equation  # convection, diffusion or burgers
-        self.convcoef = 1.
-        self.diffcoef = 0.
+# ===============================================================
+# implementation of MODEL class
+
+class model(base.model):
+    """
+    Class model for euler equations
+
+    attributes:
+        _waves[5]
+
+    """
+    def __init__(self, gamma=1.4):
+        base.model.__init__(self, name='euler', neq=3)
         self.islinear = 0
-
-    def __repr__(self):
-        print "model: ", self.equation
-        print "convection coefficient: ", self.convcoef
-        print "diffusion  coefficient: ", self.diffcoef
-        
-    def cons2prim(self):
-        print "cons2prim method not implemented"
-    
-    def prim2cons(self):
-        print "prim2cons method not implemented"
-    
-    def numflux(self):
-        pass
-    
-    def timestep(self, data, dx, condition):
-        pass
-
-class convmodel(model):
-    def __init__(self, convcoef):
-        self.equation = 'convection'
-        self.neq      = 1
-        self.convcoef = convcoef
-        self.islinear = 1
-        
-    def cons2prim(self, qdata):
-        return qdata
-        
-    def prim2cons(self, pdata):
-        return pdata
-
-    def numflux(self, pL, pR):
-        return [ self.convcoef*(pL[0]+pR[0])/2-abs(self.convcoef)*(pR[0]-pL[0])/2 ]
-    
-    def timestep(self, pdata, dx, condition):
-        "computation of timestep: data is not used, dx is an array of cell sizes, condition is the CFL number"
-        return condition*dx/abs(self.convcoef)
-
-class burgersinvmodel(model):
-    def __init__(self):
-        self.equation = 'burgersinv'
-        self.neq      = 1
-        self.islinear = 0
-        
-    def cons2prim(self, qdata):
-        return qdata
-        
-    def prim2cons(self, pdata):
-        return pdata
-
-    def numflux(self, pL, pR):
-        nflux = []
-        for i in range(self.neq):
-            nflux.append(np.zeros(len(pL[i]))) #test use zeros instead
-            for c in range(len(pL[i])):
-                #1st order Upwind scheme
-                vhalf = (pL[i][c]+pR[i][c])/2   
-                if vhalf > 0:
-                    nflux[i][c] = pL[i][c]**2/2
-                elif vhalf < 0:
-                    nflux[i][c] = pR[i][c]**2/2  
-        return nflux
-    
-    def timestep(self, data, dx, condition):
-        "computation of timestep: data is not used, dx is an array of cell sizes, condition is the CFL number"
-#        dt = CFL * dx / |u|
-        dt = np.zeros(len(dx)) #test use zeros instead
-        for c in range(len(dx)):
-            dt[c] = condition*dx[c]/ abs(data[0][c])
-             
-        return dt 
-        
-class eulermodel(model):
-    def __init__(self):
-        self.equation = 'euler'
-        self.neq      = 3
-        self.islinear = 0
-        self.gamma    = 1.4
+        self.gamma    = gamma
         
     def cons2prim(self, qdata): # qdata[ieq][cell] :
         # Loop over all cells/control volumes
@@ -225,3 +172,13 @@ class eulermodel(model):
         for c in range(len(dx)):
             dt[c] = condition*dx[c]/ (data[1][c] + math.sqrt(self.gamma*data[3][c]/data[0][c]) )               
         return dt        
+
+
+ 
+# ===============================================================
+# automatic testing
+
+if __name__ == "__main__":
+    import doctest
+    doctest.testmod()
+

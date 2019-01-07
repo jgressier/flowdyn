@@ -5,7 +5,7 @@ Created on Fri May 10 16:58:31 2013
 @author: j.gressier
 """
 import numpy as np
-import model
+#import model
 import mesh
 
 class field():

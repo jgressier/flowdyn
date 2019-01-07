@@ -1,0 +1,74 @@
+
+<style>
+
+div.cell { /* set cell width to about 80 chars */
+    width: 1100px;
+}
+
+div #notebook { /* centre the content */
+    background: #fff; /* white background for content */
+    width: 1200px;
+    margin: auto;
+    padding-left: 1em;
+}
+
+/* draw border around running cells */
+div.cell.border-box-sizing.code_cell.running { 
+    border: 3px solid #111;
+}
+
+/* Put a solid color box around each cell and its output, visually linking them together */
+div.cell.code_cell {
+    background-color: #f4f3e0; 
+    border-radius: 10px; /* rounded borders */
+    padding: 1em;
+    margin-top: 1em;
+}
+
+
+div.text_cell_render{
+    font-family: sans-serif;
+    line-height: 130%;
+    font-size: 110%;
+    width:1000px;
+    margin-left:auto;
+    margin-right:auto;
+}
+
+
+/* Formatting for header cells */
+.text_cell_render h1 {
+    font-family: serif;
+    font-weight: 600;
+    font-size: 24pt;
+    line-height: 100%;
+    color: rgb(12,85,97);
+    margin-bottom: 0.1em;
+    margin-top: 0.1em;
+    display: block;
+}	
+.text_cell_render h2 {
+    font-family: serif;
+    font-weight: 700;
+    font-size: 20pt;
+    line-height: 100%;
+    color: rgb(12,85,97);
+    margin-bottom: 0.1em;
+    margin-top: 0.1em;
+    display: block;
+}	
+
+.text_cell_render h3 {
+    font-family: serif;
+    margin-top:12px;
+    margin-bottom: 3px;
+    font-style: italic;
+    color: rgb(12,85,97);
+}
+
+.CodeMirror{
+    font-family: "PT Mono";
+    font-size: 100%;
+}
+
+</style>

@@ -10,7 +10,7 @@ import numpy as np
 from scipy.optimize import fsolve 
 
 from pyfvm.mesh  import *
-from pyfvm.model import *
+import pyfvm.modelphy.euler as euler
 from pyfvm.field import *
 from pyfvm.xnum  import *
 from pyfvm.integration import *
@@ -21,7 +21,7 @@ mesh1000 = unimesh(ncell=1000, length=1.)
 nmesh    = nonunimesh(length=5., nclass=2, ncell0=10, periods=1) #fine,corase,fine
 rmesh    = meshramzi(size=10, nclass = 3, length=5.)
 
-mymodel = eulermodel()
+mymodel = euler.model()
 
 # TODO : make init method for scafield
 # Sod shocktube
@@ -174,7 +174,7 @@ def exactSod(mesh,tf): # tf is the endtime
     return exactEulerPdata
 
 # Set of computations
-endtime = 0.2
+endtime = 1.
 ntime   = 1
 tsave   = linspace(0, endtime, num=ntime+1)
 cfls    = [ 0.5 ]

@@ -7,7 +7,7 @@ import time
 from pylab import *
 
 from pyfvm.mesh  import *
-from pyfvm.model import *
+import pyfvm.modelphy.convection as convection
 from pyfvm.field import *
 from pyfvm.xnum  import *
 from pyfvm.integration import *
@@ -15,7 +15,7 @@ from pyfvm.integration import *
 mesh100 = unimesh(ncell=100, length=1.)
 mesh50  = unimesh(ncell=50, length=1.)
 
-mymodel = convmodel(1.)
+mymodel = convection.model(1.)
 
 # TODO : make init method for scafield
 # sinus packet
@@ -73,5 +73,5 @@ for t in range(1,len(tsave)):
         labels.append(legends[i]+", t=%.1f"%results[i][t].time)
 legend(labels, loc='upper left',prop={'size':10})
 fig.savefig('conv-flux.png', bbox_inches='tight')
-#show()
+show()
 
