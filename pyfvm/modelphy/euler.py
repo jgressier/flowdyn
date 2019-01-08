@@ -40,9 +40,13 @@ class model(base.model):
         self.gamma    = gamma
         
     def cons2prim(self, qdata): # qdata[ieq][cell] :
+        """
+        >>> model().cons2prim([[1.], [4.], [10.]]) == [[1.], [4.], [2.]]
+        True
+        """
         # Loop over all cells/control volumes
         pdata = []
-        for i in range(self.neq+1):
+        for i in range(self.neq):
             pdata.append(np.zeros(len(qdata[i]))) #test use zeros instead
 
         for c in range(len(qdata[0])):
@@ -52,14 +56,18 @@ class model(base.model):
             pdata[0][c]=rho                               # rho
             pdata[1][c]=rhou/rho                          # u
             pdata[2][c]=(rhoE-0.5*rhou*pdata[1][c])/rho   # e = E- u**2       
-            pdata[3][c]=(self.gamma-1.0)*rho*pdata[2][c]  # p = (gamma-1)*rho*e       
+            #pdata[3][c]=(self.gamma-1.0)*rho*pdata[2][c]  # p = (gamma-1)*rho*e       
 
         return pdata 
 
     def prim2cons(self, pdata): # qdata[ieq][cell] :
+        """
+        >>> model().prim2cons([[2.], [4.], [5.]]) == [[2.], [8.], [42.]]
+        True
+        """
         # Loop over all cells/control volumes
         qdata = []
-        for i in range(self.neq+1):
+        for i in range(self.neq):
             qdata.append(np.zeros(len(pdata[i]))) #test use zeros instead
 
         # Loop over all cells/control volumes
@@ -67,7 +75,6 @@ class model(base.model):
             qdata[0][c] = pdata[0][c] 
             qdata[1][c] = pdata[0][c]*pdata[1][c] 
             qdata[2][c] = pdata[0][c]*(pdata[2][c]+pdata[1][c]**2) 
-            qdata[3][c] = 0.0 # We don t need to acces to this data 
         return qdata
 
     def numflux(self, pdataL, pdataR): # HLLC Riemann solver ; pL[ieq][face]

@@ -1,17 +1,14 @@
 # -*- coding: utf-8 -*-
 """
-    The ``base`` module of modelphy library
+    The ``convection`` module of modelphy library
     =========================
  
-    Provides ...
+    Provides convection model
  
     :Example:
  
-    >>> import hades.aero.Isentropic as Is
-    >>> Is.TiTs_Mach(1.)
-    1.2
-    >>> Is.TiTs_Mach(2., gamma=1.6)
-    2.2
+    >>> model(2.).numflux([10.],[50.])
+    [20.0]
  
     Available functions
     -------------------
@@ -33,6 +30,10 @@ class model(base.model):
     attributes:
         _waves[5]
 
+    >>> model(2.).numflux([10.],[50.])
+    [20.0]
+    >>> model(-2.).numflux([10.],[50.])
+    [-100.0]
     """
     def __init__(self, convcoef):
         base.model.__init__(self, name='convection', neq=1)

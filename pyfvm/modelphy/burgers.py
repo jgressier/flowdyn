@@ -46,6 +46,12 @@ class model(base.model):
         return pdata
 
     def numflux(self, pL, pR):
+        """
+        >>> model().numflux([[1.]], [[4.]]) == [.5]
+        True
+        >>> model().numflux([[-5.]],[[4.]]) == [8.]
+        True
+        """
         nflux = []
         for i in range(self.neq):
             nflux.append(np.zeros(len(pL[i]))) #test use zeros instead

@@ -3,15 +3,14 @@
     The ``base`` module of modelphy library
     =========================
  
-    Provides ...
+    Provides virtual class for all other model
  
     :Example:
  
-    >>> import hades.aero.Isentropic as Is
-    >>> Is.TiTs_Mach(1.)
-    1.2
-    >>> Is.TiTs_Mach(2., gamma=1.6)
-    2.2
+    >>> model = modelbase.model(name='test', neq=1)
+    >>> import pyfvm.modelphy.base as modelbase
+    >>> print model.neq, model.equation
+    1 test
  
     Available functions
     -------------------
