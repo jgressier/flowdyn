@@ -4,6 +4,7 @@ test integration methods
 """
 
 import time
+import cProfile
 from pylab import *
 
 import numpy as np 
@@ -15,9 +16,9 @@ from pyfvm.field import *
 from pyfvm.xnum  import *
 from pyfvm.integration import *
 
-mesh50   = unimesh(ncell=50, length=1.)
-mesh100  = unimesh(ncell=100, length=1.)
-mesh1000 = unimesh(ncell=1000, length=1.)
+mesh50   = unimesh(ncell=50, length=5.)
+mesh100  = unimesh(ncell=100, length=5.)
+mesh1000 = unimesh(ncell=1000, length=5.)
 nmesh    = nonunimesh(length=5., nclass=2, ncell0=10, periods=1) #fine,corase,fine
 rmesh    = meshramzi(size=10, nclass = 3, length=5.)
 
@@ -195,19 +196,19 @@ for i in range(mymodel.neq+1):
 
 bcvalues[0][0] = 1.0      # density  rho
 bcvalues[1][0] = 0.0      # velocity u       
-bcvalues[2][0] = 2.5      # int. nrg e            
-bcvalues[3][0] = 1.0      # pressure p            
+#bcvalues[2][0] = 2.5      # int. nrg e            
+bcvalues[2][0] = 1.0      # pressure p            
 
 # Right Boundary
 
 bcvalues[0][1] = 0.125    # density  rho            
 bcvalues[1][1] = 0.0      # velocity u            
-bcvalues[2][1] = 2.0      # int. nrg e             
-bcvalues[3][1] = 0.1      # pressure p            
+#bcvalues[2][1] = 2.0      # int. nrg e             
+bcvalues[2][1] = 0.1      # pressure p            
 
 
 gamma      = 1.4
-meshs      = [ rmesh ]
+meshs      = [ mesh1000 ]
 initm      = initSod
 exactPdata = exactSod(meshs[0],endtime)
 
@@ -219,8 +220,10 @@ for i in range(nbcalc):
     field0.qdata = initm((meshs*nbcalc)[i])
     solvers.append((tmeths*nbcalc)[i]((meshs*nbcalc)[i], (xmeths*nbcalc)[i]))
     start = time.clock()
-    results.append(solvers[-1].solve(field0, (cfls*nbcalc)[i], tsave))
-    #print "cpu time of "+"%-11s"%(legends[i])+" computation (",solvers[-1].nit,"it) :",time.clock()-start,"s"
+    cProfile.run('results.append(solvers[-1].solve(field0, (cfls*nbcalc)[i], tsave))')
+    cputime = time.clock()-start
+    print "cpu time of "+"%-11s"%(legends[i])+" computation (",solvers[-1].nit,"it) :",cputime,"s"
+    print "  %.2f µs/cell/it"%(cputime*1.e6/solvers[-1].nit/(meshs*nbcalc)[i].ncell)
 
 # Figure
 

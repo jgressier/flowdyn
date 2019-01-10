@@ -41,7 +41,7 @@ class model(base.model):
         
     def cons2prim(self, qdata): # qdata[ieq][cell] :
         """
-        >>> model().cons2prim([[1.], [4.], [10.]]) == [[1.], [4.], [2.]]
+        >>> model().cons2prim([[5.], [10.], [20.]])
         True
         """
         # Loop over all cells/control volumes
@@ -55,14 +55,14 @@ class model(base.model):
             rhoE = qdata[2][c]
             pdata[0][c]=rho                               # rho
             pdata[1][c]=rhou/rho                          # u
-            pdata[2][c]=(rhoE-0.5*rhou*pdata[1][c])/rho   # e = E- u**2       
-            #pdata[3][c]=(self.gamma-1.0)*rho*pdata[2][c]  # p = (gamma-1)*rho*e       
+            #pdata[2][c]=(rhoE-0.5*rhou*pdata[1][c])/rho   # e = E- u**2       
+            pdata[2][c]=(self.gamma-1.0)*(rhoE-0.5*rhou*pdata[1][c])  # p = (gamma-1)*rho*e       
 
         return pdata 
 
     def prim2cons(self, pdata): # qdata[ieq][cell] :
         """
-        >>> model().prim2cons([[2.], [4.], [5.]]) == [[2.], [8.], [42.]]
+        >>> model().prim2cons([[2.], [4.], [10.]]) == [[2.], [8.], [41.]]
         True
         """
         # Loop over all cells/control volumes
@@ -74,22 +74,23 @@ class model(base.model):
         for c in range(len(pdata[0])):
             qdata[0][c] = pdata[0][c] 
             qdata[1][c] = pdata[0][c]*pdata[1][c] 
-            qdata[2][c] = pdata[0][c]*(pdata[2][c]+pdata[1][c]**2) 
+            qdata[2][c] = pdata[2][c]/(self.gamma-1.) + .5*pdata[1][c]**2*pdata[0][c]
+            #qdata[2][c] = pdata[0][c]*(pdata[2][c]+pdata[1][c]**2) 
         return qdata
 
     def numflux(self, pdataL, pdataR): # HLLC Riemann solver ; pL[ieq][face]
         nflux = []
-        for i in range(self.neq+1):
+        for i in range(self.neq):
             nflux.append(np.zeros(len(pdataL[i]))) #test use zeros instead
 
         #  Loopdata over all faces
         for ifa in range(len(pdataL[0])):
             rhoL  = pdataL[0][ifa]
             uL    = pdataL[1][ifa]
-            pL    = pdataL[3][ifa]
+            pL    = pdataL[2][ifa]
             rhoR  = pdataR[0][ifa]
             uR    = pdataR[1][ifa]
-            pR    = pdataR[3][ifa]
+            pR    = pdataR[2][ifa]
             gamma = self.gamma
             # add ke to h
             # the enthalpy is assumed to include ke ...!
@@ -168,7 +169,6 @@ class model(base.model):
             nflux[0][ifa] = Frho
             nflux[1][ifa] = Frhou
             nflux[2][ifa] = FrhoE
-            nflux[3][ifa] = 0.0
 
         return nflux
 
@@ -177,7 +177,7 @@ class model(base.model):
 #        dt = CFL * dx / ( |u| + c )
         dt = np.zeros(len(dx)) #test use zeros instead
         for c in range(len(dx)):
-            dt[c] = condition*dx[c]/ (data[1][c] + math.sqrt(self.gamma*data[3][c]/data[0][c]) )               
+            dt[c] = condition*dx[c]/ (data[1][c] + math.sqrt(self.gamma*data[2][c]/data[0][c]) )               
         return dt        
 
 

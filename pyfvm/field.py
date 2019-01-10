@@ -77,7 +77,7 @@ class numfield(field):
                     self.pR[i][self.nelem] = self.pR[i][0] #= 0
                     #print 'BC L/R',self.pL[i], self.pR[i]
             elif self.bc == 'd':   #dirichlet boundary conditions
-                for i in range(len(self.pL)):
+                for i in range(self.neq):
                     self.pL[i][0]          = self.bcvalues[i][0] 
                     self.pR[i][self.nelem] = self.bcvalues[i][1]
             else:
