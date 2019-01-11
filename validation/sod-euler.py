@@ -19,6 +19,7 @@ from pyfvm.integration import *
 mesh50   = unimesh(ncell=50, length=5.)
 mesh100  = unimesh(ncell=100, length=5.)
 mesh1000 = unimesh(ncell=1000, length=5.)
+mesh5000 = unimesh(ncell=5000, length=5.)
 nmesh    = nonunimesh(length=5., nclass=2, ncell0=10, periods=1) #fine,corase,fine
 rmesh    = meshramzi(size=10, nclass = 3, length=5.)
 
@@ -181,7 +182,7 @@ tsave   = linspace(0, endtime, num=ntime+1)
 cfls    = [ 0.5 ]
 # extrapol1(), extrapol2()=extrapolk(1), centered=extrapolk(-1), extrapol3=extrapolk(1./3.)
 #xmeths  = [ extrapol1(), extrapol2(), centered(), extrapol3() ]
-xmeths  = [ muscl(limiter=vanalbada) ]
+xmeths  = [ muscl(limiter=minmod) ]
 # explicit, rk2, rk3ssp, rk4, implicit, trapezoidal=cranknicolson
 tmeths  = [ rk4 ]
 #legends = [ 'O1 upwind', 'O2 upwind', 'O2 centered', 'O3 extrapol' ]
