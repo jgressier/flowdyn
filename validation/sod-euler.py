@@ -181,11 +181,11 @@ tsave   = linspace(0, endtime, num=ntime+1)
 cfls    = [ 0.5 ]
 # extrapol1(), extrapol2()=extrapolk(1), centered=extrapolk(-1), extrapol3=extrapolk(1./3.)
 #xmeths  = [ extrapol1(), extrapol2(), centered(), extrapol3() ]
-xmeths  = [ muscl() ]
+xmeths  = [ muscl(limiter=vanalbada) ]
 # explicit, rk2, rk3ssp, rk4, implicit, trapezoidal=cranknicolson
-tmeths  = [ AsyncLSrk4 ]
+tmeths  = [ rk4 ]
 #legends = [ 'O1 upwind', 'O2 upwind', 'O2 centered', 'O3 extrapol' ]
-legends = [ 'O1 muscl' ]
+legends = [ 'O2 muscl' ]
 #boundary condition bc : type of boundary condition - "p"=periodic / "d"=Dirichlet
 bc       = 'd'
 bcvalues = []

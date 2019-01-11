@@ -44,19 +44,10 @@ class model(base.model):
         >>> model().cons2prim([[5.], [10.], [20.]])
         True
         """
-        # Loop over all cells/control volumes
-        pdata = []
-        for i in range(self.neq):
-            pdata.append(np.zeros(len(qdata[i]))) #test use zeros instead
-
-        for c in range(len(qdata[0])):
-            rho  = qdata[0][c] 
-            rhou = qdata[1][c]
-            rhoE = qdata[2][c]
-            pdata[0][c]=rho                               # rho
-            pdata[1][c]=rhou/rho                          # u
-            #pdata[2][c]=(rhoE-0.5*rhou*pdata[1][c])/rho   # e = E- u**2       
-            pdata[2][c]=(self.gamma-1.0)*(rhoE-0.5*rhou*pdata[1][c])  # p = (gamma-1)*rho*e       
+        rho = qdata[0]
+        u   = qdata[1]/qdata[0]
+        p   = (self.gamma-1.0)*(qdata[2]-0.5*u*qdata[1])
+        pdata = [ rho, u ,p ] 
 
         return pdata 
 
@@ -79,98 +70,127 @@ class model(base.model):
         return qdata
 
     def numflux(self, pdataL, pdataR): # HLLC Riemann solver ; pL[ieq][face]
-        nflux = []
-        for i in range(self.neq):
-            nflux.append(np.zeros(len(pdataL[i]))) #test use zeros instead
 
-        #  Loopdata over all faces
-        for ifa in range(len(pdataL[0])):
-            rhoL  = pdataL[0][ifa]
-            uL    = pdataL[1][ifa]
-            pL    = pdataL[2][ifa]
-            rhoR  = pdataR[0][ifa]
-            uR    = pdataR[1][ifa]
-            pR    = pdataR[2][ifa]
-            gamma = self.gamma
-            # add ke to h
-            # the enthalpy is assumed to include ke ...!
-            HL = gamma/(gamma-1.0)*pL/rhoL + 0.5*uL**2
-            HR = gamma/(gamma-1.0)*pR/rhoR + 0.5*uR**2
+        gam  = self.gamma
+        gam1 = gam-1.
 
-            # The HLLC Riemann solver
+        rhoL  = pdataL[0]
+        uL    = pdataL[1]
+        pL    = pdataL[2]
+        rhoR  = pdataR[0]
+        uR    = pdataR[1]
+        pR    = pdataR[2]
+
+        # add ke to h
+        # the enthalpy is assumed to include ke ...!
+        HL = gam/gam1*pL/rhoL + 0.5*uL**2
+        HR = gam/gam1*pR/rhoR + 0.5*uR**2
+
+        # The HLLC Riemann solver
             
-            #print ifa,gamma,pR,rhoR
-            # raw_input('Press <ENTER> to continue')               #test
-            cL   = math.sqrt(gamma*pL/rhoL)
-            cR   = math.sqrt(gamma*pR/rhoR)
+        cL   = np.sqrt(gam*pL/rhoL)
+        cR   = np.sqrt(gam*pR/rhoR)
 
-            unL  =  uL # We need to check the projection on the normals
-            unR  =  uR # We need to check the projection on the normals
-            uLuL = uL**2
-            uRuR = uR**2
+        unL  =  uL # We need to check the projection on the normals
+        unR  =  uR # We need to check the projection on the normals
+        uLuL = uL**2
+        uRuR = uR**2
 
-            # remove t       he   # essure term from the enthalpy, leaving an energy that has everything else...
-            # sorry for using little "e" here - is is not just internal energy
-            eL   = HL*rhoL-pL
-            eR   = HR*rhoR-pR
+        # remove t       he   # essure term from the enthalpy, leaving an energy that has everything else...
+        # sorry for using little "e" here - is is not just internal energy
+        eL   = HL*rhoL-pL
+        eR   = HR*rhoR-pR
 
-            # Roe's averaging
-            Rrho = math.sqrt(rhoR/rhoL)
+        # Roe's averaging
+        Rrho = np.sqrt(rhoR/rhoL)
 
-            tmp    = 1.0/(1.0+Rrho);
-            velRoe = tmp*(uL + uR*Rrho)
-            uRoe   = tmp*(uL + uR*Rrho)
-            hRoe   = tmp*(HL + HR*Rrho)
+        tmp    = 1.0/(1.0+Rrho);
+        velRoe = tmp*(uL + uR*Rrho)
+        uRoe   = tmp*(uL + uR*Rrho)
+        hRoe   = tmp*(HL + HR*Rrho)
 
-            gamPdivRho = tmp*( (gamma*pL/rhoL+0.5*(gamma-1.0)*uLuL) + (gamma*pR/rhoR+0.5*(gamma-1.0)*uRuR)*Rrho )
-            cRoe  = math.sqrt(gamPdivRho - ((gamma+gamma)*0.5-1.0)*0.5*velRoe**2)
+        gamPdivRho = tmp*( (gam*pL/rhoL+0.5*gam1*uLuL) + (gam*pR/rhoR+0.5*gam1*uRuR)*Rrho )
+        cRoe  = np.sqrt(gamPdivRho - ((gam+gam)*0.5-1.0)*0.5*velRoe**2)
 
-            # speed of sound at L and R
-            sL = min(uRoe-cRoe, unL-cL)
-            sR = max(uRoe+cRoe, unR+cR)
+        # speed of sound at L and R
+        sL = np.minimum(uRoe-cRoe, unL-cL)
+        sR = np.maximum(uRoe+cRoe, unR+cR)
 
-            # speed of contact surface
-            sM = (pL-pR-rhoL*unL*(sL-unL)+rhoR*unR*(sR-unR))/(rhoR*(sR-unR)-rhoL*(sL-unL))
+        # speed of contact surface
+        sM = (pL-pR-rhoL*unL*(sL-unL)+rhoR*unR*(sR-unR))/(rhoR*(sR-unR)-rhoL*(sL-unL))
 
-            # pressure at right and left (pR=pL) side of contact surface
-            pStar = rhoR*(unR-sR)*(unR-sM)+pR
+        # pressure at right and left (pR=pL) side of contact surface
+        pStar = rhoR*(unR-sR)*(unR-sM)+pR
 
-            if sM >= 0.0 :
-                if sL > 0.0 :
-                    Frho   = rhoL*unL
-                    Frhou  = rhoL*uL*unL + pL
-                    FrhoE  = (eL+pL)*unL
+        Frho  = np.zeros(len(pdataL[0]))
+        Frhou = np.zeros(len(pdataL[0]))
+        FrhoE = np.zeros(len(pdataL[0]))
+
+        for ifa in range(len(pdataL[0])):
+            if sM[ifa] >= 0.0 :
+                if sL[ifa] > 0.0 :
+                    Frho[ifa]   = rhoL[ifa]*unL[ifa]
+                    Frhou[ifa]  = rhoL[ifa]*uL[ifa]*unL[ifa] + pL[ifa]
+                    FrhoE[ifa]  = (eL[ifa]+pL[ifa])*unL[ifa]
                 else :
-                    invSLmSs   = 1.0/(sL-sM)
-                    sLmuL      = sL-unL
-                    rhoSL      = rhoL*sLmuL*invSLmSs
-                    eSL        = (sLmuL*eL-pL*unL+pStar*sM)*invSLmSs
-                    rhouSL     = (rhoL*uL*sLmuL+(pStar-pL))*invSLmSs
+                    invSLmSs   = 1.0/(sL[ifa]-sM[ifa])
+                    sLmuL      = sL[ifa]-unL[ifa]
+                    rhoSL      = rhoL[ifa]*sLmuL*invSLmSs
+                    eSL        = (sLmuL*eL[ifa]-pL[ifa]*unL[ifa]+pStar[ifa]*sM[ifa])*invSLmSs
+                    rhouSL     = (rhoL[ifa]*uL[ifa]*sLmuL+(pStar[ifa]-pL[ifa]))*invSLmSs
 
-                    Frho  = rhoSL*sM
-                    Frhou = rhouSL*sM + pStar
-                    FrhoE = (eSL+pStar)*sM
+                    Frho[ifa]  = rhoSL*sM[ifa]
+                    Frhou[ifa] = rhouSL*sM[ifa] + pStar[ifa]
+                    FrhoE[ifa] = (eSL+pStar[ifa])*sM[ifa]
             else :
                 if sR >= 0.0 :
-                    invSRmSs = 1.0/(sR-sM)
-                    sRmuR    = sR-unR
-                    rhoSR    = rhoR*sRmuR*invSRmSs
-                    eSR      = (sRmuR*eR-pR*unR+pStar*sM)*invSRmSs
-                    rhouSR   = (rhoR*uR*sRmuR+(pStar-pR))*invSRmSs
+                    invSRmSs = 1.0/(sR[ifa]-sM[ifa])
+                    sRmuR    = sR[ifa]-unR[ifa]
+                    rhoSR    = rhoR[ifa]*sRmuR*invSRmSs
+                    eSR      = (sRmuR*eR[ifa]-pR[ifa]*unR[ifa]+pStar[ifa]*sM[ifa])*invSRmSs
+                    rhouSR   = (rhoR[ifa]*uR[ifa]*sRmuR+(pStar[ifa]-pR[ifa]))*invSRmSs
 
-                    Frho   = rhoSR*sM
-                    Frhou  = rhouSR*sM + pStar
-                    FrhoE  = (eSR+pStar)*sM
+                    Frho[ifa]   = rhoSR*sM[ifa]
+                    Frhou[ifa]  = rhouSR*sM[ifa] + pStar[ifa]
+                    FrhoE[ifa]  = (eSR+pStar[ifa])*sM[ifa]
                 else :
-                    Frho   = rhoR*unR
-                    Frhou  = rhoR*uR*unR + pR
-                    FrhoE  = (eR+pR)*unR
+                    Frho[ifa]   = rhoR[ifa]*unR[ifa]
+                    Frhou[ifa]  = rhoR[ifa]*uR[ifa]*unR[ifa] + pR[ifa]
+                    FrhoE  = (eR[ifa]+pR[ifa])*unR[ifa]
 
-            nflux[0][ifa] = Frho
-            nflux[1][ifa] = Frhou
-            nflux[2][ifa] = FrhoE
+        # for ifa in range(len(pdataL[0])):
+        #     if sM >= 0.0 :
+        #         if sL > 0.0 :
+        #             Frho   = rhoL*unL
+        #             Frhou  = rhoL*uL*unL + pL
+        #             FrhoE  = (eL+pL)*unL
+        #         else :
+        #             invSLmSs   = 1.0/(sL-sM)
+        #             sLmuL      = sL-unL
+        #             rhoSL      = rhoL*sLmuL*invSLmSs
+        #             eSL        = (sLmuL*eL-pL*unL+pStar*sM)*invSLmSs
+        #             rhouSL     = (rhoL*uL*sLmuL+(pStar-pL))*invSLmSs
 
-        return nflux
+        #             Frho  = rhoSL*sM
+        #             Frhou = rhouSL*sM + pStar
+        #             FrhoE = (eSL+pStar)*sM
+        #     else :
+        #         if sR >= 0.0 :
+        #             invSRmSs = 1.0/(sR-sM)
+        #             sRmuR    = sR-unR
+        #             rhoSR    = rhoR*sRmuR*invSRmSs
+        #             eSR      = (sRmuR*eR-pR*unR+pStar*sM)*invSRmSs
+        #             rhouSR   = (rhoR*uR*sRmuR+(pStar-pR))*invSRmSs
+
+        #             Frho   = rhoSR*sM
+        #             Frhou  = rhouSR*sM + pStar
+        #             FrhoE  = (eSR+pStar)*sM
+        #         else :
+        #             Frho   = rhoR*unR
+        #             Frhou  = rhoR*uR*unR + pR
+        #             FrhoE  = (eR+pR)*unR
+
+        return [Frho, Frhou, FrhoE]
 
     def timestep(self, data, dx, condition):
         "computation of timestep: data(=pdata) is not used, dx is an array of cell sizes, condition is the CFL number"
