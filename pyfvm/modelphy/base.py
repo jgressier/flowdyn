@@ -61,6 +61,12 @@ class model():
     def timestep(self, data, dx, condition):
         pass
 
+    def nameddata(self, name, data):
+        #method = getattr(self, name)
+        #return method()
+        #print self._dict[name]
+        return (self._dict[name])(data)
+
 
  
 # ===============================================================

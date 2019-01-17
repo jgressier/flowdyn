@@ -38,6 +38,8 @@ class model(base.model):
         base.model.__init__(self, name='euler', neq=3)
         self.islinear = 0
         self.gamma    = gamma
+        self._dict = { 'pressure': self.pressure, 'density': self.density,
+                       'velocity': self.velocity, 'mach': self.mach }
         
     def cons2prim(self, qdata): # qdata[ieq][cell] :
         """
@@ -68,6 +70,18 @@ class model(base.model):
             qdata[2][c] = pdata[2][c]/(self.gamma-1.) + .5*pdata[1][c]**2*pdata[0][c]
             #qdata[2][c] = pdata[0][c]*(pdata[2][c]+pdata[1][c]**2) 
         return qdata
+
+    def density(self, qdata):
+        return qdata[0].copy()
+
+    def pressure(self, qdata):
+        return (self.gamma-1.0)*(qdata[2]-0.5*qdata[1]**2/qdata[0])
+
+    def velocity(self, qdata):
+        return qdata[1]/qdata[0]
+
+    def mach(self, qdata):
+        return qdata[1]/np.sqrt(self.gamma*((self.gamma-1.0)*(qdata[2]-0.5*qdata[1]**2/qdata[0])))
 
     def numflux(self, pdataL, pdataR): # HLLC Riemann solver ; pL[ieq][face]
 
@@ -153,8 +167,11 @@ class model(base.model):
         "computation of timestep: data(=pdata) is not used, dx is an array of cell sizes, condition is the CFL number"
         #        dt = CFL * dx / ( |u| + c )
         # dt = np.zeros(len(dx)) #test use zeros instead
-        dt = condition*dx/ (data[1] + np.sqrt(self.gamma*data[2]/data[0]) )
-        return dt        
+        #dt = condition*dx/ (data[1] + np.sqrt(self.gamma*data[2]/data[0]) )
+        dt = condition*dx *data[0]/ (
+                np.abs(data[1]) + np.sqrt(
+                self.gamma*(self.gamma-1.0)*(data[2]*data[0]-0.5*data[1]**2) ))
+        return dt
 
 
  

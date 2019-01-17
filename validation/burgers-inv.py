@@ -10,10 +10,11 @@ import numpy as np
 from scipy.optimize import fsolve 
 
 from pyfvm.mesh  import *
-import pyfvm.modelphy.burgers as burgers
 from pyfvm.field import *
 from pyfvm.xnum  import *
 from pyfvm.integration import *
+import pyfvm.modelphy.burgers as burgers
+import pyfvm.modeldisc        as modeldisc
 
 mesh50   = unimesh(ncell=50, length=5.)
 mesh100  = unimesh(ncell=100, length=5.)
@@ -124,7 +125,7 @@ cfls    = [ 0.5 ]
 #xmeths  = [ extrapol1(), extrapol2(), centered(), extrapol3() ]
 xmeths  = [ muscl() ]
 # explicit, rk2, rk3ssp, rk4, implicit, trapezoidal=cranknicolson
-tmeths  = [ LSrk4 ]
+tmeths  = [ rk4 ]
 #legends = [ 'O1 upwind', 'O2 upwind', 'O2 centered', 'O3 extrapol' ]
 legends = [ 'O1 muscl' ]
 #boundary condition bc : type of boundary condition - "p"=periodic / "d"=Dirichlet / Neumann: 'n'
@@ -145,15 +146,16 @@ meshs      = [ mesh100 ]
 initm      = init_step
 exactPdata = exact_step(initm,meshs[0],endtime)
 
-print len(meshs[0].dx()), meshs[0].dx()
+#print len(meshs[0].dx()), meshs[0].dx()
 
 solvers = []
 results = []
 nbcalc  = max(len(cfls), len(tmeths), len(xmeths), len(meshs))
 for i in range(nbcalc):
-    field0 = scafield(mymodel, bc, (meshs*nbcalc)[i].ncell, bcvalues)
-    field0.qdata[0] = initm((meshs*nbcalc)[i])
-    solvers.append((tmeths*nbcalc)[i]((meshs*nbcalc)[i], (xmeths*nbcalc)[i]))
+    #f = field(mymodel, mesh100, np.zeros(100))
+    field0 = fdata(mymodel, (meshs*nbcalc)[i], [initm((meshs*nbcalc)[i])])
+    rhs = modeldisc.fvm(mymodel, (meshs*nbcalc)[i], (xmeths*nbcalc)[i], bc, bcvalues)
+    solvers.append((tmeths*nbcalc)[i]((meshs*nbcalc)[i], rhs))
     start = time.clock()
     results.append(solvers[-1].solve(field0, (cfls*nbcalc)[i], tsave))
     #print "cpu time of "+"%-11s"%(legends[i])+" computation (",solvers[-1].nit,"it) :",time.clock()-start,"s"
@@ -168,14 +170,14 @@ fig = figure(1, figsize=(10,8))
 grid(linestyle='--', color='0.5')
 fig.suptitle('Density profile along the Sod shock-tube, CFL %.3f'%cfls[0], fontsize=12, y=0.93)
 # Initial solution
-plot(meshs[0].centers(), results[0][0].qdata[0], '-')
+plot(meshs[0].centers(), results[0][0].data[0], '-')
 # Exact solution
 plot(meshs[0].centers(), exactPdata[1], '-')
 labels = ["initial condition","exact solution"+", t=%.1f"%results[0][len(tsave)-1].time]
 # Numerical solution
 for t in range(1,len(tsave)):
     for i in range(nbcalc):
-        plot((meshs*nbcalc)[i].centers(), results[i][t].qdata[0], style[i])
+        plot((meshs*nbcalc)[i].centers(), results[i][t].data[0], style[i])
         labels.append(legends[i]+", t=%.1f"%results[i][t].time)
 legend(labels, loc='lower left',prop={'size':10})
 fig.savefig('density.png', bbox_inches='tight')

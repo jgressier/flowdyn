@@ -1,1 +1,1 @@
-__all__ = [ "field", "integration", "mesh", "model", "xnum" ]
+__all__ = [ "field", "integration", "mesh", "xnum" ]

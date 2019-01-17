@@ -11,10 +11,11 @@ import numpy as np
 from scipy.optimize import fsolve 
 
 from pyfvm.mesh  import *
-import pyfvm.modelphy.euler as euler
 from pyfvm.field import *
 from pyfvm.xnum  import *
 from pyfvm.integration import *
+import pyfvm.modelphy.euler as euler
+import pyfvm.modeldisc      as modeldisc
 
 mesh50   = unimesh(ncell=50, length=5.)
 mesh100  = unimesh(ncell=100, length=5.)
@@ -207,21 +208,23 @@ bcvalues[1][1] = 0.0      # velocity u
 #bcvalues[2][1] = 2.0      # int. nrg e             
 bcvalues[2][1] = 0.1      # pressure p            
 
-
 gamma      = 1.4
 meshs      = [ mesh1000 ]
 initm      = initSod
 exactPdata = exactSod(meshs[0],endtime)
 
+eulerrhs = modeldisc
+
 solvers = []
 results = []
 nbcalc  = max(len(cfls), len(tmeths), len(xmeths), len(meshs))
 for i in range(nbcalc):
-    field0 = scafield(mymodel, bc, (meshs*nbcalc)[i].ncell, bcvalues)
-    field0.qdata = initm((meshs*nbcalc)[i])
-    solvers.append((tmeths*nbcalc)[i]((meshs*nbcalc)[i], (xmeths*nbcalc)[i]))
+    field0 = fdata(mymodel, (meshs*nbcalc)[i], initm((meshs*nbcalc)[i]))
+    rhs = modeldisc.fvm(mymodel, (meshs*nbcalc)[i], (xmeths*nbcalc)[i], bc, bcvalues)
+    solvers.append((tmeths*nbcalc)[i]((meshs*nbcalc)[i], rhs))
     start = time.clock()
-    cProfile.run('results.append(solvers[-1].solve(field0, (cfls*nbcalc)[i], tsave))')
+    #cProfile.run('results.append(solvers[-1].solve(field0, (cfls*nbcalc)[i], tsave))')
+    results.append(solvers[-1].solve(field0, (cfls*nbcalc)[i], tsave))
     cputime = time.clock()-start
     print "cpu time of "+"%-11s"%(legends[i])+" computation (",solvers[-1].nit,"it) :",cputime,"s"
     print "  %.2f µs/cell/it"%(cputime*1.e6/solvers[-1].nit/(meshs*nbcalc)[i].ncell)
@@ -236,7 +239,7 @@ fig = figure(1, figsize=(10,8))
 grid(linestyle='--', color='0.5')
 fig.suptitle('Density profile along the Sod shock-tube, CFL %.3f'%cfls[0], fontsize=12, y=0.93)
 # Initial solution
-rho0 = results[0][0].qdata[0]
+rho0 = results[0][0].phydata('density')
 plot(meshs[0].centers(), rho0, '-.')
 # Exact solution
 plot(meshs[0].centers(), exactPdata[0], '-')
@@ -244,7 +247,7 @@ labels = ["initial condition","exact solution"+", t=%.1f"%results[0][len(tsave)-
 # Numerical solution
 for t in range(1,len(tsave)):
     for i in range(nbcalc):
-        rho=results[i][t].qdata[0]
+        rho=results[i][t].phydata('density')
         plot((meshs*nbcalc)[i].centers(), rho, style[i])
         labels.append(legends[i]+", t=%.1f"%results[i][t].time)
 legend(labels, loc='lower left',prop={'size':10})
@@ -257,7 +260,7 @@ fig = figure(2, figsize=(10,8))
 grid(linestyle='--', color='0.5')
 fig.suptitle('Velocity profile along the Sod shock-tube, CFL %.3f'%cfls[0], fontsize=12, y=0.93)
 # Initial solution
-u0 = results[0][0].qdata[1]/results[0][0].qdata[0]
+u0 = results[0][0].phydata('velocity')
 plot(meshs[0].centers(), u0, '-.')             
 # Exact solution
 plot(meshs[0].centers(), exactPdata[1], '-')
@@ -265,32 +268,11 @@ labels = ["initial condition","exact condition"+", t=%.1f"%results[0][len(tsave)
 # Numerical solution
 for t in range(1,len(tsave)):
     for i in range(nbcalc):
-        u = results[i][t].qdata[1]/results[i][t].qdata[0] 
+        u = results[i][t].phydata('velocity')
         plot((meshs*nbcalc)[i].centers(), u, style[i])
         labels.append(legends[i]+", t=%.1f"%results[i][t].time)
 legend(labels, loc='upper left',prop={'size':10})
 fig.savefig('velocity.png', bbox_inches='tight')
-show()
-#
-# INTERNAL ENERGY
-#
-fig = figure(3, figsize=(10,8))
-grid(linestyle='--', color='0.5')
-fig.suptitle('Internal Energy profile along the Sod shock-tube, CFL %.3f'%cfls[0], fontsize=12, y=0.93)
-# Initial solution
-e0 = (results[0][0].qdata[2]-0.5*results[0][0].qdata[1]**2/results[0][0].qdata[0])/results[0][0].qdata[0]
-plot(meshs[0].centers(), e0, '-.')
-# Exact solution
-plot(meshs[0].centers(), exactPdata[2], '-')
-labels = ["initial condition","exact condition"+", t=%.1f"%results[0][len(tsave)-1].time]
-# Numerical solution
-for t in range(1,len(tsave)):
-    for i in range(nbcalc):
-        e = (results[i][t].qdata[2]-0.5*results[i][t].qdata[1]**2/results[i][t].qdata[0])/results[i][t].qdata[0]
-        plot((meshs*nbcalc)[i].centers(), e, style[i])
-        labels.append(legends[i]+", t=%.1f"%results[i][t].time)
-legend(labels, loc='upper left',prop={'size':10})
-fig.savefig('internalenergy.png', bbox_inches='tight')
 show()
 #
 # PRESSURE
@@ -299,7 +281,7 @@ fig = figure(4, figsize=(10,8))
 grid(linestyle='--', color='0.5')
 fig.suptitle('Pressure profile along the Sod shock-tube, CFL %.3f'%cfls[0], fontsize=12, y=0.93)
 # Initial solution
-p0 = (gamma-1.0)*(results[0][0].qdata[2]-0.5*results[0][0].qdata[1]**2/results[0][0].qdata[0])
+p0 = results[0][0].phydata('pressure')
 plot(meshs[0].centers(), p0, '-.')
 # Exact solution
 plot(meshs[0].centers(), exactPdata[3], '-') 
@@ -307,8 +289,9 @@ labels = ["initial condition","exact condition"+", t=%.1f"%results[0][len(tsave)
 # Numerical solution
 for t in range(1,len(tsave)):
     for i in range(nbcalc):
-        p = (gamma-1.0)*(results[i][t].qdata[2]-0.5*results[i][t].qdata[1]**2/results[i][t].qdata[0])
-        plot((meshs*nbcalc)[i].centers(), p, style[i])
+        #p = results[i][t].phydata("pressure")
+        #plot((meshs*nbcalc)[i].centers(), p, style[i])
+        results[i][t].plot('pressure', style[i])
         labels.append(legends[i]+", t=%.1f"%results[i][t].time)
 legend(labels, loc='best', prop={'size':10})
 fig.savefig('pressure.png', bbox_inches='tight')            

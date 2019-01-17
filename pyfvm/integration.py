@@ -11,44 +11,46 @@ trapezoidal or cranknichlson
 """
 import math
 import numpy as np
-from field import *
+import field
 
 class timemodel():
-    def __init__(self, mesh, num):
-        self.mesh  = mesh
-        self.num   = num
+    def __init__(self, mesh, modeldisc):
+        self.mesh      = mesh
+        self.modeldisc = modeldisc
         
     def calcrhs(self, field):
-        field.cons2prim()
-        field.calc_grad(self.mesh)
-        field.calc_bc_grad(self.mesh)
-        field.interp_face(self.mesh, self.num)
-        field.calc_bc()
-        field.calc_flux()
-        return field.calc_res(self.mesh)
+        self.residual = self.modeldisc.rhs(field)
  
     def step():
         print "not implemented for virtual class"
 
-    def solve(self, field, condition, tsave):
+    def add_res(self, f, dt):
+        f.time += np.min(dt)
+        for i in range(f.neq):
+            #print i,self.qdata[i].size,time,self.residual[i].size
+            f.data[i] += dt*self.residual[i]  # time can be scalar or np.array
+
+    def save_res(self):
+        self.lastresidual = [ q.copy() for q in self.residual ]
+
+    def solve(self, f, condition, tsave):
         self.nit       = 0
         self.condition = condition
-        itfield = numfield(field)
-        itfield.cons2prim()
+        itfield = f.copy()
+        #itfield.cons2prim()
         results = []
         for t in np.arange(tsave.size):
             endcycle = 0
             while endcycle == 0:
-                dtloc = itfield.calc_timestep(self.mesh, condition)
+                dtloc = self.modeldisc.calc_timestep(itfield, condition)
                 dtloc = min(dtloc)
                 if itfield.time+dtloc >= tsave[t]:
                     endcycle = 1
                     dtloc    = tsave[t]-itfield.time
                 self.nit += 1
-                itfield.time += dtloc
                 if dtloc > np.spacing(dtloc):
-                    itfield = self.step(itfield, dtloc)
-            itfield.cons2prim()
+                    self.step(itfield, dtloc)
+            #itfield.cons2prim()
             results.append(itfield.copy())
         return results
 
@@ -56,8 +58,8 @@ class timemodel():
 class explicit(timemodel):
     def step(self, field, dtloc):
         self.calcrhs(field)
-        field.add_res(dtloc)
-        return field
+        self.add_res(field, dtloc)
+        return 
 
 class forwardeuler(explicit):
     pass
@@ -72,30 +74,35 @@ class rkmodel(timemodel):
         #            np.array([0.25, 0.25]), \
         #            np.array([1., 1., 4.])/6. ]
         prhs = []
-        pfield = numfield(field)            
+        pfield = field.copy()
         for pcoef in butcher:
+            subtimestage = np.sum(pcoef)
             # compute residual of previous stage and memorize it in prhs[]
-            prhs.append([ q.copy() for q in self.calcrhs(pfield)])
+            self.calcrhs(pfield) # result in self.residual
+            prhs.append([ q.copy() for q in self.residual])
             # revert to initial step
-            pfield.qdata = [ q.copy() for q in field.qdata ]
+            #pfield.data = [ q.copy() for q in field.data ]
+            pfield = field.copy()
             # aggregate residuals
-            for qf in pfield.residual:
+            for qf in self.residual:
                 qf *= pcoef[-1]
             for i in range(pcoef.size-1):
                 for q in range(pfield.neq):
-                    pfield.residual[q] += pcoef[i]*prhs[i][q]
-            pfield.add_res(dtloc)        
-        return pfield
+                    self.residual[q] += pcoef[i]*prhs[i][q]
+            # substep
+            self.add_res(pfield, dtloc*subtimestage)
+        field.set(pfield)
+        return 
 
 class rk2(timemodel):
     def step(self, field, dtloc):
-        reffield = numfield(field)
-        self.calcrhs(field)
-        field.add_res(dtloc/2)
-        self.calcrhs(field)
-        reffield.residual = field.residual
-        reffield.add_res(dtloc)
-        return reffield
+        pfield = field.copy()
+        self.calcrhs(pfield)
+        self.add_res(pfield, dtloc/2)
+        self.calcrhs(pfield)
+        #self.residual = field.residual
+        self.add_res(field, dtloc)
+        return 
 
 class rk3ssp(rkmodel):
     def step(self, field, dtloc):
