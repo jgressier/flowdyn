@@ -44,6 +44,7 @@ class model():
         self.has_firstorder_terms  = 0
         self.has_secondorder_terms = 0
         self.has_source_terms      = 0
+        self._bcdict = { 'dirichlet': self.bc_dirichlet }
 
     def __repr__(self):
         print "model: ", self.equation
@@ -62,11 +63,13 @@ class model():
         pass
 
     def nameddata(self, name, data):
-        #method = getattr(self, name)
-        #return method()
-        #print self._dict[name]
-        return (self._dict[name])(data)
+        return (self._vardict[name])(data)
 
+    def namedBC(self, name, dir, data, param):
+        return (self._bcdict[name])(dir, data, param)
+
+    def bc_dirichlet(self, dir, data, param):
+        return param['prim']
 
  
 # ===============================================================

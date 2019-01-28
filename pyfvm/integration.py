@@ -39,7 +39,7 @@ class timemodel():
         itfield = f.copy()
         #itfield.cons2prim()
         results = []
-        for t in np.arange(tsave.size):
+        for t in np.arange(len(tsave)):
             endcycle = 0
             while endcycle == 0:
                 dtloc = self.modeldisc.calc_timestep(itfield, condition)

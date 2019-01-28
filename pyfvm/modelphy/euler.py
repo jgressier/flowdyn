@@ -34,12 +34,18 @@ class model(base.model):
         _waves[5]
 
     """
-    def __init__(self, gamma=1.4):
+    def __init__(self, gamma=1.4, source=None):
         base.model.__init__(self, name='euler', neq=3)
         self.islinear = 0
         self.gamma    = gamma
-        self._dict = { 'pressure': self.pressure, 'density': self.density,
-                       'velocity': self.velocity, 'mach': self.mach }
+        self.source   = source
+        self._vardict = { 'pressure': self.pressure, 'density': self.density,
+                          'velocity': self.velocity, 'mach': self.mach }
+        self._bcdict.update({'sym': self.bc_sym,
+                         'insub': self.bc_insub,
+                         'insup': self.bc_insup,
+                         'outsub': self.bc_outsub,
+                         'outsup': self.bc_outsup })
         
     def cons2prim(self, qdata): # qdata[ieq][cell] :
         """
@@ -173,7 +179,20 @@ class model(base.model):
                 self.gamma*(self.gamma-1.0)*(data[2]*data[0]-0.5*data[1]**2) ))
         return dt
 
+    def bc_sym(self, dir, data, param):
+        return
 
+    def bc_insub(self, dir, data, param):
+        return
+
+    def bc_insup(self, dir, data, param):
+        return param
+
+    def bc_outsub(self, dir, data, param):
+        return
+
+    def bc_outsup(self, dir, data, param):
+        return data
  
 # ===============================================================
 # automatic testing

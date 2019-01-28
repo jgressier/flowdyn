@@ -128,9 +128,9 @@ class meshramzi(nonunimesh):
 
 class unimesh(virtualmesh):
     " class defining a uniform mesh: ncell and length"
-    def __init__(self, ncell=100, length=1.):
+    def __init__(self, ncell=100, length=1., x0=0.):
         virtualmesh.__init__(self, ncell, length)
-        self.xf     = np.linspace(0., length, ncell+1)
+        self.xf     = np.linspace(0., length, ncell+1)+x0
         self.xc     = self.centers()
 
 class refinedmesh(virtualmesh):

@@ -34,15 +34,15 @@ class base():
       pdata : list of neq nparray - primitive    data
       bc    : type of boundary condition - "p"=periodic / "d"=Dirichlet 
     """
-    def __init__(self, model, mesh, num, bc={'p', 'p'}, bcvalues = []):
+    def __init__(self, model, mesh, num, bcL='per', bcR='per'):
         self.model = model
         self.mesh  = mesh
         self.neq   = model.neq
         self.num   = num
         self.nelem = mesh.ncell
         self.time  = 0.
-        self.bc    = bc        
-        self.bcvalues = bcvalues
+        self.bcL   = bcL
+        self.bcR   = bcR
 
     def copy(self):
         return base(self.model, self.mesh, self.num, self.bc, self.bcvalues)
@@ -89,18 +89,20 @@ class fvm(base):
         self.pL, self.pR = self.num.interp_face(self.mesh, self.pdata, self.grad)                
     
     def calc_bc(self):
-        for i in range(self.neq):
-            if self.bc == 'p':     #periodic boundary conditions
-                for i in range(self.neq):
-                    self.pL[i][0]          = self.pL[i][self.nelem] #=0
-                    self.pR[i][self.nelem] = self.pR[i][0] #= 0
-                    #print 'BC L/R',self.pL[i], self.pR[i]
-            elif self.bc == 'd':   #dirichlet boundary conditions
-                for i in range(self.neq):
-                    self.pL[i][0]          = self.bcvalues[i][0] 
-                    self.pR[i][self.nelem] = self.bcvalues[i][1]
-            else:
-                raise NameError("unknown BC condition: "+self.bc)
+        if (self.bcL['type'] == 'per') and (self.bcR['type'] == 'per'):     #periodic boundary conditions
+            for i in range(self.neq):
+                self.pL[i][0]          = self.pL[i][self.nelem] 
+                self.pR[i][self.nelem] = self.pR[i][0] 
+        elif (self.bcL['type'] == 'per') or (self.bcR['type'] == 'per'):     # inconsistent periodic boundary conditions:
+            raise NameError("both conditions should be periodic")
+        else:
+            q_bcL  = self.model.namedBC(self.bcL['type'],
+                                        -1, [self.pR[i][0] for i in range(self.neq)], self.bcL)
+            q_bcR  = self.model.namedBC(self.bcR['type'],
+                                        1, [self.pL[i][self.nelem] for i in range(self.neq)], self.bcR)
+            for i in range(self.neq):
+                self.pL[i][0]          = q_bcL[i]
+                self.pR[i][self.nelem] = q_bcR[i]
     
     def calc_bc_grad(self):
         for i in range(self.neq):
