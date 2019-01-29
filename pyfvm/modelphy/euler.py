@@ -87,7 +87,9 @@ class model(base.model):
         return qdata[1]/qdata[0]
 
     def mach(self, qdata):
-        return qdata[1]/np.sqrt(self.gamma*((self.gamma-1.0)*(qdata[2]-0.5*qdata[1]**2/qdata[0])))
+        #return qdata[1]/np.sqrt(self.gamma*((self.gamma-1.0)*(qdata[2]-0.5*qdata[1]**2/qdata[0])))
+        return qdata[1]/np.sqrt(self.gamma*((self.gamma-1.0)*(qdata[0]*qdata[2]-0.5*qdata[1]**2)))
+        #return qdata[1]/np.sqrt(self.gamma*((self.gamma-1.0)*qdata[0]*(qdata[2]*qdata[0]-0.5*qdata[1]**2)))
 
     def numflux(self, pdataL, pdataR): # HLLC Riemann solver ; pL[ieq][face]
 
@@ -183,13 +185,18 @@ class model(base.model):
         return
 
     def bc_insub(self, dir, data, param):
-        return
+        g   = self.gamma
+        gmu = g-1.
+        p  = data[2]
+        m2 = ((param['ptot']/p)**(gmu/g)-1.)*2./gmu
+        rh = param['ptot']/param['rttot']/(1.+.5*gmu*m2)**(1./gmu)
+        return [ rh, -dir*np.sqrt(g*m2*p/rh), p ] 
 
     def bc_insup(self, dir, data, param):
         return param
 
     def bc_outsub(self, dir, data, param):
-        return
+        return [ data[0], data[1], param['p'] ] 
 
     def bc_outsup(self, dir, data, param):
         return data
