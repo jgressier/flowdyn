@@ -24,6 +24,7 @@
 import numpy               as np
 import pyfvm.modelphy.base as model
 import pyfvm.mesh          as mesh
+import pyfvm.field         as field
 
 class base():
     """
@@ -46,6 +47,9 @@ class base():
 
     def copy(self):
         return base(self.model, self.mesh, self.num, self.bc, self.bcvalues)
+
+    def fdata(self, data):
+        return field.fdata(self.model, self.mesh, data)
 
     def rhs(self, field):
         print "not implemented for virtual class"
@@ -122,7 +126,6 @@ class fvm(base):
                                   /(self.mesh.xf[1:self.nelem+1]-self.mesh.xf[0:self.nelem]))
         return self.residual
 
-                    
 # class scafield(field):
 #     def __init__(self, model, bc, nelem=100, bcvalues = []):
 #         field.__init__(self, model, bc, nelem=nelem, bcvalues=bcvalues)

@@ -18,14 +18,14 @@ class fdata():
       pdata : list of neq nparray - primitive    data
       bc    : type of boundary condition - "p"=periodic / "d"=Dirichlet 
     """
-    def __init__(self, model, mesh, data):
+    def __init__(self, model, mesh, data=None, t=0.):
         self.model = model
         self.neq   = model.neq
         self.mesh  = mesh
         self.nelem = mesh.ncell
-        self.time  = 0.
-        if data:
-            self.data = [ d.copy() for d in data ]
+        self.time  = t
+        if data!=None:
+            self.data = [ np.ones(self.nelem)*d for d in data ]
         else:
             self.data = [ np.zeros(self.nelem) ] * self.neq
             # for i in range(self.neq):
@@ -47,6 +47,8 @@ class fdata():
         return self.model.nameddata(name, self.data)
 
     def plot(self, name, style='o'):
-        plt.plot(self.mesh.centers(),
-                 self.phydata(name), style)
+        return plt.plot(self.mesh.centers(), self.phydata(name), style)
 
+    def set_plotdata(self, line, name):
+        line.set_data(self.mesh.centers(), self.phydata(name))
+        return

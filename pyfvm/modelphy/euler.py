@@ -64,18 +64,8 @@ class model(base.model):
         >>> model().prim2cons([[2.], [4.], [10.]]) == [[2.], [8.], [41.]]
         True
         """
-        # Loop over all cells/control volumes
-        qdata = []
-        for i in range(self.neq):
-            qdata.append(np.zeros(len(pdata[i]))) #test use zeros instead
-
-        # Loop over all cells/control volumes
-        for c in range(len(pdata[0])):
-            qdata[0][c] = pdata[0][c] 
-            qdata[1][c] = pdata[0][c]*pdata[1][c] 
-            qdata[2][c] = pdata[2][c]/(self.gamma-1.) + .5*pdata[1][c]**2*pdata[0][c]
-            #qdata[2][c] = pdata[0][c]*(pdata[2][c]+pdata[1][c]**2) 
-        return qdata
+        rhoe = pdata[2]/(self.gamma-1.) + .5*pdata[1]**2*pdata[0]
+        return [ pdata[0], pdata[0]*pdata[1], rhoe ]
 
     def density(self, qdata):
         return qdata[0].copy()
@@ -87,9 +77,7 @@ class model(base.model):
         return qdata[1]/qdata[0]
 
     def mach(self, qdata):
-        #return qdata[1]/np.sqrt(self.gamma*((self.gamma-1.0)*(qdata[2]-0.5*qdata[1]**2/qdata[0])))
         return qdata[1]/np.sqrt(self.gamma*((self.gamma-1.0)*(qdata[0]*qdata[2]-0.5*qdata[1]**2)))
-        #return qdata[1]/np.sqrt(self.gamma*((self.gamma-1.0)*qdata[0]*(qdata[2]*qdata[0]-0.5*qdata[1]**2)))
 
     def numflux(self, pdataL, pdataR): # HLLC Riemann solver ; pL[ieq][face]
 
