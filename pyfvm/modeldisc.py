@@ -73,7 +73,10 @@ class fvm(base):
         self.interp_face()
         self.calc_bc()
         self.calc_flux()
-        return self.calc_res()
+        self.calc_res()
+        if self.model.source: 
+            self.add_source()
+        return self.residual
 
             
     def cons2prim(self):
@@ -124,6 +127,11 @@ class fvm(base):
         for i in range(self.neq):
             self.residual.append(-(self.flux[i][1:self.nelem+1]-self.flux[i][0:self.nelem]) \
                                   /(self.mesh.xf[1:self.nelem+1]-self.mesh.xf[0:self.nelem]))
+        return self.residual
+
+    def add_source(self):
+        for i in range(self.neq):
+            self.residual[i] += self.model.source[i](self.mesh.centers())
         return self.residual
 
 # class scafield(field):

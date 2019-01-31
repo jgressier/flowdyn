@@ -46,8 +46,8 @@ class fdata():
     def phydata(self, name):
         return self.model.nameddata(name, self.data)
 
-    def plot(self, name, style='o'):
-        return plt.plot(self.mesh.centers(), self.phydata(name), style)
+    def plot(self, name, style='o', axes=plt):
+        return axes.plot(self.mesh.centers(), self.phydata(name), style)
 
     def set_plotdata(self, line, name):
         line.set_data(self.mesh.centers(), self.phydata(name))

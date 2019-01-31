@@ -40,7 +40,8 @@ class model(base.model):
         self.gamma    = gamma
         self.source   = source
         self._vardict = { 'pressure': self.pressure, 'density': self.density,
-                          'velocity': self.velocity, 'mach': self.mach }
+                          'velocity': self.velocity, 'mach': self.mach, 'enthalpy': self.enthalpy,
+                          'entropy': self.entropy, 'ptot': self.ptot, 'htot': self.htot }
         self._bcdict.update({'sym': self.bc_sym,
                          'insub': self.bc_insub,
                          'insup': self.bc_insup,
@@ -78,6 +79,20 @@ class model(base.model):
 
     def mach(self, qdata):
         return qdata[1]/np.sqrt(self.gamma*((self.gamma-1.0)*(qdata[0]*qdata[2]-0.5*qdata[1]**2)))
+
+    def entropy(self, qdata): # S/r
+        return np.log(self.pressure(qdata)/qdata[0]**self.gamma)/(self.gamma-1.)
+
+    def enthalpy(self, qdata): 
+        return (qdata[2]-0.5*qdata[1]**2/qdata[0])*self.gamma/qdata[0]
+
+    def ptot(self, qdata):
+        gm1 = self.gamma-1.
+        return self.pressure(qdata)*(1.+.5*gm1*self.mach(qdata))**(self.gamma/gm1)
+
+    def htot(self, qdata):
+        ec = 0.5*qdata[1]**2/qdata[0]
+        return ((qdata[2]-ec)*self.gamma + ec)/qdata[0]
 
     def numflux(self, pdataL, pdataR): # HLLC Riemann solver ; pL[ieq][face]
 
@@ -170,13 +185,13 @@ class model(base.model):
         return dt
 
     def bc_sym(self, dir, data, param):
-        return
+        return [ data[0], -data[1], data[2] ]
 
     def bc_insub(self, dir, data, param):
         g   = self.gamma
         gmu = g-1.
         p  = data[2]
-        m2 = ((param['ptot']/p)**(gmu/g)-1.)*2./gmu
+        m2 = np.maximum(0., ((param['ptot']/p)**(gmu/g)-1.)*2./gmu)
         rh = param['ptot']/param['rttot']/(1.+.5*gmu*m2)**(1./gmu)
         return [ rh, -dir*np.sqrt(g*m2*p/rh), p ] 
 
@@ -188,7 +203,32 @@ class model(base.model):
 
     def bc_outsup(self, dir, data, param):
         return data
+
+class nozzle(model):
+    """
+    Class nozlle for euler equations with section term -1/A dA/dx (rho u, rho u2, rho u Ht)
+
+    attributes:
+        _waves[5]
+
+    """
+    def __init__(self, sectionlaw, gamma=1.4):
+        base.model.__init__(self, name='nozzle', neq=3)
+        self.islinear = 0
+        self.gamma    = gamma
+        self.source   = source
+        self._vardict = { 'pressure': self.pressure, 'density': self.density,
+                          'velocity': self.velocity, 'mach': self.mach }
+        self._bcdict.update({'sym': self.bc_sym,
+                         'insub': self.bc_insub,
+                         'insup': self.bc_insup,
+                         'outsub': self.bc_outsub,
+                         'outsup': self.bc_outsup })
+        
  
+
+
+
 # ===============================================================
 # automatic testing
 

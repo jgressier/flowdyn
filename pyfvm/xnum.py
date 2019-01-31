@@ -96,19 +96,19 @@ class extrapol3(extrapolk):
 
 def minmod(a,b):
     p = a*b
-    return np.where(p <= 0, 0, np.where( a > 0, np.minimum(a, b), np.maximum(a,b) ) )
+    return np.where(p <= 0., 0, np.where( a > 0, np.minimum(a, b), np.maximum(a,b) ) )
 
 def vanalbada(a,b):
     p = a*b
-    return np.where(p <= 0, 0,  p*(a+b)/(a**2+b**2) )
+    return np.where(p <= 0., 0,  p*(a+b)/(a**2+b**2) )
 
 def vanleer(a,b):
     p = a*b
-    return np.where(p <= 0, 0, 2*p/(a+b) )
+    return np.where(p <= 0., 0, 2*p/(a+b) )
 
 def superbee(a,b):
     p = a*b
-    return np.where(p <= 0, 0, np.where( a > 0, np.minimum( 2*np.minimum(a, b), np.maximum(a, b)),
+    return np.where(p <= 0., 0, np.where( a > 0, np.minimum( 2*np.minimum(a, b), np.maximum(a, b)),
                                                 np.maximum( 2*np.maximum(a, b), np.minimum(a, b)) ) )
     #alternate formula
     #return np.where(p <= 0, 0, np.where( a > 0, np.maximum( np.minimum(2*a, b), np.minimum(a, 2*b)),
