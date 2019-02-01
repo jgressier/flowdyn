@@ -44,6 +44,7 @@ class base():
         self.time  = 0.
         self.bcL   = bcL
         self.bcR   = bcR
+        self.model.initdisc(mesh)
 
     def copy(self):
         return base(self.model, self.mesh, self.num, self.bc, self.bcvalues)
@@ -131,7 +132,8 @@ class fvm(base):
 
     def add_source(self):
         for i in range(self.neq):
-            self.residual[i] += self.model.source[i](self.mesh.centers())
+            if self.model.source[i]:
+                self.residual[i] += self.model.source[i](self.mesh.centers(), self.qdata)
         return self.residual
 
 # class scafield(field):

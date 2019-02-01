@@ -56,6 +56,9 @@ class model():
     def prim2cons(self):
         print "prim2cons method not implemented"
     
+    def initdisc(self, mesh):
+        return
+    
     def numflux(self):
         pass
     

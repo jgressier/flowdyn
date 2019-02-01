@@ -204,30 +204,36 @@ class model(base.model):
     def bc_outsup(self, dir, data, param):
         return data
 
+# ===============================================================
+# implementation of MODEL class
+
 class nozzle(model):
     """
-    Class nozlle for euler equations with section term -1/A dA/dx (rho u, rho u2, rho u Ht)
+    Class nozzle for euler equations with section term -1/A dA/dx (rho u, rho u2, rho u Ht)
 
     attributes:
         _waves[5]
 
     """
     def __init__(self, sectionlaw, gamma=1.4):
-        base.model.__init__(self, name='nozzle', neq=3)
-        self.islinear = 0
-        self.gamma    = gamma
-        self.source   = source
-        self._vardict = { 'pressure': self.pressure, 'density': self.density,
-                          'velocity': self.velocity, 'mach': self.mach }
-        self._bcdict.update({'sym': self.bc_sym,
-                         'insub': self.bc_insub,
-                         'insup': self.bc_insup,
-                         'outsub': self.bc_outsub,
-                         'outsup': self.bc_outsup })
-        
+        model.__init__(self, gamma=gamma, source=[ self.src_mass, self.src_mom, self.src_energy ])
+        self.sectionlaw = sectionlaw
  
+    def initdisc(self, mesh):
+        self.geomterm = 1./self.sectionlaw(mesh.centers())* \
+                    (self.sectionlaw(mesh.xf[1:mesh.ncell+1])-self.sectionlaw(mesh.xf[0:mesh.ncell])) / \
+                    (mesh.xf[1:mesh.ncell+1]-mesh.xf[0:mesh.ncell])
+        return 
 
+    def src_mass(self, x, qdata):
+        return -self.geomterm * qdata[1]
 
+    def src_mom(self, x, qdata):
+        return -self.geomterm * qdata[1]**2/qdata[0]
+
+    def src_energy(self, x, qdata):
+        ec = 0.5*qdata[1]**2/qdata[0]
+        return -self.geomterm * qdata[1] * ((qdata[2]-ec)*self.gamma + ec)/qdata[0]
 
 # ===============================================================
 # automatic testing
