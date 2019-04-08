@@ -190,26 +190,26 @@ tmeths  = [ rk4 ]
 legends = [ 'O2 muscl' ]
 #boundary condition bc : type of boundary condition - "p"=periodic / "d"=Dirichlet
 bc       = 'd'
-bcvalues = []
-for i in range(mymodel.neq+1):
-    bcvalues.append(np.zeros(2))
+bcvalues = [ [0.]*mymodel.neq for _ in range(2) ]
 
 # Left Boundary
 
 bcvalues[0][0] = 1.0      # density  rho
-bcvalues[1][0] = 0.0      # velocity u       
+bcvalues[0][1] = 0.0      # velocity u       
 #bcvalues[2][0] = 2.5      # int. nrg e            
-bcvalues[2][0] = 1.0      # pressure p            
+bcvalues[0][2] = 1.0      # pressure p            
 
 # Right Boundary
 
-bcvalues[0][1] = 0.125    # density  rho            
+bcvalues[1][0] = 0.125    # density  rho            
 bcvalues[1][1] = 0.0      # velocity u            
 #bcvalues[2][1] = 2.0      # int. nrg e             
-bcvalues[2][1] = 0.1      # pressure p            
+bcvalues[1][2] = 0.1      # pressure p            
+print bcvalues
+print bcvalues[0], bcvalues[-1]
 
 gamma      = 1.4
-meshs      = [ mesh1000 ]
+meshs      = [ mesh100 ]
 initm      = initSod
 exactPdata = exactSod(meshs[0],endtime)
 
