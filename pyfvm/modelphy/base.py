@@ -40,6 +40,7 @@ class model():
     def __init__(self, name='not defined', neq=0):
         self.equation = name
         self.neq      = neq
+        self.source   = None
         self.islinear = 0
         self.has_firstorder_terms  = 0
         self.has_secondorder_terms = 0

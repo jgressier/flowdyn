@@ -134,14 +134,16 @@ class implicitmodel(timemodel):
         self.dim = self.neq * field.nelem
         self.jacobian = np.zeros([self.dim, self.dim])
         #self.jact     = np.zeros([self.dim, self.dim])
-        eps = [ math.sqrt(np.spacing(1.))*np.sum(np.abs(q))/field.nelem for q in field.qdata ] 
-        refrhs = [ qf.copy() for qf in self.calcrhs(field) ]
+        eps = [ math.sqrt(np.spacing(1.))*np.sum(np.abs(q))/field.nelem for q in field.data ] 
+        self.calcrhs(field)
+        refrhs = [ qf.copy() for qf in self.residual ]
         #print 'refrhs',refrhs
         for i in range(field.nelem):    # for all variables (nelem*neq)
             for q in range(self.neq):
-                dfield = numfield(field)
-                dfield.qdata[q][i] += eps[q]
-                drhs = [ qf.copy() for qf in self.calcrhs(dfield) ]
+                dfield = field.copy()
+                dfield.data[q][i] += eps[q]
+                self.calcrhs(dfield)
+                drhs = [ qf.copy() for qf in  self.residual ]
                 for qq in range(self.neq):
                     #self.jacobian[i*self.neq+q,qq::self.neq] = (drhs[qq]-refrhs[qq])/eps[q] # working
                     self.jacobian[qq::self.neq,i*self.neq+q] = (drhs[qq]-refrhs[qq])/eps[q]
