@@ -31,11 +31,11 @@ class virtualmesh():
         return dx
 
     def __repr__(self):
-        print "length : ", self.length
-        print "ncell  : ", self.ncell
+        print("length : ", self.length)
+        print("ncell  : ", self.ncell)
         dx = self.dx()
-        print "min dx : ", dx.min()
-        print "max dx : ", dx.max()
+        print("min dx : ", dx.min())
+        print("max dx : ", dx.max())
 
 class nonunimesh(virtualmesh):
     " class defining a domain and a non-uniform mesh"

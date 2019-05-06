@@ -11,18 +11,20 @@ trapezoidal or cranknichlson
 """
 import math
 import numpy as np
-import field
+import time
 
 class timemodel():
     def __init__(self, mesh, modeldisc):
         self.mesh      = mesh
         self.modeldisc = modeldisc
+        self._cputime  = 0.
+        self._nit      = 0
         
     def calcrhs(self, field):
         self.residual = self.modeldisc.rhs(field)
  
     def step():
-        print "not implemented for virtual class"
+        print("not implemented for virtual class")
 
     def add_res(self, f, dt):
         f.time += np.min(dt)
@@ -34,7 +36,8 @@ class timemodel():
         self.lastresidual = [ q.copy() for q in self.residual ]
 
     def solve(self, f, condition, tsave):
-        self.nit       = 0
+        start = time.clock()
+        self._nit       = 0
         self.condition = condition
         itfield = f.copy()
         #itfield.cons2prim()
@@ -47,13 +50,23 @@ class timemodel():
                 if itfield.time+dtloc >= tsave[t]:
                     endcycle = 1
                     dtloc    = tsave[t]-itfield.time
-                self.nit += 1
+                self._nit += 1
                 if dtloc > np.spacing(dtloc):
                     self.step(itfield, dtloc)
             #itfield.cons2prim()
             results.append(itfield.copy())
+        self._cputime = time.clock()-start
         return results
 
+    def nit(self):
+        return self._nit
+
+    def cputime(self):
+        return self._cputime
+
+    def show_perf(self):
+        print("cpu time computation ({0:d} it) : {1:.3f}s\n  {2:.2f} µs/cell/it".format(
+            self._nit, self._cputime, self._cputime*1.e6/self._nit/self.modeldisc.nelem))
     
 class explicit(timemodel):
     def step(self, field, dtloc):
@@ -125,16 +138,16 @@ class rk4(rkmodel):
 
 class implicitmodel(timemodel):
     def step(self, field, dtloc):
-        print "not implemented for virtual implicit class"
+        print("not implemented for virtual implicit class")
         
-    def calc_jacobian(self, field):
+    def calc_jacobian(self, field, epsdiff=1.e-6):
         if ((field.model.islinear == 1) and (hasattr(self, "jacobian_use"))):
             return
         self.neq = field.neq
         self.dim = self.neq * field.nelem
         self.jacobian = np.zeros([self.dim, self.dim])
         #self.jact     = np.zeros([self.dim, self.dim])
-        eps = [ math.sqrt(np.spacing(1.))*np.sum(np.abs(q))/field.nelem for q in field.data ] 
+        eps = [ epsdiff*math.sqrt(np.spacing(1.))*np.sum(np.abs(q))/field.nelem for q in field.data ] 
         self.calcrhs(field)
         refrhs = [ qf.copy() for qf in self.residual ]
         #print 'refrhs',refrhs
@@ -538,7 +551,7 @@ class AsyncLowStorageRKmodel(timemodel):
                         if i not in adjcells[cell_class[i]]:      #to avoid double elements
                             adjcells[cell_class[i]].append(i)     #storing next cell i+1
             elif abs(cldif)!=0:
-                print "there are still adjacent cells of class difference > 1", cldif
+                print("there are still adjacent cells of class difference > 1", cldif)
                 break
         #print "adjcells",adjcells
 

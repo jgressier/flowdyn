@@ -8,7 +8,7 @@ xnum: package for spatial numerical methods
 """
 
 import numpy as np
-import mesh
+#import mesh
 
 class virtualmeth():
     def __init__(self):
@@ -22,7 +22,7 @@ class extrapol1(virtualmeth):
     def interp_face(self, mesh, data, grad='none'):
         "returns 2x (L/R) neq list of (ncell+1) nparray"
         nc = data[0].size
-        if (mesh.ncell <> nc): print self.__class__+"/interp_face error: mismatch sizes"
+        if (mesh.ncell != nc): print(self.__class__+"/interp_face error: mismatch sizes")
         Ldata = []
         Rdata = []
         for i in range(len(data)):
@@ -41,7 +41,7 @@ class extrapol2(virtualmeth):
     def interp_face(self, mesh, data, grad):
         "returns 2x (L/R) neq list of (ncell+1) nparray / except bound"
         nc = data[0].size
-        if (mesh.ncell <> nc): print self.__class__+"/interp_face error: mismatch sizes"
+        if (mesh.ncell != nc): print(self.__class__+"/interp_face error: mismatch sizes")
         Ldata = []
         Rdata = []
         for i in range(len(data)):
@@ -60,7 +60,7 @@ class extrapolk(virtualmeth):
     def interp_face(self, mesh, data, grad):
         "returns 2x (L/R) neq list of (ncell+1) nparray / except bound"
         nc = data[0].size
-        if (mesh.ncell <> nc): print self.__class__+"/interp_face error: mismatch sizes"
+        if (mesh.ncell != nc): print(self.__class__+"/interp_face error: mismatch sizes")
         Ldata = []
         Rdata = []
         for i in range(len(data)):
@@ -124,7 +124,7 @@ class muscl(virtualmeth):
     def interp_face(self, mesh, data, grad):
         "returns 2x (L/R) neq list of (ncell+1) nparray / except bound"
         nc = data[0].size
-        if (mesh.ncell <> nc): print self.__class__+"/interp_face error: mismatch sizes"
+        if (mesh.ncell != nc): print (self.__class__+"/interp_face error: mismatch sizes")
         Ldata = []
         Rdata = []
         for i in range(len(data)):

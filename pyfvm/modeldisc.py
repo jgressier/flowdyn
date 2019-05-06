@@ -53,7 +53,7 @@ class base():
         return field.fdata(self.model, self.mesh, data)
 
     def rhs(self, field):
-        print "not implemented for virtual class"
+        print("not implemented for virtual class")
 
 
 class fvm(base):
