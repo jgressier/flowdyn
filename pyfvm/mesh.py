@@ -134,7 +134,7 @@ class unimesh(virtualmesh):
         self.xc     = self.centers()
 
 class refinedmesh(virtualmesh):
-    " class defining a domain and its mesh: ncell and length"
+    " class defining a mesh with 2 uniform parts and a cell ratio"
     def __init__(self, ncell=100, length=1., ratio=2.):
         virtualmesh.__init__(self, ncell, length)
         dx1 = 2* length / ((1.+ratio)*ncell)
@@ -145,3 +145,10 @@ class refinedmesh(virtualmesh):
                     np.linspace(0., dx1*nc1, nc1+1)[0:-1],
                     np.linspace(dx1*nc1, length, nc2+1) )
         self.xc = self.centers()
+
+class morphedmesh(virtualmesh):
+    " class defining a mesh with a morphing function: ncell and length"
+    def __init__(self, ncell=100, length=1., x0=0., morph=lambda x: x):
+        virtualmesh.__init__(self, ncell, length)
+        self.xf     = morph(np.linspace(0., length, ncell+1)+x0)
+        self.xc     = self.centers()
