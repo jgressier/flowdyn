@@ -16,7 +16,7 @@ import pyfvm.modelphy.euler as euler
 import pyfvm.modeldisc      as modeldisc
 import pyfvm.solution.euler_riemann as sol
 
-meshsim  = unimesh(ncell=100,  length=10., x0=-4.)
+meshsim  = unimesh(ncell=500,  length=10., x0=-4.)
 meshref  = unimesh(ncell=1000, length=10., x0=-4.)
 
 model = euler.model()
@@ -28,21 +28,17 @@ bcR = { 'type': 'dirichlet',  'prim':  sod.bcR() }
 rhs = modeldisc.fvm(model, meshsim, muscl(minmod), 
       bcL=bcL, bcR=bcR)
 #      bcL={'type':'per'}, bcR={'type':'per'})
-solver = rk2(meshsim, rhs)
+solver = rk3ssp(meshsim, rhs)
 
 # computation
 #
 endtime = 2.8
-cfl     = .5
+cfl     = 1.
 
 finit = sod.fdata(meshsim)
 
-start = time.clock()
 fsol = solver.solve(finit, cfl, [endtime])
-cputime = time.clock()-start
-
-print "cpu time computation (",solver.nit,"it) :",cputime,"s"
-print "  %.2f µs/cell/it"%(cputime*1.e6/solver.nit/meshsim.ncell)
+solver.show_perf()
 
 # Figure / Plot
 
@@ -54,6 +50,6 @@ for name in ['density', 'pressure', 'mach']:
     grid(linestyle='--', color='0.5')
     #finit.plot(name, 'k-.')
     fref.plot(name, 'k-')
-    fsol[0].plot(name, 'ko')
+    fsol[0].plot(name, 'b-')
     fig.savefig(name+'.png', bbox_inches='tight')
 show()

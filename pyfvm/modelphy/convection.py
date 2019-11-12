@@ -42,13 +42,13 @@ class model(base.model):
         self.islinear = 1
         
     def cons2prim(self, qdata):
-        return qdata
+        return [ 1*d for d in qdata ]
         
     def prim2cons(self, pdata):
-        return pdata
+        return [ 1*d for d in pdata ]
 
     def numflux(self, pL, pR):
-        return [ self.convcoef*(pL[0]+pR[0])/2-abs(self.convcoef)*(pR[0]-pL[0])/2 ]
+        return [ self.convcoef*(pL[0]+pR[0])/2.-abs(self.convcoef)*(pR[0]-pL[0])/2. ]
     
     def timestep(self, pdata, dx, condition):
         "computation of timestep: data is not used, dx is an array of cell sizes, condition is the CFL number"

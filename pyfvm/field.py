@@ -13,10 +13,8 @@ class fdata():
     """
     define field: neq x nelem data
       model : number of equations
-      nelem : number of cells (conservative and primitive data)
-      qdata : list of neq nparray - conservative data 
-      pdata : list of neq nparray - primitive    data
-      bc    : type of boundary condition - "p"=periodic / "d"=Dirichlet 
+      mesh  : mesh
+      data  : data to initialize
     """
     def __init__(self, model, mesh, data=None, t=0.):
         self.model = model

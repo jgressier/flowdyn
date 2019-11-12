@@ -26,6 +26,8 @@ import pyfvm.modelphy.base as model
 import pyfvm.mesh          as mesh
 import pyfvm.field         as field
 
+_default_bc = { 'type': 'per' }
+
 class base():
     """
     virtual object `base` which aims at defining R(Q) in dQ/dt = R(Q)
@@ -35,7 +37,7 @@ class base():
       pdata : list of neq nparray - primitive    data
       bc    : type of boundary condition - "p"=periodic / "d"=Dirichlet 
     """
-    def __init__(self, model, mesh, num, bcL='per', bcR='per'):
+    def __init__(self, model, mesh, num, bcL=_default_bc, bcR=_default_bc):
         self.model = model
         self.mesh  = mesh
         self.neq   = model.neq
@@ -47,7 +49,7 @@ class base():
         self.model.initdisc(mesh)
 
     def copy(self):
-        return base(self.model, self.mesh, self.num, self.bc, self.bcvalues)
+        return base(self.model, self.mesh, self.num, self.bcL, self.bcR)
 
     def fdata(self, data):
         return field.fdata(self.model, self.mesh, data)
@@ -113,9 +115,17 @@ class fvm(base):
                 self.pR[i][self.nelem] = q_bcR[i]
     
     def calc_bc_grad(self):
-        for i in range(self.neq):
-            self.grad[i][0] = self.grad[i][-1] = (self.pdata[i][0]-self.pdata[i][-1]) / (self.mesh.xc[0]+self.mesh.length-self.mesh.xc[-1])
-            #print 'BC L/R',self.pL[i], self.pR[i]
+        if (self.bcL['type'] == 'per') and (self.bcR['type'] == 'per'):     #periodic boundary conditions
+            for i in range(self.neq):
+                self.grad[i][0]  = 0.
+                self.grad[i][-1] = 0.
+                self.grad[i][0] = self.grad[i][-1] = (self.pdata[i][0]-self.pdata[i][-1]) / (self.mesh.xc[0]+self.mesh.length-self.mesh.xc[-1])
+        elif (self.bcL['type'] == 'per') or (self.bcR['type'] == 'per'):     # inconsistent periodic boundary conditions:
+            raise NameError("both conditions should be periodic")
+        else:
+            for i in range(self.neq):
+                self.grad[i][0]  = 0.
+                self.grad[i][-1] = 0.
     
     def calc_flux(self):
             self.flux = self.model.numflux(self.pL, self.pR)

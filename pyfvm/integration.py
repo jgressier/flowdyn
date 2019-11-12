@@ -7,7 +7,7 @@ rk2
 rk3ssp
 rk4
 implicit or ba
-trapezoidal or cranknichlson
+trapezoidal or cranknicolson
 """
 import math
 import numpy as np
@@ -35,12 +35,13 @@ class timemodel():
     def save_res(self):
         self.lastresidual = [ q.copy() for q in self.residual ]
 
-    def solve(self, f, condition, tsave):
+    def solve(self, f, condition, tsave, flush=None):
         start = time.clock()
-        self._nit       = 0
+        self._nit      = 0
         self.condition = condition
         itfield = f.copy()
-        #itfield.cons2prim()
+        if flush:
+            alldata = [ d for d in itfield.data ]
         results = []
         for t in np.arange(len(tsave)):
             endcycle = 0
@@ -53,9 +54,13 @@ class timemodel():
                 self._nit += 1
                 if dtloc > np.spacing(dtloc):
                     self.step(itfield, dtloc)
-            #itfield.cons2prim()
+                if flush:
+                    for i, q in zip(range(len(alldata)), itfield.data):
+                        alldata[i] = np.vstack((alldata[i], q))
             results.append(itfield.copy())
         self._cputime = time.clock()-start
+        if flush:
+            np.save(flush, alldata)
         return results
 
     def nit(self):

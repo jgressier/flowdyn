@@ -35,16 +35,12 @@ cfl     = .5
 
 finit = rhs.fdata(model.prim2cons([  1., 0., 1. ])) # rho, u, p
 
-start = time.clock()
 fsol = solver.solve(finit, cfl, [endtime])
-cputime = time.clock()-start
 
-print "cpu time computation (",solver.nit,"it) :",cputime,"s"
-print "  %.2f µs/cell/it"%(cputime*1.e6/solver.nit/meshsim.ncell)
+solver.show_perf()
 print "theoretical Mach", np.sqrt(((bcL['ptot']/bcR['p'])**(1./3.5)-1.)/.2)
+
 # Figure / Plot
-
-
 for name in ['density', 'pressure', 'mach']:
 	fig = figure(figsize=(10,8))
 	ylabel(name)
