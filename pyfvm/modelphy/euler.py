@@ -88,7 +88,7 @@ class model(base.model):
 
     def ptot(self, qdata):
         gm1 = self.gamma-1.
-        return self.pressure(qdata)*(1.+.5*gm1*self.mach(qdata))**(self.gamma/gm1)
+        return self.pressure(qdata)*(1.+.5*gm1*self.mach(qdata)**2)**(self.gamma/gm1)
 
     def htot(self, qdata):
         ec = 0.5*qdata[1]**2/qdata[0]

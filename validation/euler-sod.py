@@ -5,7 +5,7 @@ test integration methods
 
 import time
 import cProfile
-from pylab import *
+from pylab import plot
 import numpy as np 
 
 from pyfvm.mesh  import *
