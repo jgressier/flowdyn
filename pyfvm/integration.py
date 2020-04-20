@@ -26,8 +26,8 @@ class timemodel():
     def step():
         print("not implemented for virtual class")
 
-    def add_res(self, f, dt):
-        f.time += np.min(dt)
+    def add_res(self, f, dt, subtimecoef = 1.0):
+        f.time += np.min(dt)*subtimecoef
         for i in range(f.neq):
             #print i,self.qdata[i].size,time,self.residual[i].size
             f.data[i] += dt*self.residual[i]  # time can be scalar or np.array
@@ -94,7 +94,7 @@ class rkmodel(timemodel):
         prhs = []
         pfield = field.copy()
         for pcoef in butcher:
-            subtimestage = np.sum(pcoef)
+            subtimecoef = np.sum(pcoef)
             # compute residual of previous stage and memorize it in prhs[]
             self.calcrhs(pfield) # result in self.residual
             prhs.append([ q.copy() for q in self.residual])
@@ -108,7 +108,7 @@ class rkmodel(timemodel):
                 for q in range(pfield.neq):
                     self.residual[q] += pcoef[i]*prhs[i][q]
             # substep
-            self.add_res(pfield, dtloc*subtimestage)
+            self.add_res(pfield, dtloc, subtimecoef)
         field.set(pfield)
         return 
 

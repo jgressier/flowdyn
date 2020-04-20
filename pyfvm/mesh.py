@@ -135,15 +135,15 @@ class unimesh(virtualmesh):
 
 class refinedmesh(virtualmesh):
     " class defining a mesh with 2 uniform parts and a cell ratio"
-    def __init__(self, ncell=100, length=1., ratio=2.):
+    def __init__(self, ncell=100, length=1., ratio=2., nratioa=1, nratiob=1):
         virtualmesh.__init__(self, ncell, length)
-        dx1 = 2* length / ((1.+ratio)*ncell)
+        dx1 = (nratioa+nratiob) * length / ((nratioa+ratio*nratiob)*ncell)
         dx2 = ratio*dx1
-        nc1 = ncell/2
+        nc1 = (ncell*nratioa)/(nratioa+nratiob)
         nc2 = ncell-nc1
         self.xf = np.append(
-                    np.linspace(0., dx1*nc1, nc1+1)[0:-1],
-                    np.linspace(dx1*nc1, length, nc2+1) )
+                    np.linspace(    0.0, dx1*nc1, nc1, endpoint=False),
+                    np.linspace(dx1*nc1,  length, nc2+1) )
         self.xc = self.centers()
 
 class morphedmesh(virtualmesh):
