@@ -6,16 +6,17 @@ test integration methods
 import time
 from pylab import *
 
-from pyfvm.mesh  import *
-import pyfvm.modelphy.convection as convection
-from pyfvm.field import *
+import pyfvm.mesh  as mesh
+import pyfvm.modelphy.convection as conv
+import pyfvm.modeldisc as modeldisc
+import pyfvm.field as field
 from pyfvm.xnum  import *
 from pyfvm.integration import *
 
-mesh100 = unimesh(ncell=100, length=1.)
-mesh50  = unimesh(ncell=50, length=1.)
+mesh100 = mesh.unimesh(ncell=100, length=1.)
+mesh50  = mesh.unimesh(ncell=50, length=1.)
 
-mymodel = convection.model(1.)
+mymodel = conv.model(1.)
 
 # TODO : make init method for scafield
 # sinus packet
@@ -52,12 +53,12 @@ solvers = []
 results = []
 nbcalc  = max(len(cfls), len(tmeths), len(xmeths), len(meshs))
 for i in range(nbcalc):
-    field0 = scafield(mymodel, bc, (meshs*nbcalc)[i].ncell)
-    field0.qdata[0] = initm((meshs*nbcalc)[i])
-    solvers.append((tmeths*nbcalc)[i]((meshs*nbcalc)[i], (xmeths*nbcalc)[i]))
-    start = time.clock()
-    results.append(solvers[-1].solve(field0, (cfls*nbcalc)[i], tsave))
-    print "cpu time of "+"%-11s"%(legends[i])+" computation (",solvers[-1].nit,"it) :",time.clock()-start,"s"
+    curmesh = (meshs*nbcalc)[i]
+    finit = field.fdata(mymodel, curmesh, [ initm(curmesh) ] )
+    rhs = modeldisc.fvm(mymodel, curmesh, (xmeths*nbcalc)[i])
+    solvers.append((tmeths*nbcalc)[i](curmesh, rhs))
+    results.append(solvers[-1].solve(finit, (cfls*nbcalc)[i], tsave)) #, flush="resfilename"))
+    solvers[-1].show_perf()
 
 # Figure
 
@@ -65,11 +66,11 @@ style = ['o', 'x', 'D', '*', '+', '>', '<', 'd']
 fig = figure(1, figsize=(10,8))
 grid(linestyle='--', color='0.5')
 fig.suptitle('integration of various spatial scheme fluxes, CFL %.1f'%cfls[0], fontsize=12, y=0.93)
-plot(meshs[0].centers(), results[0][0].qdata[0], '-')
+plot(meshs[0].centers(), results[0][0].data[0], '-')
 labels = ["initial condition"]
 for t in range(1,len(tsave)):
     for i in range(nbcalc):
-        plot((meshs*nbcalc)[i].centers(), results[i][t].qdata[0], style[i])
+        plot((meshs*nbcalc)[i].centers(), results[i][t].data[0], style[i])
         labels.append(legends[i]+", t=%.1f"%results[i][t].time)
 legend(labels, loc='upper left',prop={'size':10})
 fig.savefig('conv-flux.png', bbox_inches='tight')
