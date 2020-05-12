@@ -15,7 +15,8 @@ def remove_outputs(nb):
         for cell in ws.cells:
             if cell.cell_type == 'code':
                 cell.outputs = []
-                if 'execution_count' in cell: del cell['execution_count']
+                for key in 'execution_count', 'prompt_number':
+                    if key  in cell: del cell[key]
 
 if __name__ == '__main__':
     for fname in sys.argv[1:]:
