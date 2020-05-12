@@ -7,9 +7,9 @@
  
     :Example:
  
-    >>> model = modelbase.model(name='test', neq=1)
     >>> import pyfvm.modelphy.base as modelbase
-    >>> print model.neq, model.equation
+    >>> model = modelbase.model(name='test', neq=1)
+    >>> print(model.neq, model.equation)
     1 test
  
     Available functions
@@ -57,20 +57,20 @@ class model():
 
     def list_var(self):
         return self._vardict.keys()
-        
-    def cons2prim(self):
+
+    def cons2prim(self):  # NEEDS definition by derived model
         print("cons2prim method not implemented")
     
-    def prim2cons(self):
+    def prim2cons(self):  # NEEDS definition by derived model
         print("prim2cons method not implemented")
     
     def initdisc(self, mesh):
         return
     
-    def numflux(self):
+    def numflux(self): # NEEDS definition by derived model
         pass
     
-    def timestep(self, data, dx, condition):
+    def timestep(self, data, dx, condition):  # NEEDS definition by derived model
         pass
 
     def nameddata(self, name, data):
@@ -79,8 +79,12 @@ class model():
     def namedBC(self, name, dir, data, param):
         return (self._bcdict[name])(dir, data, param)
 
+    #------------------------------------
+    # definition of boundary conditions with name bc_*
+    
     def bc_dirichlet(self, dir, data, param):
         return param['prim']
+
 
  
 # ===============================================================

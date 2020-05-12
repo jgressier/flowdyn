@@ -71,10 +71,10 @@ class model(base.model):
     def density(self, qdata):
         return qdata[0].copy()
 
-    def pressure(self, qdata):
+    def pressure(self, qdata): # returns (gam-1)*( rho.et) - .5 * (rho.u)**2 / rho )
         return (self.gamma-1.0)*(qdata[2]-0.5*qdata[1]**2/qdata[0])
 
-    def velocity(self, qdata):
+    def velocity(self, qdata):  # returns (rho u)/rho
         return qdata[1]/qdata[0]
 
     def mach(self, qdata):

@@ -5,13 +5,12 @@
  
     Provides ...
  
-    :Example:
+   :Example:
  
-    >>> import hades.aero.Isentropic as Is
-    >>> Is.TiTs_Mach(1.)
-    1.2
-    >>> Is.TiTs_Mach(2., gamma=1.6)
-    2.2
+    >>> import pyfvm.modelphy.burgers as burg
+    >>> model = burg.model()
+    >>> print(model.neq, model.equation)
+    1 burgers
  
     Available functions
     -------------------
@@ -29,6 +28,7 @@ import pyfvm.modelphy.base as base
 class model(base.model):
     """
     Class model for burgers equations
+    Primitive and Conservative variables are the same
 
     attributes:
         _waves[5]
@@ -39,10 +39,10 @@ class model(base.model):
         self.has_firstorder_terms = 1
         self.islinear = 0
                 
-    def cons2prim(self, qdata):
+    def cons2prim(self, qdata): # conservative and primitive data are the same
         return qdata
         
-    def prim2cons(self, pdata):
+    def prim2cons(self, pdata):  # conservative and primitive data are the same
         return pdata
 
     def numflux(self, pL, pR):
@@ -81,4 +81,3 @@ class model(base.model):
 if __name__ == "__main__":
     import doctest
     doctest.testmod()
-
