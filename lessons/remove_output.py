@@ -15,6 +15,7 @@ def remove_outputs(nb):
         for cell in ws.cells:
             if cell.cell_type == 'code':
                 cell.outputs = []
+                if 'execution_count' in cell: del cell['execution_count']
 
 if __name__ == '__main__':
     for fname in sys.argv[1:]:
@@ -26,4 +27,4 @@ if __name__ == '__main__':
         #base, ext = os.path.splitext(fname)
         with io.open(fname, 'w', encoding='utf8') as f:
             write(nb, f, 'json', version=4)
-        print "wrote cleaned %s and backward copy %s" % (fname, bakname)
+        print("wrote cleaned %s and backward copy %s" % (fname, bakname))
