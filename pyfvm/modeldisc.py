@@ -37,11 +37,12 @@ class base():
       pdata : list of neq nparray - primitive    data
       bc    : type of boundary condition - "p"=periodic / "d"=Dirichlet 
     """
-    def __init__(self, model, mesh, num, bcL=_default_bc, bcR=_default_bc):
+    def __init__(self, model, mesh, num, numflux=None, bcL=_default_bc, bcR=_default_bc):
         self.model = model
         self.mesh  = mesh
         self.neq   = model.neq
-        self.num   = num
+        self.num     = num
+        self.numflux = numflux
         self.nelem = mesh.ncell
         self.time  = 0.
         self.bcL   = bcL
@@ -128,7 +129,7 @@ class fvm(base):
                 self.grad[i][-1] = 0.
     
     def calc_flux(self):
-            self.flux = self.model.numflux(self.pL, self.pR)
+            self.flux = self.model.numflux(self.numflux, self.pL, self.pR) # get numerical flux from model object, self.numflux is here only a tag
 
     def calc_timestep(self, f, condition):
         return self.model.timestep(f.data, self.mesh.xf[1:self.nelem+1]-self.mesh.xf[0:self.nelem], condition)

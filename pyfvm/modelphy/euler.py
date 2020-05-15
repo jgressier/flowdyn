@@ -34,12 +34,11 @@ class model(base.model):
         _waves[5]
 
     """
-    def __init__(self, gamma=1.4, numflux='hllc', source=None):
+    def __init__(self, gamma=1.4, source=None):
         base.model.__init__(self, name='euler', neq=3)
         self.islinear    = 0
         self.gamma       = gamma
         self.source      = source
-        self.numfluxname = numflux
         self._vardict = { 'pressure': self.pressure, 'density': self.density,
                           'velocity': self.velocity, 'mach': self.mach, 'enthalpy': self.enthalpy,
                           'entropy': self.entropy, 'ptot': self.ptot, 'htot': self.htot }
@@ -97,8 +96,9 @@ class model(base.model):
         ec = 0.5*qdata[1]**2/qdata[0]
         return ((qdata[2]-ec)*self.gamma + ec)/qdata[0]
 
-    def numflux(self, pdataL, pdataR):
-        return (self._numfluxdict[self.numfluxname])(pdataL, pdataR)
+    def numflux(self, name, pdataL, pdataR):
+        if name==None: name='hllc'
+        return (self._numfluxdict[name])(pdataL, pdataR)
 
     def numflux_centeredflux(self, pdataL, pdataR): # centered flux ; pL[ieq][face]
         gam  = self.gamma

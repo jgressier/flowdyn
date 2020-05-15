@@ -45,7 +45,7 @@ class model(base.model):
     def prim2cons(self, pdata):  # conservative and primitive data are the same
         return pdata
 
-    def numflux(self, pL, pR):
+    def numflux(self, name, pL, pR):
         """
         >>> model().numflux([[1.]], [[4.]]) == [.5]
         True
