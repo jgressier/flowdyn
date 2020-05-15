@@ -34,11 +34,12 @@ class model(base.model):
         _waves[5]
 
     """
-    def __init__(self, gamma=1.4, source=None):
+    def __init__(self, gamma=1.4, numflux='hllc', source=None):
         base.model.__init__(self, name='euler', neq=3)
-        self.islinear = 0
-        self.gamma    = gamma
-        self.source   = source
+        self.islinear    = 0
+        self.gamma       = gamma
+        self.source      = source
+        self.numfluxname = numflux
         self._vardict = { 'pressure': self.pressure, 'density': self.density,
                           'velocity': self.velocity, 'mach': self.mach, 'enthalpy': self.enthalpy,
                           'entropy': self.entropy, 'ptot': self.ptot, 'htot': self.htot }
@@ -47,6 +48,8 @@ class model(base.model):
                          'insup': self.bc_insup,
                          'outsub': self.bc_outsub,
                          'outsup': self.bc_outsup })
+        self._numfluxdict = { 'hllc': self.numflux_hllc, 'hlle': self.numflux_hlle, 
+                        'centered': self.numflux_centeredflux, 'centered': self.numflux_centeredflux, 'centeredmassflow': self.numflux_centeredmassflow }
         
     def cons2prim(self, qdata): # qdata[ieq][cell] :
         """
@@ -94,7 +97,102 @@ class model(base.model):
         ec = 0.5*qdata[1]**2/qdata[0]
         return ((qdata[2]-ec)*self.gamma + ec)/qdata[0]
 
-    def numflux(self, pdataL, pdataR): # HLLC Riemann solver ; pL[ieq][face]
+    def numflux(self, pdataL, pdataR):
+        return (self._numfluxdict[self.numfluxname])(pdataL, pdataR)
+
+    def numflux_centeredflux(self, pdataL, pdataR): # centered flux ; pL[ieq][face]
+        gam  = self.gamma
+        gam1 = gam-1.
+
+        rhoL     = pdataL[0]
+        uL = unL = pdataL[1]
+        pL       = pdataL[2]
+        rhoR     = pdataR[0]
+        uR = unR = pdataR[1]
+        pR       = pdataR[2]
+
+        cL2 = gam*pL/rhoL
+        cR2 = gam*pR/rhoR
+        HL  = cL2/gam1 + 0.5*uL**2
+        HR  = cR2/gam1 + 0.5*uR**2
+
+        # final flux
+        Frho  = .5*( rhoL*unL + rhoR*unR )
+        Frhou = .5*( (rhoL*unL**2 + pL) + (rhoR*unR**2 + pR))
+        FrhoE = .5*( (rhoL*unL*HL) + (rhoR*unR*HR))
+
+        return [Frho, Frhou, FrhoE]
+
+    def numflux_centeredmassflow(self, pdataL, pdataR): # centered flux ; pL[ieq][face]
+        gam  = self.gamma
+        gam1 = gam-1.
+
+        rhoL     = pdataL[0]
+        uL = unL = pdataL[1]
+        pL       = pdataL[2]
+        rhoR     = pdataR[0]
+        uR = unR = pdataR[1]
+        pR       = pdataR[2]
+
+        cL2 = gam*pL/rhoL
+        cR2 = gam*pR/rhoR
+        HL  = cL2/gam1 + 0.5*uL**2
+        HR  = cR2/gam1 + 0.5*uR**2
+
+        # final flux
+        Frho  = .5*( rhoL*unL + rhoR*unR )
+        Frhou = .5*( Frho*(unL+unR) + pL + pR)
+        FrhoE = .5*Frho*( HL + HR)
+
+        return [Frho, Frhou, FrhoE]
+
+
+    def numflux_hlle(self, pdataL, pdataR): # HLLE Riemann solver ; pL[ieq][face]
+
+        gam  = self.gamma
+        gam1 = gam-1.
+
+        rhoL     = pdataL[0]
+        uL = unL = pdataL[1]
+        pL       = pdataL[2]
+        rhoR     = pdataR[0]
+        uR = unR = pdataR[1]
+        pR       = pdataR[2]
+
+        cL2 = gam*pL/rhoL
+        cR2 = gam*pR/rhoR
+        HL  = cL2/gam1 + 0.5*uL**2
+        HR  = cR2/gam1 + 0.5*uR**2
+
+        # The HLLE Riemann solver
+                
+        # sorry for using little "e" here - is is not just internal energy
+        eL   = HL-pL/rhoL
+        eR   = HR-pR/rhoR
+
+        # Roe's averaging
+        Rrho = np.sqrt(rhoR/rhoL)
+
+        tmp    = 1.0/(1.0+Rrho);
+        velRoe = tmp*(uL + uR*Rrho)
+        uRoe   = tmp*(uL + uR*Rrho)
+        hRoe   = tmp*(HL + HR*Rrho)
+
+        gamPdivRho = tmp*( (cL2+0.5*gam1*uL*uL) + (cR2+0.5*gam1*uR*uR)*Rrho )
+        cRoe  = np.sqrt(gamPdivRho - gam1*0.5*velRoe**2)
+
+        # max HLL 2 waves "velocities"
+        sL = np.minimum(0., np.minimum(uRoe-cRoe, unL-np.sqrt(cL2)))
+        sR = np.maximum(0., np.maximum(uRoe+cRoe, unR+np.sqrt(cR2)))
+
+        # final flux
+        Frho  = (sR*rhoL*unL - sL*rhoR*unR + sL*sR*(rhoR-rhoL))/(sR-sL)
+        Frhou = (sR*(rhoL*unL**2 + pL) - sL*(rhoR*unR**2 + pR) + sL*sR*(rhoR*unR-rhoL*unL))/(sR-sL)
+        FrhoE = (sR*(rhoL*unL*HL) - sL*(rhoR*unR*HR) + sL*sR*(rhoR*eR-rhoL*eL))/(sR-sL)
+
+        return [Frho, Frhou, FrhoE]
+
+    def numflux_hllc(self, pdataL, pdataR): # HLLC Riemann solver ; pL[ieq][face]
 
         gam  = self.gamma
         gam1 = gam-1.
