@@ -283,6 +283,7 @@ class model(base.model):
         return dt
 
     def bc_sym(self, dir, data, param):
+        "symmetry boundary condition, for inviscid equations, it is equivalent to a wall, do not need user parameters"
         return [ data[0], -data[1], data[2] ]
 
     def bc_insub(self, dir, data, param):
@@ -294,6 +295,12 @@ class model(base.model):
         return [ rh, -dir*np.sqrt(g*m2*p/rh), p ] 
 
     def bc_insup(self, dir, data, param):
+        # 
+        g   = self.gamma
+        gmu = g-1.
+        p  = data[2]
+        m2 = np.maximum(0., ((param['ptot']/p)**(gmu/g)-1.)*2./gmu)
+        rh = param['ptot']/param['rttot']/(1.+.5*gmu*m2)**(1./gmu)
         return param
 
     def bc_outsub(self, dir, data, param):
