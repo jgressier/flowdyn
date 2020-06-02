@@ -7,7 +7,8 @@ import time
 from pylab import *
 
 from pyfvm.mesh  import *
-from pyfvm.model import *
+import pyfvm.modelphy.convection as convection
+import pyfvm.modeldisc as modeldisc
 from pyfvm.field import *
 from pyfvm.xnum  import *
 from pyfvm.integration import *
@@ -15,7 +16,7 @@ from pyfvm.integration import *
 mesh100 = unimesh(ncell=100, length=1.)
 mesh50  = unimesh(ncell=50, length=1.)
 
-mymodel     = convmodel(1.)
+mymodel     = convection.model(1.)
 
 # TODO : make init method for scafield
 # sinus packet
@@ -31,12 +32,12 @@ def init_sinper(mesh):
 def init_square(mesh):
     return (1+sign(-(mesh.centers()/mesh.length-.25)*(mesh.centers()/mesh.length-.75)))/2
 
-initm   = init_sinper
+initm   = init_sinpack
 meshs   = [ mesh100 ]
 
 # First set of computations
 
-endtime = 5.
+endtime = 1.
 ntime   = 1
 tsave   = linspace(0, endtime, num=ntime+1)
 cfls    = [ 0.2 ]
@@ -45,36 +46,35 @@ xmeths  = [ extrapol2() ]
 # explicit, rk2, rk3ssp, rk4, implicit, trapezoidal=cranknicolson
 tmeths  = [ explicit, implicit, rk2 ]
 legends = [ 'RK1', 'BDF1', 'RK2' ]
-#boundary condition bc : type of boundary condition - "p"=periodic / "d"=Dirichlet
-bc = 'p'
 
 solvers = []
 results = []
 nbcalc  = max(len(cfls), len(tmeths), len(xmeths), len(meshs))
 for i in range(nbcalc):
-    field0 = scafield(mymodel, bc, (meshs*nbcalc)[i].ncell)
-    field0.qdata[0] = initm((meshs*nbcalc)[i])
-    solvers.append((tmeths*nbcalc)[i]((meshs*nbcalc)[i], (xmeths*nbcalc)[i]))
+    curmesh = (meshs*nbcalc)[i]
+    finit   = fdata(mymodel, curmesh, [ initm(curmesh) ] )
+    rhs     = modeldisc.fvm(mymodel, curmesh, (xmeths*nbcalc)[i])
+    solvers.append((tmeths*nbcalc)[i](curmesh, rhs))
     start = time.clock()
-    results.append(solvers[-1].solve(field0, (cfls*nbcalc)[i], tsave))
-    print "cpu time of "+"%-4s"%(legends[i])+" computation (",solvers[-1].nit,"it) :",time.clock()-start,"s"
+    results.append(solvers[-1].solve(finit, (cfls*nbcalc)[i], tsave)) #, flush="resfilename"))
+    print("cpu time of "+"%-4s"%(legends[i])+" computation (",solvers[-1].nit,"it) :",time.clock()-start,"s")
 
 # First figure
 
 style = ['o', 'x', 'D', '*', '+', '>', '<', 'd']
 fig = figure(1, figsize=(10,8))
-clf()
+#clf()
 grid(linestyle='--', color='0.5')
 fig.suptitle('integration of 2nd order flux, CFL %.1f'%cfls[0], fontsize=12, y=0.93)
-plot(meshs[0].centers(), results[0][0].qdata[0], '-')
+plot(meshs[0].centers(), results[0][0].data[0], '-')
 labels = ["initial condition"]
 for t in range(1,len(tsave)):
     for i in range(nbcalc):
-        plot((meshs*nbcalc)[i].centers(), results[i][t].qdata[0], style[i])
+        plot((meshs*nbcalc)[i].centers(), results[i][t].data[0], style[i])
         labels.append(legends[i]+", t=%.1f"%results[i][t].time)
 legend(labels, loc='upper left',prop={'size':10})
 fig.savefig('conv-time1.png', bbox_inches='tight')
-#show()
+show()
 
 # Second set of computations
 
@@ -85,33 +85,34 @@ cfls    = [ 1.0 ]
 # extrapol1(), extrapol2()=extrapolk(1), centered=extrapolk(-1), extrapol3=extrapolk(1./3.)
 xmeths  = [ extrapol3() ]
 # explicit, rk2, rk3ssp, rk4, implicit, trapezoidal=cranknicolson
-tmeths  = [ rk3ssp, rk4, trapezoidal ]
-legends = [ 'RK3', 'RK4', 'CK2' ]
+tmeths  = [ rk3ssp, rk4, gear, trapezoidal ]
+legends = [ 'RK3', 'RK4', 'BDF2', 'CK2' ]
 
 solvers = []
 results = []
 nbcalc  = max(len(cfls), len(tmeths), len(xmeths), len(meshs))
 for i in range(nbcalc):
-    field0 = scafield(mymodel, bc, (meshs*nbcalc)[i].ncell)
-    field0.qdata[0] = initm((meshs*nbcalc)[i])
-    solvers.append((tmeths*nbcalc)[i]((meshs*nbcalc)[i], (xmeths*nbcalc)[i]))
+    curmesh = (meshs*nbcalc)[i]
+    finit   = fdata(mymodel, curmesh, [ initm(curmesh) ] )
+    rhs     = modeldisc.fvm(mymodel, curmesh, (xmeths*nbcalc)[i])
+    solvers.append((tmeths*nbcalc)[i](curmesh, rhs))
     start = time.clock()
-    results.append(solvers[-1].solve(field0, (cfls*nbcalc)[i], tsave))
-    print "cpu time of "+"%-4s"%(legends[i])+" computation (",solvers[-1].nit,"it) :",time.clock()-start,"s"
+    results.append(solvers[-1].solve(finit, (cfls*nbcalc)[i], tsave)) #, flush="resfilename"))
+    print("cpu time of "+"%-4s"%(legends[i])+" computation (",solvers[-1].nit,"it) :",time.clock()-start,"s")
 
 # Second figure
 
 style = ['o', 'x', 'D', '*', '+', '>', '<', 'd']
-clf()
+#clf()
 fig = figure(2, figsize=(10,8))
 grid(linestyle='--', color='0.5')
 fig.suptitle('integration of 3rd order flux, CFL %.1f'%cfls[0], fontsize=12, y=0.93)
-plot(meshs[0].centers(), results[0][0].qdata[0], '-')
+plot(meshs[0].centers(), results[0][0].data[0], '-')
 labels = ["initial condition"]
 for t in range(1,len(tsave)):
     for i in range(nbcalc):
-        plot((meshs*nbcalc)[i].centers(), results[i][t].qdata[0], style[i])
+        plot((meshs*nbcalc)[i].centers(), results[i][t].data[0], style[i])
         labels.append(legends[i]+", t=%.1f"%results[i][t].time)
 legend(labels, loc='upper left',prop={'size':10})
 fig.savefig('conv-time2.png', bbox_inches='tight')
-#show()
+show()

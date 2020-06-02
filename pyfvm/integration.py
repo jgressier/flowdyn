@@ -146,16 +146,18 @@ class implicitmodel(timemodel):
         print("not implemented for virtual implicit class")
         
     def calc_jacobian(self, field, epsdiff=1.e-6):
+        """
+            jacobian matrix dR/dQ of dQ/dt=R(Q) is computed as successive columns by finite difference of R(Q+dQ)
+            ordering is ncell x neq (neq is the fast index)
+        """
         if ((field.model.islinear == 1) and (hasattr(self, "jacobian_use"))):
             return
         self.neq = field.neq
         self.dim = self.neq * field.nelem
         self.jacobian = np.zeros([self.dim, self.dim])
-        #self.jact     = np.zeros([self.dim, self.dim])
         eps = [ epsdiff*math.sqrt(np.spacing(1.))*np.sum(np.abs(q))/field.nelem for q in field.data ] 
         self.calcrhs(field)
         refrhs = [ qf.copy() for qf in self.residual ]
-        #print 'refrhs',refrhs
         for i in range(field.nelem):    # for all variables (nelem*neq)
             for q in range(self.neq):
                 dfield = field.copy()
@@ -163,56 +165,67 @@ class implicitmodel(timemodel):
                 self.calcrhs(dfield)
                 drhs = [ qf.copy() for qf in  self.residual ]
                 for qq in range(self.neq):
-                    #self.jacobian[i*self.neq+q,qq::self.neq] = (drhs[qq]-refrhs[qq])/eps[q] # working
                     self.jacobian[qq::self.neq,i*self.neq+q] = (drhs[qq]-refrhs[qq])/eps[q]
         self.jacobian_use = 0
-        #print self.jacobian - self.jact.transpose()
         return self.jacobian
 
     def solve_implicit(self, field, dtloc, invert=np.linalg.solve, theta=1., xi=0):
         ""
-        diag = np.repeat(np.ones(field.nelem)/dtloc, self.neq)   # dtloc can be scalar or np.array
-        mat = (1+xi)*np.diag(diag)-theta*self.jacobian#.transpose()
-        rhs = np.concatenate(field.residual)
+        diag = np.repeat(np.ones(field.nelem)/dtloc, self.neq)   # dtloc can be scalar or np.array, neq is the fast index
+        mat = (1+xi)*np.diag(diag)-theta*self.jacobian
+        rhs = np.zeros((self.dim))
+        for q in range(self.neq):
+            rhs[q::self.neq] = self.residual[q]
         if xi != 0: 
-            rhs += xi* np.concatenate(field.lastresidual)
-        newrhs = np.linalg.solve(mat, rhs)
-        field.residual = [ newrhs[iq::self.neq]/dtloc for iq in range(self.neq) ]
+            for q in range(self.neq):
+                rhs[q::self.neq] += xi* self._lastresidual[q]
+        newrhs = invert(mat, rhs)
+        self.residual = [ newrhs[iq::self.neq]/dtloc for iq in range(self.neq) ]
     
 class implicit(implicitmodel):
-    def step(self, field, dtloc):                
+    """
+        make an Euler implicit or backward Euler step: Qn+1 - Qn = Rn+1 
+    """
+    def step(self, field, dtloc):           
         self.calc_jacobian(field)
-        self.calcrhs(field)
-        self.solve_implicit(field, dtloc)
-        field.add_res(dtloc)
-        return field
+        self.calcrhs(field)                  # compute and define self.residual
+        self.solve_implicit(field, dtloc)    # save self.residual
+        self.add_res(field, dtloc)
+        return
     
 class backwardeuler(implicit):
     pass
 
 class trapezoidal(implicitmodel):
+    """
+        make an 2nd order (centered) Crank-Nicolson step: Qn+1 - Qn = .5*(Rn + Rn+1)
+    """
     def step(self, field, dtloc):                
         self.calc_jacobian(field)
         self.calcrhs(field)
         self.solve_implicit(field, dtloc, theta=.5)
-        field.add_res(dtloc)
-        return field
+        self.add_res(field, dtloc)
+        return
 
 class cranknicolson(trapezoidal):
     pass
 
 class gear(trapezoidal):
+    """
+        make an 2nd order backward step (Gear): (3Qn+1 - 4Qn + Qn-1)/3 = 2/3* Rn+1
+        Using Rn+1 = Rn + A*(Qn+1-Qn), linearized form is (3I-2A)(Qn+1-Qn)=2Rn+(Qn-Qn-1)
+    """
     def step(self, field, dtloc):
-        if not hasattr(field, 'lastresidual'):      # if starting integration (missing last residual)
-            field = trapezoidal.step(self, field, dtloc)
-            field.save_res()
-            return field
-        self.calc_jacobian(field)
-        self.calcrhs(field)
-        self.solve_implicit(field, dtloc, theta=1., xi=.5)
-        field.add_res(dtloc)
-        field.save_res()
-        return field
+        if not hasattr(self, '_lastresidual'):      # if starting integration (missing last residual), so use 2nd order trapezoidal/cranknicolson
+            trapezoidal.step(self, field, dtloc)
+            self.add_res(field, dtloc)
+        else:
+            self.calc_jacobian(field)
+            self.calcrhs(field)
+            self.solve_implicit(field, dtloc, theta=1., xi=.5)
+            self.add_res(field, dtloc)
+        self._lastresidual = self.residual
+        return 
 
 #--------------------------------------------------------------------
 # LOW STORAGE MODELS; rk1 / rk22 / rk3lsw / rk3ssp / rk4
