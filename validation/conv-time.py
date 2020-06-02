@@ -32,12 +32,12 @@ def init_sinper(mesh):
 def init_square(mesh):
     return (1+sign(-(mesh.centers()/mesh.length-.25)*(mesh.centers()/mesh.length-.75)))/2
 
-initm   = init_sinper
+initm   = init_sinpack
 meshs   = [ mesh100 ]
 
 # First set of computations
 
-endtime = 5.
+endtime = 1.
 ntime   = 1
 tsave   = linspace(0, endtime, num=ntime+1)
 cfls    = [ 0.2 ]
@@ -63,7 +63,7 @@ for i in range(nbcalc):
 
 style = ['o', 'x', 'D', '*', '+', '>', '<', 'd']
 fig = figure(1, figsize=(10,8))
-clf()
+#clf()
 grid(linestyle='--', color='0.5')
 fig.suptitle('integration of 2nd order flux, CFL %.1f'%cfls[0], fontsize=12, y=0.93)
 plot(meshs[0].centers(), results[0][0].data[0], '-')
@@ -74,7 +74,7 @@ for t in range(1,len(tsave)):
         labels.append(legends[i]+", t=%.1f"%results[i][t].time)
 legend(labels, loc='upper left',prop={'size':10})
 fig.savefig('conv-time1.png', bbox_inches='tight')
-#show()
+show()
 
 # Second set of computations
 
@@ -85,8 +85,8 @@ cfls    = [ 1.0 ]
 # extrapol1(), extrapol2()=extrapolk(1), centered=extrapolk(-1), extrapol3=extrapolk(1./3.)
 xmeths  = [ extrapol3() ]
 # explicit, rk2, rk3ssp, rk4, implicit, trapezoidal=cranknicolson
-tmeths  = [ rk3ssp, rk4, trapezoidal ]
-legends = [ 'RK3', 'RK4', 'CK2' ]
+tmeths  = [ rk3ssp, rk4, gear, trapezoidal ]
+legends = [ 'RK3', 'RK4', 'BDF2', 'CK2' ]
 
 solvers = []
 results = []
@@ -103,7 +103,7 @@ for i in range(nbcalc):
 # Second figure
 
 style = ['o', 'x', 'D', '*', '+', '>', '<', 'd']
-clf()
+#clf()
 fig = figure(2, figsize=(10,8))
 grid(linestyle='--', color='0.5')
 fig.suptitle('integration of 3rd order flux, CFL %.1f'%cfls[0], fontsize=12, y=0.93)
@@ -115,4 +115,4 @@ for t in range(1,len(tsave)):
         labels.append(legends[i]+", t=%.1f"%results[i][t].time)
 legend(labels, loc='upper left',prop={'size':10})
 fig.savefig('conv-time2.png', bbox_inches='tight')
-#show()
+show()
