@@ -172,20 +172,20 @@ class implicitmodel(timemodel):
     def solve_implicit(self, field, dtloc, invert=np.linalg.solve, theta=1., xi=0):
         ""
         diag = np.repeat(np.ones(field.nelem)/dtloc, self.neq)   # dtloc can be scalar or np.array
-        mat = (1+xi)*np.diag(diag)-theta*self.jacobian#.transpose()
-        rhs = np.concatenate(field.residual)
+        mat = (1+xi)*np.diag(diag)-theta*self.jacobian
+        rhs = np.concatenate(self.residual)
         if xi != 0: 
             rhs += xi* np.concatenate(field.lastresidual)
         newrhs = np.linalg.solve(mat, rhs)
-        field.residual = [ newrhs[iq::self.neq]/dtloc for iq in range(self.neq) ]
+        self.residual = [ newrhs[iq::self.neq]/dtloc for iq in range(self.neq) ]
     
 class implicit(implicitmodel):
     def step(self, field, dtloc):                
         self.calc_jacobian(field)
-        self.calcrhs(field)
-        self.solve_implicit(field, dtloc)
-        field.add_res(dtloc)
-        return field
+        self.calcrhs(field)                  # compute and define self.residual
+        self.solve_implicit(field, dtloc)    # save self.residual
+        self.add_res(field, dtloc)
+        return
     
 class backwardeuler(implicit):
     pass
@@ -195,8 +195,8 @@ class trapezoidal(implicitmodel):
         self.calc_jacobian(field)
         self.calcrhs(field)
         self.solve_implicit(field, dtloc, theta=.5)
-        field.add_res(dtloc)
-        return field
+        self.add_res(field, dtloc)
+        return
 
 class cranknicolson(trapezoidal):
     pass
