@@ -5,3 +5,5 @@
 *.txt
 *.pdf
 *.bak
+.ipynb_checkpoints
+Untitled*.ipynb

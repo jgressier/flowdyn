@@ -57,7 +57,7 @@ for i in range(nbcalc):
     solvers.append((tmeths*nbcalc)[i](curmesh, rhs))
     start = time.clock()
     results.append(solvers[-1].solve(finit, (cfls*nbcalc)[i], tsave)) #, flush="resfilename"))
-    print("cpu time of "+"%-4s"%(legends[i])+" computation (",solvers[-1].nit,"it) :",time.clock()-start,"s")
+    print("cpu time of "+"%-4s"%(legends[i])+" computation (",solvers[-1].nit(),"it) :",time.clock()-start,"s")
 
 # First figure
 
@@ -78,15 +78,15 @@ show()
 
 # Second set of computations
 
-endtime = 50.
+endtime = 20.
 ntime   = 1
 tsave   = linspace(0, endtime, num=ntime+1)
-cfls    = [ 1.0 ]
+cfls    = [ 0.8 ]
 # extrapol1(), extrapol2()=extrapolk(1), centered=extrapolk(-1), extrapol3=extrapolk(1./3.)
 xmeths  = [ extrapol3() ]
 # explicit, rk2, rk3ssp, rk4, implicit, trapezoidal=cranknicolson
-tmeths  = [ rk3ssp, rk4, gear, trapezoidal ]
-legends = [ 'RK3', 'RK4', 'BDF2', 'CK2' ]
+tmeths  = [ rk2, rk3ssp, rk4, gear, trapezoidal ]
+legends = [ 'RK2', 'RK3', 'RK4', 'BDF2', 'CK2' ]
 
 solvers = []
 results = []
@@ -98,7 +98,7 @@ for i in range(nbcalc):
     solvers.append((tmeths*nbcalc)[i](curmesh, rhs))
     start = time.clock()
     results.append(solvers[-1].solve(finit, (cfls*nbcalc)[i], tsave)) #, flush="resfilename"))
-    print("cpu time of "+"%-4s"%(legends[i])+" computation (",solvers[-1].nit,"it) :",time.clock()-start,"s")
+    print("cpu time of "+"%-4s"%(legends[i])+" computation (",solvers[-1].nit(),"it) :",time.clock()-start,"s")
 
 # Second figure
 

@@ -17,8 +17,11 @@ class timemodel():
     def __init__(self, mesh, modeldisc):
         self.mesh      = mesh
         self.modeldisc = modeldisc
-        self._cputime  = 0.
-        self._nit      = 0
+        self.reset()
+
+    def reset(self):
+        self._cputime = 0.
+        self._nit     = 0
         
     def calcrhs(self, field):
         self.residual = self.modeldisc.rhs(field)
@@ -29,11 +32,7 @@ class timemodel():
     def add_res(self, f, dt, subtimecoef = 1.0):
         f.time += np.min(dt)*subtimecoef
         for i in range(f.neq):
-            #print i,self.qdata[i].size,time,self.residual[i].size
             f.data[i] += dt*self.residual[i]  # time can be scalar or np.array
-
-    def save_res(self):
-        self.lastresidual = [ q.copy() for q in self.residual ]
 
     def solve(self, f, condition, tsave, flush=None):
         start = time.clock()
@@ -232,10 +231,6 @@ class gear(trapezoidal):
 #--------------------------------------------------------------------       
 
 class LowStorageRKmodel(timemodel):
-
-    def __init__(self, mesh, num):
-        self.mesh = mesh
-        self.num  = num
 
     def solve(self, field, condition, tsave):
         self.nit       = 0
