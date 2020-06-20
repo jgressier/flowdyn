@@ -23,7 +23,7 @@
 
 import numpy               as np
 import pyfvm.modelphy.base as model
-import pyfvm.mesh          as mesh
+#import pyfvm.mesh          as mesh
 import pyfvm.field         as field
 
 _default_bc = { 'type': 'per' }
@@ -56,20 +56,6 @@ class base():
         return field.fdata(self.model, self.mesh, data)
 
     def rhs(self, field):
-        print("not implemented for virtual class")
-
-
-class fvm(base):
-    """
-    define field: neq x nelem data
-      model : number of equations
-      nelem : number of cells (conservative and primitive data)
-      qdata : list of neq nparray - conservative data 
-      pdata : list of neq nparray - primitive    data
-      bc    : type of boundary condition - "p"=periodic / "d"=Dirichlet 
-    """
-
-    def rhs(self, field):
         self.qdata = [ d.copy() for d in field.data ]
         self.cons2prim()
         self.calc_grad()
@@ -82,14 +68,25 @@ class fvm(base):
             self.add_source()
         return self.residual
 
-            
     def cons2prim(self):
         self.pdata = self.model.cons2prim(self.qdata)
     
     def prim2cons(self):
         self.qdata = self.model.prim2cons(self.pdata) 
                 
+# -----------------------------------------------------------------------------------
+class fvm1d(base):
+    """
+    """
+    def __init__(self, model, mesh, num, numflux=None, bcL=_default_bc, bcR=_default_bc):
+        base.__init__(self, model, mesh, num, numflux)
+        self.bcL   = bcL
+        self.bcR   = bcR
+            
     def calc_grad(self):
+        """
+        Computes face-based gradients of each primitive data
+        """
         self.grad = []
         for d in self.pdata:
             g = np.zeros(self.mesh.ncell+1)
@@ -97,6 +94,9 @@ class fvm(base):
             self.grad.append(g)
     
     def interp_face(self):
+        """
+        Computes left and right interpolation to a face, using self (cell) primitive data and (face) gradients
+        """
         self.pL, self.pR = self.num.interp_face(self.mesh, self.pdata, self.grad)                
     
     def calc_bc(self):
@@ -147,12 +147,95 @@ class fvm(base):
                 self.residual[i] += self.model.source[i](self.mesh.centers(), self.qdata)
         return self.residual
 
-# class scafield(field):
-#     def __init__(self, model, bc, nelem=100, bcvalues = []):
-#         field.__init__(self, model, bc, nelem=nelem, bcvalues=bcvalues)
+# -----------------------------------------------------------------------------------
+class fvm(fvm1d): # alias fvm->fvm1d for backward compatibility
+    pass
+
+# -----------------------------------------------------------------------------------
+class fvm2dcart(base):
+    """
+    """
+    def __init__(self, model, mesh, num, bclist, numflux=None):
+        base.__init__(self, model, mesh, num, numflux)
+        self.bclist = bclist
+        # TODO: should check bclist tags in mesh definition
             
-#     def scadata(self):
-#         return self.data[0]
+    def calc_grad(self):
+        """
+        Computes face-based gradients of each primitive data
+        """
+        self.grad = []
+        # for d in self.pdata:
+        #     g = np.zeros(self.mesh.ncell+1)
+        #     g[1:-1] = (d[1:]-d[0:-1]) / (self.mesh.xc[1:]-self.mesh.xc[0:-1])
+        #     self.grad.append(g)
+    
+    def interp_face(self):
+        """
+        Computes left and right interpolation to a face, using self (cell) primitive data and (face) gradients
+        """
+        self.pL, self.pR = 0, 0 # reorder data for 1st order extrapolation    
+    
+    def calc_bc(self):
+        if (self.bcL['type'] == 'per') and (self.bcR['type'] == 'per'):     #periodic boundary conditions
+            for i in range(self.neq):
+                self.pL[i][0]          = self.pL[i][self.nelem] 
+                self.pR[i][self.nelem] = self.pR[i][0] 
+        elif (self.bcL['type'] == 'per') or (self.bcR['type'] == 'per'):     # inconsistent periodic boundary conditions:
+            raise NameError("both conditions should be periodic")
+        else:
+            q_bcL  = self.model.namedBC(self.bcL['type'],
+                                        -1, [self.pR[i][0] for i in range(self.neq)], self.bcL)
+            q_bcR  = self.model.namedBC(self.bcR['type'],
+                                        1, [self.pL[i][self.nelem] for i in range(self.neq)], self.bcR)
+            for i in range(self.neq):
+                self.pL[i][0]          = q_bcL[i]
+                self.pR[i][self.nelem] = q_bcR[i]
+
+    def calc_bc_grad(self):
+        # if (self.bcL['type'] == 'per') and (self.bcR['type'] == 'per'):     #periodic boundary conditions
+        #     for i in range(self.neq):
+        #         self.grad[i][0]  = 0.
+        #         self.grad[i][-1] = 0.
+        #         self.grad[i][0] = self.grad[i][-1] = (self.pdata[i][0]-self.pdata[i][-1]) / (self.mesh.xc[0]+self.mesh.length-self.mesh.xc[-1])
+        # elif (self.bcL['type'] == 'per') or (self.bcR['type'] == 'per'):     # inconsistent periodic boundary conditions:
+        #     raise NameError("both conditions should be periodic")
+        # else:
+        #     for i in range(self.neq):
+        #         self.grad[i][0]  = 0.
+        #         self.grad[i][-1] = 0.
+        return
+
+    def calc_flux(self):
+        """
+          computes array of fluxes, calls model numerical flux using self.numflux tag
+          first (nx+1)*ny are X oriented flux, then nx*(ny+1) are Y oriented flux
+        """
+        self.flux = self.model.numflux2d(self.numflux, self.pL, self.pR) # get numerical flux from model object, self.numflux is here only a tag
+
+    def calc_timestep(self, f, condition):
+        # cell characteristic length is constant for cartesian mesh
+        ldim = self.mesh.dx*self.mesh.dy / (self.mesh.dx+self.mesh.dy)
+        return self.model.timestep(f.data, ldim, condition)
+        
+    def calc_res(self):
+        self.residual = []
+        dx = self.mesh.dx
+        dy = self.mesh.dy
+        for i in range(self.neq):
+            self.residual.append(-(self.flux[i][1:self.nelem+1]-self.flux[i][0:self.nelem]) \
+                                  /(self.mesh.xf[1:self.nelem+1]-self.mesh.xf[0:self.nelem]))
+        return self.residual
+
+    def add_source(self):
+        for i in range(self.neq):
+            if self.model.source[i]:
+                self.residual[i] += self.model.source[i](self.mesh.centers(), self.qdata)
+        return self.residual
+
+# -----------------------------------------------------------------------------------
+class fvm2d(fvm2dcart): # alias fvm2d->fvm2dcart
+    pass
 
 
  
