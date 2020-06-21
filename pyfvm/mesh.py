@@ -5,16 +5,19 @@ Created on Fri May 10 15:42:29 2013
 @author: j.gressier
 """
 
-from optparse import OptionParser
 import sys
 import math
 import numpy as np
+import pyfvm.meshbase as meshbase
 
-class virtualmesh():
-    " virtual class for a domain and its mesh"
-    def __init__(self, ncell=0, length=0.):
+class mesh1d(meshbase.virtualmesh):
+    " class defining a uniform mesh: ncell and length"
+    def __init__(self, ncell=100, length=1., x0=0.):
+        meshbase.virtualmesh.__init__(self, '1D')
         self.ncell  = ncell
         self.length = length
+        self.xf     = np.linspace(0., length, ncell+1)+x0
+        self.xc     = self.centers()
 
     def centers(self):
         "compute centers of cells in a mesh"
@@ -23,7 +26,7 @@ class virtualmesh():
             xc[i] = (self.xf[i]+self.xf[i+1])/2.
         return xc
 
-    def dx(self):
+    def vol(self):
         "compute cell sizes in a mesh"
         dx = np.zeros(self.ncell)
         for i in np.arange(self.ncell):
@@ -37,7 +40,13 @@ class virtualmesh():
         print("min dx : ", dx.min())
         print("max dx : ", dx.max())
 
-class nonunimesh(virtualmesh):
+    def dx(self): # for backward compatibility, should use generic self.vol()
+        return self.vol()
+
+class unimesh(mesh1d):
+    pass
+
+class nonunimesh(mesh1d):
     " class defining a domain and a non-uniform mesh"
     #non-uniform symmetric mesh
         
@@ -126,17 +135,10 @@ class meshramzi(nonunimesh):
             self.length += self.xf[i+1]-self.xf[i]
 
 
-class unimesh(virtualmesh):
-    " class defining a uniform mesh: ncell and length"
-    def __init__(self, ncell=100, length=1., x0=0.):
-        virtualmesh.__init__(self, ncell, length)
-        self.xf     = np.linspace(0., length, ncell+1)+x0
-        self.xc     = self.centers()
-
-class refinedmesh(virtualmesh):
+class refinedmesh(mesh1d):
     " class defining a mesh with 2 uniform parts and a cell ratio"
     def __init__(self, ncell=100, length=1., ratio=2., nratioa=1, nratiob=1):
-        virtualmesh.__init__(self, ncell, length)
+        mesh1d.__init__(self, ncell, length)
         dx1 = (nratioa+nratiob) * length / ((nratioa+ratio*nratiob)*ncell)
         dx2 = ratio*dx1
         nc1 = (ncell*nratioa)/(nratioa+nratiob)
@@ -146,9 +148,9 @@ class refinedmesh(virtualmesh):
                     np.linspace(dx1*nc1,  length, nc2+1) )
         self.xc = self.centers()
 
-class morphedmesh(virtualmesh):
+class morphedmesh(mesh1d):
     " class defining a mesh with a morphing function: ncell and length"
     def __init__(self, ncell=100, length=1., x0=0., morph=lambda x: x):
-        virtualmesh.__init__(self, ncell, length)
+        mesh1d.__init__(self, ncell, length)
         self.xf     = morph(np.linspace(0., length, ncell+1)+x0)
         self.xc     = self.centers()

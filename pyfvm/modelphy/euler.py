@@ -96,11 +96,11 @@ class model(base.model):
         ec = 0.5*qdata[1]**2/qdata[0]
         return ((qdata[2]-ec)*self.gamma + ec)/qdata[0]
 
-    def numflux(self, name, pdataL, pdataR):
+    def numflux(self, name, pdataL, pdataR, dir=None):
         if name==None: name='hllc'
-        return (self._numfluxdict[name])(pdataL, pdataR)
+        return (self._numfluxdict[name])(pdataL, pdataR, dir)
 
-    def numflux_centeredflux(self, pdataL, pdataR): # centered flux ; pL[ieq][face]
+    def numflux_centeredflux(self, pdataL, pdataR, dir=None): # centered flux ; pL[ieq][face]
         gam  = self.gamma
         gam1 = gam-1.
 
@@ -123,7 +123,7 @@ class model(base.model):
 
         return [Frho, Frhou, FrhoE]
 
-    def numflux_centeredmassflow(self, pdataL, pdataR): # centered flux ; pL[ieq][face]
+    def numflux_centeredmassflow(self, pdataL, pdataR, dir=None): # centered flux ; pL[ieq][face]
         gam  = self.gamma
         gam1 = gam-1.
 
@@ -147,7 +147,7 @@ class model(base.model):
         return [Frho, Frhou, FrhoE]
 
 
-    def numflux_hlle(self, pdataL, pdataR): # HLLE Riemann solver ; pL[ieq][face]
+    def numflux_hlle(self, pdataL, pdataR, dir=None): # HLLE Riemann solver ; pL[ieq][face]
 
         gam  = self.gamma
         gam1 = gam-1.
@@ -172,7 +172,7 @@ class model(base.model):
 
         # Roe's averaging
         Rrho = np.sqrt(rhoR/rhoL)
-
+        #
         tmp    = 1.0/(1.0+Rrho);
         velRoe = tmp*(uL + uR*Rrho)
         uRoe   = tmp*(uL + uR*Rrho)
@@ -192,7 +192,7 @@ class model(base.model):
 
         return [Frho, Frhou, FrhoE]
 
-    def numflux_hllc(self, pdataL, pdataR): # HLLC Riemann solver ; pL[ieq][face]
+    def numflux_hllc(self, pdataL, pdataR, dir=None): # HLLC Riemann solver ; pL[ieq][face]
 
         gam  = self.gamma
         gam1 = gam-1.
@@ -310,7 +310,7 @@ class model(base.model):
         return data
 
 # ===============================================================
-# implementation of MODEL class
+# implementation of derived MODEL class
 
 class nozzle(model):
     """
@@ -339,6 +339,16 @@ class nozzle(model):
     def src_energy(self, x, qdata):
         ec = 0.5*qdata[1]**2/qdata[0]
         return -self.geomterm * qdata[1] * ((qdata[2]-ec)*self.gamma + ec)/qdata[0]
+
+# ===============================================================
+# implementation of euler 2D class
+
+class euler2d(model):
+    """
+    Class model for 2D euler equations
+    """
+    pass
+
 
 # ===============================================================
 # automatic testing
