@@ -55,6 +55,10 @@ class base():
     def fdata(self, data):
         return field.fdata(self.model, self.mesh, data)
 
+    def fdata_fromprim(self, data):
+        f = field.fdata(self.model, self.mesh, data)
+        return field.fdata(self.model, self.mesh, self.model.prim2cons(f))
+
     def rhs(self, field):
         self.qdata = [ d.copy() for d in field.data ]
         self.cons2prim()
@@ -174,23 +178,48 @@ class fvm2dcart(base):
         """
         Computes left and right interpolation to a face, using self (cell) primitive data and (face) gradients
         """
-        self.pL, self.pR = 0, 0 # reorder data for 1st order extrapolation    
+        # reorder data for 1st order extrapolation, except for boundary conditions
+        nx = self.mesh.nx
+        ny = self.mesh.ny
+        fshift = ny*(nx+1)
+        for p in range(self.neq):
+            # distribute cell states (by j rows) to i faces
+            for j in range(ny):
+                self.pL[p][j*(nx+1)+1:(j+1)*(nx+1)] = self.pdata[p][j*nx:(j+1)*nx]
+                self.pR[p][j*(nx+1):(j+1)*(nx+1)-1] = self.pdata[p][j*nx:(j+1)*nx]
+            # distribute cell states  (by j rows) to j faces (starting at index ny*(nx+1))
+            for j in range(ny):
+                self.pL[p][fshift+(j+1)*nx:fshift+(j+2)*nx] = self.pdata[p][j*nx:(j+1)*nx]
+                self.pR[p][fshift+ j   *nx:fshift+(j+1)*nx] = self.pdata[p][j*nx:(j+1)*nx]
     
     def calc_bc(self):
-        if (self.bcL['type'] == 'per') and (self.bcR['type'] == 'per'):     #periodic boundary conditions
-            for i in range(self.neq):
-                self.pL[i][0]          = self.pL[i][self.nelem] 
-                self.pR[i][self.nelem] = self.pR[i][0] 
-        elif (self.bcL['type'] == 'per') or (self.bcR['type'] == 'per'):     # inconsistent periodic boundary conditions:
-            raise NameError("both conditions should be periodic")
-        else:
-            q_bcL  = self.model.namedBC(self.bcL['type'],
-                                        -1, [self.pR[i][0] for i in range(self.neq)], self.bcL)
-            q_bcR  = self.model.namedBC(self.bcR['type'],
-                                        1, [self.pL[i][self.nelem] for i in range(self.neq)], self.bcR)
-            for i in range(self.neq):
-                self.pL[i][0]          = q_bcL[i]
-                self.pR[i][self.nelem] = q_bcR[i]
+        # DEV: only consider periodic conditions
+        #
+        for i in range(self.neq):
+            # copy 'right' bc left state to 'left' bc left state
+            self.pL[i][self.mesh.index_of_bc('left')] = self.pL[i][self.mesh.index_of_bc('right')]
+            # copy 'left' bc right state to 'right' bc right state
+            self.pR[i][self.mesh.index_of_bc('right')] = self.pR[i][self.mesh.index_of_bc('left')]
+            # copy 'top' bc left state to 'bottom' bc left state
+            self.pL[i][self.mesh.index_of_bc('bottom')] = self.pL[i][self.mesh.index_of_bc('top')]
+            # copy 'bottom' bc right state to 'top' bc right state
+            self.pR[i][self.mesh.index_of_bc('top')] = self.pR[i][self.mesh.index_of_bc('bottom')]
+
+        # commented 1D condition as an example
+        # if (self.bcL['type'] == 'per') and (self.bcR['type'] == 'per'):     #periodic boundary conditions
+        #     for i in range(self.neq):
+        #         self.pL[i][0]          = self.pL[i][self.nelem] 
+        #         self.pR[i][self.nelem] = self.pR[i][0] 
+        # elif (self.bcL['type'] == 'per') or (self.bcR['type'] == 'per'):     # inconsistent periodic boundary conditions:
+        #     raise NameError("both conditions should be periodic")
+        # else:
+        #     q_bcL  = self.model.namedBC(self.bcL['type'],
+        #                                 -1, [self.pR[i][0] for i in range(self.neq)], self.bcL)
+        #     q_bcR  = self.model.namedBC(self.bcR['type'],
+        #                                 1, [self.pL[i][self.nelem] for i in range(self.neq)], self.bcR)
+        #     for i in range(self.neq):
+        #         self.pL[i][0]          = q_bcL[i]
+        #         self.pR[i][self.nelem] = q_bcR[i]
 
     def calc_bc_grad(self):
         # if (self.bcL['type'] == 'per') and (self.bcR['type'] == 'per'):     #periodic boundary conditions
@@ -211,17 +240,20 @@ class fvm2dcart(base):
           computes array of fluxes, calls model numerical flux using self.numflux tag
           first (nx+1)*ny are X oriented flux, then nx*(ny+1) are Y oriented flux
         """
+        fshift = ny*(nx+1)
         self.flux = self.model.numflux2d(self.numflux, self.pL, self.pR) # get numerical flux from model object, self.numflux is here only a tag
 
     def calc_timestep(self, f, condition):
         # cell characteristic length is constant for cartesian mesh
-        ldim = self.mesh.dx*self.mesh.dy / (self.mesh.dx+self.mesh.dy)
+        dx = self.mesh.dx()
+        dy = self.mesh.dy()
+        ldim = dx*dy / (dx+dy)
         return self.model.timestep(f.data, ldim, condition)
         
     def calc_res(self):
         self.residual = []
-        dx = self.mesh.dx
-        dy = self.mesh.dy
+        dx = self.mesh.dx()
+        dy = self.mesh.dy()
         for i in range(self.neq):
             self.residual.append(-(self.flux[i][1:self.nelem+1]-self.flux[i][0:self.nelem]) \
                                   /(self.mesh.xf[1:self.nelem+1]-self.mesh.xf[0:self.nelem]))

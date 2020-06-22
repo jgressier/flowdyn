@@ -21,22 +21,32 @@
 
 import numpy as np
 import math
-import pyfvm.modelphy.base as base
+import pyfvm.modelphy.base as mbase
+
+# ===============================================================
+def _vecmag(qdata):
+    return np.sqrt(np.sum(qdata**2, axis=0))
+
+def _vecsqrmag(qdata):
+    return np.sum(qdata**2, axis=0)
+
+def datavector(ux, uy, uz=None):
+    return np.vstack([ux, uy]) if not uz else np.vstack([ux, uy, uz])
 
 # ===============================================================
 # implementation of MODEL class
 
-class model(base.model):
+class base(mbase.model):
     """
     Class model for euler equations
 
     attributes:
-        _waves[5]
 
     """
     def __init__(self, gamma=1.4, source=None):
-        base.model.__init__(self, name='euler', neq=3)
+        mbase.model.__init__(self, name='euler', neq=3)
         self.islinear    = 0
+        self.shape       = (1, 1, 1)
         self.gamma       = gamma
         self.source      = source
         self._vardict = { 'pressure': self.pressure, 'density': self.density,
@@ -57,9 +67,8 @@ class model(base.model):
         """
         rho = qdata[0]
         u   = qdata[1]/qdata[0]
-        p   = (self.gamma-1.0)*(qdata[2]-0.5*u*qdata[1])
+        p   = self.pressure(qdata)
         pdata = [ rho, u ,p ] 
-
         return pdata 
 
     def prim2cons(self, pdata): # qdata[ieq][cell] :
@@ -67,17 +76,31 @@ class model(base.model):
         >>> model().prim2cons([[2.], [4.], [10.]]) == [[2.], [8.], [41.]]
         True
         """
-        rhoe = pdata[2]/(self.gamma-1.) + .5*pdata[1]**2*pdata[0]
-        return [ pdata[0], pdata[0]*pdata[1], rhoe ]
+        V2 = pdata[1]**2 if pdata[1].ndim==1 else _vecsqrmag(pdata[1])
+        rhoe = pdata[2]/(self.gamma-1.) + .5*pdata[0]*V2
+        return [ pdata[0], (pdata[1].T*pdata[0]).T, rhoe ]
 
     def density(self, qdata):
         return qdata[0].copy()
 
     def pressure(self, qdata): # returns (gam-1)*( rho.et) - .5 * (rho.u)**2 / rho )
-        return (self.gamma-1.0)*(qdata[2]-0.5*qdata[1]**2/qdata[0])
+        return (self.gamma-1.0)*(qdata[2]-self.kinetic_energy(qdata))
 
     def velocity(self, qdata):  # returns (rho u)/rho
         return qdata[1]/qdata[0]
+
+    def velocitymag(self, qdata):  # returns mag(rho u)/rho, depending if scalar or vector
+        return np.abs(qdata[1])/qdata[0] if qdata[1].ndim==1 else _vecmag(qdata[1])/qdata[0]
+
+    def velocity_x(self, qdata):  # returns (rho ux)/rho
+        return qdata[1][0,:]/qdata[0]
+
+    def velocity_y(self, qdata):  # returns (rho uy)/rho
+        return qdata[1][1,:]/qdata[0]
+
+    def kinetic_energy(self, qdata):  
+        """volumic kinetic energy"""
+        return .5*qdata[1]**2/qdata[0] if qdata[1].ndim==1 else .5*_vecsqrmag(qdata[1])/qdata[0]
 
     def mach(self, qdata):
         return qdata[1]/np.sqrt(self.gamma*((self.gamma-1.0)*(qdata[0]*qdata[2]-0.5*qdata[1]**2)))
@@ -310,19 +333,43 @@ class model(base.model):
         return data
 
 # ===============================================================
+# implementation of euler 1D class
+
+class euler1d(base):
+    """
+    Class model for 2D euler equations
+    """
+    def __init__(self, gamma=1.4, source=None):
+        base.__init__(self, gamma=gamma, source=source)
+        self.shape       = (1, 1, 1)
+        self._vardict = { 'pressure': self.pressure, 'density': self.density,
+                          'velocity': self.velocity, 'mach': self.mach, 'enthalpy': self.enthalpy,
+                          'entropy': self.entropy, 'ptot': self.ptot, 'htot': self.htot }
+        self._bcdict.update({'sym': self.bc_sym,
+                         'insub': self.bc_insub,
+                         'insup': self.bc_insup,
+                         'outsub': self.bc_outsub,
+                         'outsup': self.bc_outsup })
+        self._numfluxdict = { 'hllc': self.numflux_hllc, 'hlle': self.numflux_hlle, 
+                        'centered': self.numflux_centeredflux, 'centered': self.numflux_centeredflux, 'centeredmassflow': self.numflux_centeredmassflow }
+
+class model(euler1d): # backward compatibility
+    pass
+
+# ===============================================================
 # implementation of derived MODEL class
 
-class nozzle(model):
+class nozzle(euler1d):
     """
     Class nozzle for euler equations with section term -1/A dA/dx (rho u, rho u2, rho u Ht)
 
     attributes:
-        _waves[5]
 
     """
     def __init__(self, sectionlaw, gamma=1.4):
-        model.__init__(self, gamma=gamma, source=[ self.src_mass, self.src_mom, self.src_energy ])
+        euler1d.__init__(self, gamma=gamma, source=[ self.src_mass, self.src_mom, self.src_energy ])
         self.sectionlaw = sectionlaw
+        self.shape      = (1, 1, 1)
  
     def initdisc(self, mesh):
         self.geomterm = 1./self.sectionlaw(mesh.centers())* \
@@ -343,11 +390,23 @@ class nozzle(model):
 # ===============================================================
 # implementation of euler 2D class
 
-class euler2d(model):
+class euler2d(base):
     """
     Class model for 2D euler equations
     """
-    pass
+    def __init__(self, gamma=1.4, source=None):
+        base.__init__(self, gamma=gamma, source=source)
+        self.shape       = (1, 2, 1)
+        self._vardict = { 'pressure': self.pressure, 'density': self.density,
+                          'velocity': self.velocity, 'mach': self.mach, 'enthalpy': self.enthalpy,
+                          'entropy': self.entropy, 'ptot': self.ptot, 'htot': self.htot }
+        self._bcdict.update({'sym': self.bc_sym,
+                         'insub': self.bc_insub,
+                         'insup': self.bc_insup,
+                         'outsub': self.bc_outsub,
+                         'outsup': self.bc_outsup })
+        self._numfluxdict = { 'hllc': self.numflux_hllc, 'hlle': self.numflux_hlle, 
+                        'centered': self.numflux_centeredflux, 'centered': self.numflux_centeredflux, 'centeredmassflow': self.numflux_centeredmassflow }
 
 
 # ===============================================================

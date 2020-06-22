@@ -23,8 +23,9 @@ class fdata():
         self.nelem = mesh.ncell
         self.time  = t
         if data!=None:
-            self.data = [ np.ones(self.nelem)*d for d in data ]
+            self.data = [ np.array(d).T*np.ones(self.nelem) for d in data ]
         else:
+            raise NotImplementedError("no more possible to get data signature")
             self.data = [ np.zeros(self.nelem) ] * self.neq
             # for i in range(self.neq):
             #     self.data.append(np.zeros(nelem))

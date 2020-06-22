@@ -30,17 +30,13 @@ class mesh2d(meshbase.virtualmesh):
             'right'  : (np.arange(ny)+1)*(nx+1)-1,
             'top'    : ny*(nx+1) + ny*nx + np.arange(nx),
             'bottom' : ny*(nx+1) + np.arange(nx) }
-        }
 
     def centers(self):
         "compute centers of cells in a mesh"
-        # DEV: to check, certainly wrong here, must use numpy.meshgrid function
-        xc = np.zeros(self.ncell)
-        yc = np.zeros(self.ncell)
-        for i in np.arange(self.ncell):
-            xc[i] = (self.xf[i]+self.xf[i+1])/2.
-            yc[i] = (self.yf[i]+self.yf[i+1])/2.
-        return xc, yc
+        x = np.linspace(0., self.lx, self.nx, endpoint=False)+ .5*self.dx()
+        y = np.linspace(0., self.ly, self.ny, endpoint=False)+ .5*self.dy()
+        xx, yy = np.meshgrid(x, y)
+        return xx.flatten(), yy.flatten()
 
     def dx(self):
         "compute cell sizes in a mesh"
@@ -51,6 +47,7 @@ class mesh2d(meshbase.virtualmesh):
         return self.ly / self.ny
 
     def __repr__(self):
+        print("mesh object: mesh2d")
         # print("length : ", self.length)
         # print("ncell  : ", self.ncell)
         # dx = self.dx()
@@ -64,3 +61,6 @@ class mesh2d(meshbase.virtualmesh):
         return list of index of faces for a given boundary condition
         """
         return self._io_bcfaces[tag]
+
+class unimesh(mesh2d):
+    pass
