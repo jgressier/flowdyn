@@ -57,7 +57,7 @@ class base():
 
     def fdata_fromprim(self, data):
         f = field.fdata(self.model, self.mesh, data)
-        return field.fdata(self.model, self.mesh, self.model.prim2cons(f))
+        return field.fdata(self.model, self.mesh, self.model.prim2cons(f.data))
 
     def rhs(self, field):
         self.qdata = [ d.copy() for d in field.data ]

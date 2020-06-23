@@ -46,7 +46,7 @@ def frho(x,y):
 xc, yc = meshsim.centers()
 print("x",xc)
 print("u",fuv(xc, yc))
-finit = rhs.fdata(model.prim2cons([ frho(xc, yc), fuv(xc, yc), fp(xc, yc) ])) # rho, u, p
+finit = rhs.fdata_fromprim([ frho(xc, yc), fuv(xc, yc), fp(xc, yc) ]) # rho, (u,v), p
 
 fsol = solver.solve(finit, cfl, [endtime])
 

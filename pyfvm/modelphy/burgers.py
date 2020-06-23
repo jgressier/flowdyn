@@ -38,6 +38,7 @@ class model(base.model):
         base.model.__init__(self, name='burgers', neq=1)
         self.has_firstorder_terms = 1
         self.islinear = 0
+        self.shape    = [1]
                 
     def cons2prim(self, qdata): # conservative and primitive data are the same
         return qdata

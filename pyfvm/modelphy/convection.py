@@ -40,6 +40,8 @@ class model(base.model):
         self.has_firstorder_terms = 1
         self.convcoef = convcoef
         self.islinear = 1
+        self.shape    = [1]
+
         
     def cons2prim(self, qdata):
         return [ 1*d for d in qdata ]

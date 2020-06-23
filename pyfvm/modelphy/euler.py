@@ -30,6 +30,9 @@ def _vecmag(qdata):
 def _vecsqrmag(qdata):
     return np.sum(qdata**2, axis=0)
 
+def _sca_dot_vec(r, v):
+    return r*v
+
 def datavector(ux, uy, uz=None):
     return np.vstack([ux, uy]) if not uz else np.vstack([ux, uy, uz])
 
@@ -46,7 +49,7 @@ class base(mbase.model):
     def __init__(self, gamma=1.4, source=None):
         mbase.model.__init__(self, name='euler', neq=3)
         self.islinear    = 0
-        self.shape       = (1, 1, 1)
+        self.shape       = [1, 1, 1]
         self.gamma       = gamma
         self.source      = source
         self._vardict = { 'pressure': self.pressure, 'density': self.density,
@@ -78,7 +81,7 @@ class base(mbase.model):
         """
         V2 = pdata[1]**2 if pdata[1].ndim==1 else _vecsqrmag(pdata[1])
         rhoe = pdata[2]/(self.gamma-1.) + .5*pdata[0]*V2
-        return [ pdata[0], (pdata[1].T*pdata[0]).T, rhoe ]
+        return [ pdata[0], _sca_dot_vec(pdata[0], pdata[1]), rhoe ]
 
     def density(self, qdata):
         return qdata[0].copy()
@@ -300,9 +303,8 @@ class base(mbase.model):
         #        dt = CFL * dx / ( |u| + c )
         # dt = np.zeros(len(dx)) #test use zeros instead
         #dt = condition*dx/ (data[1] + np.sqrt(self.gamma*data[2]/data[0]) )
-        dt = condition*dx *data[0]/ (
-                np.abs(data[1]) + np.sqrt(
-                self.gamma*(self.gamma-1.0)*(data[2]*data[0]-0.5*data[1]**2) ))
+        Vmag = self.velocitymag(data)
+        dt = condition*dx / ( Vmag  + np.sqrt(self.gamma*(self.gamma-1.0)*(data[2]/data[0]-0.5*Vmag**2) ))
         return dt
 
     def bc_sym(self, dir, data, param):
@@ -341,7 +343,7 @@ class euler1d(base):
     """
     def __init__(self, gamma=1.4, source=None):
         base.__init__(self, gamma=gamma, source=source)
-        self.shape       = (1, 1, 1)
+        self.shape       = [1, 1, 1]
         self._vardict = { 'pressure': self.pressure, 'density': self.density,
                           'velocity': self.velocity, 'mach': self.mach, 'enthalpy': self.enthalpy,
                           'entropy': self.entropy, 'ptot': self.ptot, 'htot': self.htot }
@@ -369,7 +371,6 @@ class nozzle(euler1d):
     def __init__(self, sectionlaw, gamma=1.4):
         euler1d.__init__(self, gamma=gamma, source=[ self.src_mass, self.src_mom, self.src_energy ])
         self.sectionlaw = sectionlaw
-        self.shape      = (1, 1, 1)
  
     def initdisc(self, mesh):
         self.geomterm = 1./self.sectionlaw(mesh.centers())* \
@@ -396,7 +397,7 @@ class euler2d(base):
     """
     def __init__(self, gamma=1.4, source=None):
         base.__init__(self, gamma=gamma, source=source)
-        self.shape       = (1, 2, 1)
+        self.shape       = [1, 2, 1]
         self._vardict = { 'pressure': self.pressure, 'density': self.density,
                           'velocity': self.velocity, 'mach': self.mach, 'enthalpy': self.enthalpy,
                           'entropy': self.entropy, 'ptot': self.ptot, 'htot': self.htot }

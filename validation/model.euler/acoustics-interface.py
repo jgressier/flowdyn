@@ -15,12 +15,12 @@ from pyfvm.integration import *
 import pyfvm.modelphy.euler as euler
 import pyfvm.modeldisc      as modeldisc
 
-meshsim  = unimesh(ncell=1000,  length=1.)
+meshsim  = unimesh(ncell=200,  length=1.)
 #meshref  = unimesh(ncell=1000, length=1.)
 
 model = euler.model()
 
-bcL  = { 'type': 'outsup' } # not physical but can work
+bcL  = { 'type': 'sym' } # not physical but can work
 bcR  = { 'type': 'sym' } # for wall
 xnum = muscl(vanalbada) ; flux = 'hllc'
 #xnum = extrapol1() ; flux = 'centered'
@@ -32,7 +32,7 @@ solver = rk3ssp(meshsim, rhs)
 #
 nsol    = 100
 endtime = .8
-cfl     = 1.
+cfl     = .8
 
 # initial functions
 def fu(x):
@@ -45,7 +45,7 @@ def frho(x):
     return 1.4 * ( fp(x)**(1./1.4)*(x<.6) + rhoratio*(x>.6) )
 
 xc    = meshsim.centers()
-finit = rhs.fdata(model.prim2cons([ frho(xc), fu(xc), fp(xc) ])) # rho, u, p
+finit = rhs.fdata_fromprim([ frho(xc), fu(xc), fp(xc) ]) # rho, u, p
 
 fsol = solver.solve(finit, cfl, np.linspace(0., endtime, nsol+1))
 solver.show_perf()

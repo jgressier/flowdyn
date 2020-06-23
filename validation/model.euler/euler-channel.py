@@ -33,7 +33,7 @@ solver = rk2(meshsim, rhs)
 endtime = 500.
 cfl     = .5
 
-finit = rhs.fdata(model.prim2cons([  1., 0., 1. ])) # rho, u, p
+finit = rhs.fdata_fromprim([ 1., 0., 1. ]) # rho, u, p
 
 fsol = solver.solve(finit, cfl, [endtime])
 

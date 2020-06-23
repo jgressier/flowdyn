@@ -9,6 +9,7 @@ import matplotlib.pyplot as plt
 #import model
 #import mesh
 
+
 class fdata():
     """
     define field: neq x nelem data
@@ -23,7 +24,14 @@ class fdata():
         self.nelem = mesh.ncell
         self.time  = t
         if data!=None:
-            self.data = [ np.array(d).T*np.ones(self.nelem) for d in data ]
+            self.data = data[:] # copy shape
+            # and check
+            for i, d in enumerate(data):
+                if np.ndim(d) < self.model.shape[i]:
+                    self.data[i] = np.repeat(np.expand_dims(d, axis=0), self.nelem, axis=0).T
+                else:
+                    self.data[i] = d.copy()
+            #self.data = [ np.array(d).T*np.ones(self.nelem) for d in data ] # old version only working for scalars
         else:
             raise NotImplementedError("no more possible to get data signature")
             self.data = [ np.zeros(self.nelem) ] * self.neq
@@ -31,8 +39,7 @@ class fdata():
             #     self.data.append(np.zeros(nelem))
                     
     def copy(self):
-        new = fdata(self.model, self.mesh, self.data)
-        new.time  = self.time
+        new = fdata(self.model, self.mesh, self.data, t=self.time)
         # new.mesh  = self.mesh
         # new.nelem = self.nelem
         # new.data = [ d.copy() for d in self.data ]
