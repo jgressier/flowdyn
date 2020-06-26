@@ -17,6 +17,10 @@ class virtualmesh():
     def __init__(self, type='virtual'):
         self._type = type
 
+    def nbfaces(self):
+        "returns number of faces"
+        raise NotImplementedError()
+
     def centers(self):
         "compute centers of cells in a mesh"
         raise NotImplementedError()

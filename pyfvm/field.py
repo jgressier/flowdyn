@@ -49,11 +49,29 @@ class fdata():
         self.__init__(f.model, f.mesh, f.data)
         self.time = f.time
 
+    def zero_datalist(self, newdim=None):
+        """returns a list of numpy.array with the same shape of self.data, possibly resizes to dim if provided"""
+        if newdim:
+            datalist = [ 0 for d in self.data]
+            for i, d in enumerate(self.data):
+                newshape = np.array(d.shape)
+                newshape[-1] = newdim
+                datalist[i]  = np.zeros(newshape)
+        else:
+            datalist = [ np.zeros(d.shape) for d in self.data]
+        return datalist
+
     def phydata(self, name):
         return self.model.nameddata(name, self.data)
 
     def plot(self, name, style='o', axes=plt):
         return axes.plot(self.mesh.centers(), self.phydata(name), style)
+
+    def contour(self, name, style={}, axes=plt):
+        return axes.contour(self.phydata(name).reshape((self.mesh.nx, self.mesh.ny)))
+
+    def contourf(self, name, style={}, axes=plt):
+        return axes.contourf(self.phydata(name).reshape((self.mesh.nx, self.mesh.ny)))
 
     def set_plotdata(self, line, name):
         line.set_data(self.mesh.centers(), self.phydata(name))

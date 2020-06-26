@@ -60,7 +60,9 @@ class base():
         return field.fdata(self.model, self.mesh, self.model.prim2cons(f.data))
 
     def rhs(self, field):
-        self.qdata = [ d.copy() for d in field.data ]
+        print("t=",field.time)
+        self.field = field
+        self.qdata = [ d.copy() for d in field.data ] # wonder if copy is necessary
         self.cons2prim()
         self.calc_grad()
         self.calc_bc_grad()
@@ -178,32 +180,54 @@ class fvm2dcart(base):
         """
         Computes left and right interpolation to a face, using self (cell) primitive data and (face) gradients
         """
+        self.pL = self.field.zero_datalist(newdim=self.mesh.nbfaces())
+        self.pR = self.field.zero_datalist(newdim=self.mesh.nbfaces())
         # reorder data for 1st order extrapolation, except for boundary conditions
         nx = self.mesh.nx
         ny = self.mesh.ny
         fshift = ny*(nx+1)
         for p in range(self.neq):
+            if self.pdata[p].ndim == 2:
             # distribute cell states (by j rows) to i faces
-            for j in range(ny):
-                self.pL[p][j*(nx+1)+1:(j+1)*(nx+1)] = self.pdata[p][j*nx:(j+1)*nx]
-                self.pR[p][j*(nx+1):(j+1)*(nx+1)-1] = self.pdata[p][j*nx:(j+1)*nx]
-            # distribute cell states  (by j rows) to j faces (starting at index ny*(nx+1))
-            for j in range(ny):
-                self.pL[p][fshift+(j+1)*nx:fshift+(j+2)*nx] = self.pdata[p][j*nx:(j+1)*nx]
-                self.pR[p][fshift+ j   *nx:fshift+(j+1)*nx] = self.pdata[p][j*nx:(j+1)*nx]
+                for j in range(ny):
+                    self.pL[p][:,j*(nx+1)+1:(j+1)*(nx+1)] = self.pdata[p][:,j*nx:(j+1)*nx]
+                    self.pR[p][:,j*(nx+1):(j+1)*(nx+1)-1] = self.pdata[p][:,j*nx:(j+1)*nx]
+                # distribute cell states  (by j rows) to j faces (starting at index ny*(nx+1))
+                for j in range(ny):
+                    self.pL[p][:,fshift+(j+1)*nx:fshift+(j+2)*nx] = self.pdata[p][:,j*nx:(j+1)*nx]
+                    self.pR[p][:,fshift+ j   *nx:fshift+(j+1)*nx] = self.pdata[p][:,j*nx:(j+1)*nx]
+            else:
+                # distribute cell states (by j rows) to i faces
+                for j in range(ny):
+                    self.pL[p][j*(nx+1)+1:(j+1)*(nx+1)] = self.pdata[p][j*nx:(j+1)*nx]
+                    self.pR[p][j*(nx+1):(j+1)*(nx+1)-1] = self.pdata[p][j*nx:(j+1)*nx]
+                # distribute cell states  (by j rows) to j faces (starting at index ny*(nx+1))
+                for j in range(ny):
+                    self.pL[p][fshift+(j+1)*nx:fshift+(j+2)*nx] = self.pdata[p][j*nx:(j+1)*nx]
+                    self.pR[p][fshift+ j   *nx:fshift+(j+1)*nx] = self.pdata[p][j*nx:(j+1)*nx]
     
     def calc_bc(self):
         # DEV: only consider periodic conditions
         #
         for i in range(self.neq):
-            # copy 'right' bc left state to 'left' bc left state
-            self.pL[i][self.mesh.index_of_bc('left')] = self.pL[i][self.mesh.index_of_bc('right')]
-            # copy 'left' bc right state to 'right' bc right state
-            self.pR[i][self.mesh.index_of_bc('right')] = self.pR[i][self.mesh.index_of_bc('left')]
-            # copy 'top' bc left state to 'bottom' bc left state
-            self.pL[i][self.mesh.index_of_bc('bottom')] = self.pL[i][self.mesh.index_of_bc('top')]
-            # copy 'bottom' bc right state to 'top' bc right state
-            self.pR[i][self.mesh.index_of_bc('top')] = self.pR[i][self.mesh.index_of_bc('bottom')]
+            if self.model.shape[i] == 2:
+                # copy 'right' bc left state to 'left' bc left state
+                self.pL[i][:,self.mesh.index_of_bc('left')] = self.pL[i][:,self.mesh.index_of_bc('right')]
+                # copy 'left' bc right state to 'right' bc right state
+                self.pR[i][:,self.mesh.index_of_bc('right')] = self.pR[i][:,self.mesh.index_of_bc('left')]
+                # copy 'top' bc left state to 'bottom' bc left state
+                self.pL[i][:,self.mesh.index_of_bc('bottom')] = self.pL[i][:,self.mesh.index_of_bc('top')]
+                # copy 'bottom' bc right state to 'top' bc right state
+                self.pR[i][:,self.mesh.index_of_bc('top')] = self.pR[i][:,self.mesh.index_of_bc('bottom')]
+            else:
+                # copy 'right' bc left state to 'left' bc left state
+                self.pL[i][self.mesh.index_of_bc('left')] = self.pL[i][self.mesh.index_of_bc('right')]
+                # copy 'left' bc right state to 'right' bc right state
+                self.pR[i][self.mesh.index_of_bc('right')] = self.pR[i][self.mesh.index_of_bc('left')]
+                # copy 'top' bc left state to 'bottom' bc left state
+                self.pL[i][self.mesh.index_of_bc('bottom')] = self.pL[i][self.mesh.index_of_bc('top')]
+                # copy 'bottom' bc right state to 'top' bc right state
+                self.pR[i][self.mesh.index_of_bc('top')] = self.pR[i][self.mesh.index_of_bc('bottom')]
 
         # commented 1D condition as an example
         # if (self.bcL['type'] == 'per') and (self.bcR['type'] == 'per'):     #periodic boundary conditions
@@ -240,8 +264,15 @@ class fvm2dcart(base):
           computes array of fluxes, calls model numerical flux using self.numflux tag
           first (nx+1)*ny are X oriented flux, then nx*(ny+1) are Y oriented flux
         """
-        fshift = ny*(nx+1)
-        self.flux = self.model.numflux2d(self.numflux, self.pL, self.pR) # get numerical flux from model object, self.numflux is here only a tag
+        nx = self.mesh.nx
+        ny = self.mesh.ny
+        nxface = ny*(nx+1)
+        nyface = nx*(ny+1)
+        # get numerical flux from model object, self.numflux is here only a tag
+        dir = np.zeros((2,nxface+nyface),dtype=np.int8)
+        dir[0,:nxface]   = 1
+        dir[1,nxface+1:] = 1  
+        self.flux = self.model.numflux(self.numflux, self.pL, self.pR, dir) 
 
     def calc_timestep(self, f, condition):
         # cell characteristic length is constant for cartesian mesh
@@ -251,12 +282,23 @@ class fvm2dcart(base):
         return self.model.timestep(f.data, ldim, condition)
         
     def calc_res(self):
-        self.residual = []
+        self.residual = [ np.zeros_like(d) for d in self.qdata ]
         dx = self.mesh.dx()
         dy = self.mesh.dy()
-        for i in range(self.neq):
-            self.residual.append(-(self.flux[i][1:self.nelem+1]-self.flux[i][0:self.nelem]) \
-                                  /(self.mesh.xf[1:self.nelem+1]-self.mesh.xf[0:self.nelem]))
+        nx = self.mesh.nx
+        ny = self.mesh.ny
+        fshift = ny*(nx+1)
+        for flux, res in zip(self.flux, self.residual):
+            if flux.ndim == 2:
+                # flux balance by j row
+                for j in range(ny):
+                    res[:,j*nx:(j+1)*nx] -= (flux[:,j*(nx+1)+1:(j+1)*(nx+1)] - flux[:,j*(nx+1):(j+1)*(nx+1)-1] ) /dx + \
+                                   (flux[:,fshift+(j+1)*nx:fshift+(j+2)*nx] - flux[:,fshift+j*nx:fshift+(j+1)*nx] ) /dy
+            else:
+                # flux balance by j row
+                for j in range(ny):
+                    res[j*nx:(j+1)*nx] -= (flux[j*(nx+1)+1:(j+1)*(nx+1)] - flux[j*(nx+1):(j+1)*(nx+1)-1] ) /dx + \
+                            (flux[fshift+(j+1)*nx:fshift+(j+2)*nx] - flux[fshift+j*nx:fshift+(j+1)*nx] ) /dy
         return self.residual
 
     def add_source(self):

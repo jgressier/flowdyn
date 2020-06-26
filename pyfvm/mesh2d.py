@@ -31,6 +31,10 @@ class mesh2d(meshbase.virtualmesh):
             'top'    : ny*(nx+1) + ny*nx + np.arange(nx),
             'bottom' : ny*(nx+1) + np.arange(nx) }
 
+    def nbfaces(self):
+        "returns number of faces"
+        return (self.nx+1)*self.ny + self.nx*(self.ny+1)
+
     def centers(self):
         "compute centers of cells in a mesh"
         x = np.linspace(0., self.lx, self.nx, endpoint=False)+ .5*self.dx()

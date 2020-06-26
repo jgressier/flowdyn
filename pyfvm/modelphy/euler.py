@@ -31,7 +31,7 @@ def _vecsqrmag(qdata):
     return np.sum(qdata**2, axis=0)
 
 def _sca_dot_vec(r, v):
-    return r*v
+    return r*v # direct mulyiplication thanks to shape (:)*(2,:)
 
 def datavector(ux, uy, uz=None):
     return np.vstack([ux, uy]) if not uz else np.vstack([ux, uy, uz])
@@ -52,16 +52,6 @@ class base(mbase.model):
         self.shape       = [1, 1, 1]
         self.gamma       = gamma
         self.source      = source
-        self._vardict = { 'pressure': self.pressure, 'density': self.density,
-                          'velocity': self.velocity, 'mach': self.mach, 'enthalpy': self.enthalpy,
-                          'entropy': self.entropy, 'ptot': self.ptot, 'htot': self.htot }
-        self._bcdict.update({'sym': self.bc_sym,
-                         'insub': self.bc_insub,
-                         'insup': self.bc_insup,
-                         'outsub': self.bc_outsub,
-                         'outsup': self.bc_outsup })
-        self._numfluxdict = { 'hllc': self.numflux_hllc, 'hlle': self.numflux_hlle, 
-                        'centered': self.numflux_centeredflux, 'centered': self.numflux_centeredflux, 'centeredmassflow': self.numflux_centeredmassflow }
         
     def cons2prim(self, qdata): # qdata[ieq][cell] :
         """
@@ -89,17 +79,11 @@ class base(mbase.model):
     def pressure(self, qdata): # returns (gam-1)*( rho.et) - .5 * (rho.u)**2 / rho )
         return (self.gamma-1.0)*(qdata[2]-self.kinetic_energy(qdata))
 
-    def velocity(self, qdata):  # returns (rho u)/rho
+    def velocity(self, qdata):  # returns (rho u)/rho, works for both scalar and vector
         return qdata[1]/qdata[0]
 
     def velocitymag(self, qdata):  # returns mag(rho u)/rho, depending if scalar or vector
         return np.abs(qdata[1])/qdata[0] if qdata[1].ndim==1 else _vecmag(qdata[1])/qdata[0]
-
-    def velocity_x(self, qdata):  # returns (rho ux)/rho
-        return qdata[1][0,:]/qdata[0]
-
-    def velocity_y(self, qdata):  # returns (rho uy)/rho
-        return qdata[1][1,:]/qdata[0]
 
     def kinetic_energy(self, qdata):  
         """volumic kinetic energy"""
@@ -307,6 +291,37 @@ class base(mbase.model):
         dt = condition*dx / ( Vmag  + np.sqrt(self.gamma*(self.gamma-1.0)*(data[2]/data[0]-0.5*Vmag**2) ))
         return dt
 
+
+# ===============================================================
+# implementation of euler 1D class
+
+class euler1d(base):
+    """
+    Class model for 2D euler equations
+    """
+    def __init__(self, gamma=1.4, source=None):
+        base.__init__(self, gamma=gamma, source=source)
+        self.shape       = [1, 1, 1]
+        self._vardict = { 'pressure': self.pressure, 'density': self.density,
+                          'velocity': self.velocity, 'mach': self.mach, 'enthalpy': self.enthalpy,
+                          'entropy': self.entropy, 'ptot': self.ptot, 'htot': self.htot }
+        self._bcdict.update({'sym': self.bc_sym,
+                         'insub': self.bc_insub,
+                         'insup': self.bc_insup,
+                         'outsub': self.bc_outsub,
+                         'outsup': self.bc_outsup })
+        self._numfluxdict = { 'hllc': self.numflux_hllc, 'hlle': self.numflux_hlle, 
+                        'centered': self.numflux_centeredflux, 'centered': self.numflux_centeredflux, 'centeredmassflow': self.numflux_centeredmassflow }
+
+    def _derived_fromprim(self, pdata, dir):
+        """
+        returns rho, un, V, c2, H
+        'dir' is ignored
+        """
+        c2 = self.gamma * pdata[2] / pdata[0]
+        H  = c2/(self.gamma-1.) + .5*pdata[1]**2
+        return pdata[0], pdata[1], pdata[1], c2, H
+
     def bc_sym(self, dir, data, param):
         "symmetry boundary condition, for inviscid equations, it is equivalent to a wall, do not need user parameters"
         return [ data[0], -data[1], data[2] ]
@@ -333,27 +348,6 @@ class base(mbase.model):
 
     def bc_outsup(self, dir, data, param):
         return data
-
-# ===============================================================
-# implementation of euler 1D class
-
-class euler1d(base):
-    """
-    Class model for 2D euler equations
-    """
-    def __init__(self, gamma=1.4, source=None):
-        base.__init__(self, gamma=gamma, source=source)
-        self.shape       = [1, 1, 1]
-        self._vardict = { 'pressure': self.pressure, 'density': self.density,
-                          'velocity': self.velocity, 'mach': self.mach, 'enthalpy': self.enthalpy,
-                          'entropy': self.entropy, 'ptot': self.ptot, 'htot': self.htot }
-        self._bcdict.update({'sym': self.bc_sym,
-                         'insub': self.bc_insub,
-                         'insup': self.bc_insup,
-                         'outsub': self.bc_outsub,
-                         'outsup': self.bc_outsup })
-        self._numfluxdict = { 'hllc': self.numflux_hllc, 'hlle': self.numflux_hlle, 
-                        'centered': self.numflux_centeredflux, 'centered': self.numflux_centeredflux, 'centeredmassflow': self.numflux_centeredmassflow }
 
 class model(euler1d): # backward compatibility
     pass
@@ -401,14 +395,44 @@ class euler2d(base):
         self._vardict = { 'pressure': self.pressure, 'density': self.density,
                           'velocity': self.velocity, 'mach': self.mach, 'enthalpy': self.enthalpy,
                           'entropy': self.entropy, 'ptot': self.ptot, 'htot': self.htot }
-        self._bcdict.update({'sym': self.bc_sym,
-                         'insub': self.bc_insub,
-                         'insup': self.bc_insup,
-                         'outsub': self.bc_outsub,
-                         'outsup': self.bc_outsup })
-        self._numfluxdict = { 'hllc': self.numflux_hllc, 'hlle': self.numflux_hlle, 
-                        'centered': self.numflux_centeredflux, 'centered': self.numflux_centeredflux, 'centeredmassflow': self.numflux_centeredmassflow }
+        self._bcdict.update({ #'sym': self.bc_sym,
+                        #  'insub': self.bc_insub,
+                        #  'insup': self.bc_insup,
+                        #  'outsub': self.bc_outsub,
+                        #  'outsup': self.bc_outsup 
+                        })
+        self._numfluxdict = { #'hllc': self.numflux_hllc, 'hlle': self.numflux_hlle, 
+                        'centered': self.numflux_centeredflux  }
 
+    def _derived_fromprim(self, pdata, dir):
+        """
+        returns rho, un, V, c2, H
+        'dir' is ignored
+        """
+        c2 = self.gamma * pdata[2] / pdata[0]
+        un = np.einsum('ij,ik->j',pdata[1], dir) 
+        H  = c2/(self.gamma-1.) + .5*_vecmag(pdata[1])
+        return pdata[0], un, pdata[1], c2, H
+
+    def velocity_x(self, qdata):  # returns (rho ux)/rho
+        return qdata[1][0,:]/qdata[0]
+
+    def velocity_y(self, qdata):  # returns (rho uy)/rho
+        return qdata[1][1,:]/qdata[0]
+
+    def numflux_centeredflux(self, pdataL, pdataR, dir): # centered flux ; pL[ieq][face]
+        gam  = self.gamma
+        gam1 = gam-1.
+
+        rhoL, unL, VL, pL, HL = self._derived_fromprim(pdataL, dir)
+        rhoR, unR, VR, pR, HR = self._derived_fromprim(pdataR, dir)
+    
+        # final flux
+        Frho  = .5*( rhoL*unL + rhoR*unR )
+        Frhou = .5*( (rhoL*unL*VL + pL*dir) + (rhoR*unR*VR + pR*dir))
+        FrhoE = .5*( (rhoL*unL*HL) + (rhoR*unR*HR))
+
+        return [Frho, Frhou, FrhoE]
 
 # ===============================================================
 # automatic testing

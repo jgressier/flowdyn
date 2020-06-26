@@ -19,6 +19,10 @@ class mesh1d(meshbase.virtualmesh):
         self.xf     = np.linspace(0., length, ncell+1)+x0
         self.xc     = self.centers()
 
+    def nbfaces(self):
+        "returns number of faces"
+        return self.ncell+1
+
     def centers(self):
         "compute centers of cells in a mesh"
         xc = np.zeros(self.ncell)
