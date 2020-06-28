@@ -60,7 +60,7 @@ class base():
         return field.fdata(self.model, self.mesh, self.model.prim2cons(f.data))
 
     def rhs(self, field):
-        print("t=",field.time)
+        #print("t=",field.time)
         self.field = field
         self.qdata = [ d.copy() for d in field.data ] # wonder if copy is necessary
         self.cons2prim()

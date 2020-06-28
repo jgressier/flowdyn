@@ -68,10 +68,18 @@ class fdata():
         return axes.plot(self.mesh.centers(), self.phydata(name), style)
 
     def contour(self, name, style={}, axes=plt):
-        return axes.contour(self.phydata(name).reshape((self.mesh.nx, self.mesh.ny)))
+        xx, yy = self.mesh.centers()
+        axes.set_aspect('equal')
+        return axes.contour(xx.reshape((self.mesh.nx, self.mesh.ny)),
+                             yy.reshape((self.mesh.nx, self.mesh.ny)), 
+                             self.phydata(name).reshape((self.mesh.nx, self.mesh.ny)))
 
     def contourf(self, name, style={}, axes=plt):
-        return axes.contourf(self.phydata(name).reshape((self.mesh.nx, self.mesh.ny)))
+        xx, yy = self.mesh.centers()
+        axes.set_aspect('equal')
+        return axes.contourf(xx.reshape((self.mesh.nx, self.mesh.ny)),
+                             yy.reshape((self.mesh.nx, self.mesh.ny)), 
+                             self.phydata(name).reshape((self.mesh.nx, self.mesh.ny)))
 
     def set_plotdata(self, line, name):
         line.set_data(self.mesh.centers(), self.phydata(name))

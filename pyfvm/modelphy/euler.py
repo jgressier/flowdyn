@@ -31,7 +31,7 @@ def _vecsqrmag(qdata):
     return np.sum(qdata**2, axis=0)
 
 def _sca_mult_vec(r, v):
-    return r*v # direct mulyiplication thanks to shape (:)*(2,:)
+    return r*v # direct multiplication thanks to shape (:)*(2,:)
 
 def _vec_dot_vec(v1, v2):
     return np.einsum('ij,ij->j', v1, v2) 
@@ -396,7 +396,8 @@ class euler2d(base):
         base.__init__(self, gamma=gamma, source=source)
         self.shape       = [1, 2, 1]
         self._vardict = { 'pressure': self.pressure, 'density': self.density,
-                          'velocity': self.velocity, 'mach': self.mach, 'enthalpy': self.enthalpy,
+                          'velocity': self.velocity, 'velocity_x': self.velocity_x, 'velocity_y': self.velocity_y,
+                          'mach': self.mach, 'enthalpy': self.enthalpy,
                           'entropy': self.entropy, 'ptot': self.ptot, 'htot': self.htot }
         self._bcdict.update({ #'sym': self.bc_sym,
                         #  'insub': self.bc_insub,
@@ -415,7 +416,7 @@ class euler2d(base):
         c2 = self.gamma * pdata[2] / pdata[0]
         un = _vec_dot_vec(pdata[1], dir) 
         H  = c2/(self.gamma-1.) + .5*_vecmag(pdata[1])
-        return pdata[0], un, pdata[1], c2, H
+        return pdata[0], un, pdata[1], pdata[2], H, c2
 
     def velocity_x(self, qdata):  # returns (rho ux)/rho
         return qdata[1][0,:]/qdata[0]
@@ -431,12 +432,12 @@ class euler2d(base):
         gam  = self.gamma
         gam1 = gam-1.
 
-        rhoL, unL, VL, pL, HL = self._derived_fromprim(pdataL, dir)
-        rhoR, unR, VR, pR, HR = self._derived_fromprim(pdataR, dir)
+        rhoL, unL, VL, pL, HL, cL2 = self._derived_fromprim(pdataL, dir)
+        rhoR, unR, VR, pR, HR, cR2 = self._derived_fromprim(pdataR, dir)
     
         # final flux
         Frho  = .5*( rhoL*unL + rhoR*unR )
-        Frhou = .5*( (rhoL*unL*VL + pL*dir) + (rhoR*unR*VR + pR*dir))
+        Frhou = .5*( (rhoL*unL)*VL + pL*dir + (rhoR*unR)*VR + pR*dir)
         FrhoE = .5*( (rhoL*unL*HL) + (rhoR*unR*HR))
 
         return [Frho, Frhou, FrhoE]

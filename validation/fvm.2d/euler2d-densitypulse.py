@@ -5,7 +5,7 @@ test integration methods
 
 import time
 import cProfile
-from pylab import *
+import matplotlib.pyplot as plt
 import numpy as np 
 
 import pyfvm.mesh2d as mesh2d
@@ -31,17 +31,17 @@ solver = rk3ssp(meshsim, rhs)
 
 # computation
 #
-endtime = .5
-cfl     = .5
+endtime = 5.
+cfl     = 2.5
 
 # initial functions
 def fuv(x,y):
     vmag = .01 ; k = 10.
-    return euler.datavector(0.*x+.2, 0.*x)
+    return euler.datavector(0.*x+.4, 0.*x+.2)
 def fp(x,y): # gamma = 1.4
     return 0.*x+1.
 def frho(x,y):
-    return 1.4 * (1+.0*np.exp(-((x-.5)**2+(y-.5)**2)/(.1)**2))
+    return 1.4 * (1+.2*np.exp(-((x-.5)**2+(y-.5)**2)/(.1)**2))
 
 xc, yc = meshsim.centers()
 finit = rhs.fdata_fromprim([ frho(xc, yc), fuv(xc, yc), fp(xc, yc) ]) # rho, (u,v), p
@@ -52,13 +52,15 @@ fsol = solver.solve(finit, cfl, [endtime])
 solver.show_perf()
 
 # Figure / Plot
-for name in ['density', 'pressure', 'mach']:
-	fig = figure(figsize=(10,8))
-	fig.suptitle('density pulse: '+name)
-	#ylabel(name)
+vars = ['density', 'velocity_x', 'mach']
+nvars = len(vars)
+fig, ax = plt.subplots(ncols=nvars, figsize=(8*nvars-2,6))
+fig.suptitle('density pulse: ')
+for i, varname in enumerate(vars):
+	ax[i].set_title(varname)
 	#grid(linestyle='--', color='0.5')
 	#finit.plot(name, 'k-.')
-	cf = fsol[0].contourf(name, 'ko')
-	fig.colorbar(cf)
+	cf = fsol[0].contourf(varname, axes=ax[i])
+	fig.colorbar(cf, ax=ax[i])
 	#fig.savefig(name+'.png', bbox_inches='tight')
-	show()
+plt.show()
