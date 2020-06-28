@@ -270,8 +270,8 @@ class fvm2dcart(base):
         nyface = nx*(ny+1)
         # get numerical flux from model object, self.numflux is here only a tag
         dir = np.zeros((2,nxface+nyface),dtype=np.int8)
-        dir[0,:nxface]   = 1
-        dir[1,nxface+1:] = 1  
+        dir[0,:nxface] = 1
+        dir[1,nxface:] = 1  
         self.flux = self.model.numflux(self.numflux, self.pL, self.pR, dir) 
 
     def calc_timestep(self, f, condition):

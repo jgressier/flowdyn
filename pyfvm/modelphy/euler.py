@@ -30,8 +30,11 @@ def _vecmag(qdata):
 def _vecsqrmag(qdata):
     return np.sum(qdata**2, axis=0)
 
-def _sca_dot_vec(r, v):
+def _sca_mult_vec(r, v):
     return r*v # direct mulyiplication thanks to shape (:)*(2,:)
+
+def _vec_dot_vec(v1, v2):
+    return np.einsum('ij,ij->j', v1, v2) 
 
 def datavector(ux, uy, uz=None):
     return np.vstack([ux, uy]) if not uz else np.vstack([ux, uy, uz])
@@ -71,7 +74,7 @@ class base(mbase.model):
         """
         V2 = pdata[1]**2 if pdata[1].ndim==1 else _vecsqrmag(pdata[1])
         rhoe = pdata[2]/(self.gamma-1.) + .5*pdata[0]*V2
-        return [ pdata[0], _sca_dot_vec(pdata[0], pdata[1]), rhoe ]
+        return [ pdata[0], _sca_mult_vec(pdata[0], pdata[1]), rhoe ]
 
     def density(self, qdata):
         return qdata[0].copy()
@@ -410,7 +413,7 @@ class euler2d(base):
         'dir' is ignored
         """
         c2 = self.gamma * pdata[2] / pdata[0]
-        un = np.einsum('ij,ik->j',pdata[1], dir) 
+        un = _vec_dot_vec(pdata[1], dir) 
         H  = c2/(self.gamma-1.) + .5*_vecmag(pdata[1])
         return pdata[0], un, pdata[1], c2, H
 
@@ -419,6 +422,10 @@ class euler2d(base):
 
     def velocity_y(self, qdata):  # returns (rho uy)/rho
         return qdata[1][1,:]/qdata[0]
+
+    def mach(self, qdata):
+        rhoUmag = _vecmag(qdata[1])
+        return rhoUmag/np.sqrt(self.gamma*((self.gamma-1.0)*(qdata[0]*qdata[2]-0.5*rhoUmag**2)))
 
     def numflux_centeredflux(self, pdataL, pdataR, dir): # centered flux ; pL[ieq][face]
         gam  = self.gamma

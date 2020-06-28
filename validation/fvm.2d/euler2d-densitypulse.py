@@ -16,8 +16,8 @@ import pyfvm.modelphy.euler as euler
 import pyfvm.modeldisc      as modeldisc
 #import pyfvm.solution.euler_riemann as sol
 
-nx = 100
-ny = 100
+nx = 50
+ny = 50
 
 meshsim  = mesh2d.unimesh(nx, ny)
 
@@ -31,8 +31,8 @@ solver = rk3ssp(meshsim, rhs)
 
 # computation
 #
-endtime = .001
-cfl     = 1.
+endtime = .5
+cfl     = .5
 
 # initial functions
 def fuv(x,y):
@@ -41,11 +41,12 @@ def fuv(x,y):
 def fp(x,y): # gamma = 1.4
     return 0.*x+1.
 def frho(x,y):
-    return 1.4 * (1+.2*np.exp(-((x-.5)**2+(y-.5)**2)/(.1)**2))
+    return 1.4 * (1+.0*np.exp(-((x-.5)**2+(y-.5)**2)/(.1)**2))
 
 xc, yc = meshsim.centers()
 finit = rhs.fdata_fromprim([ frho(xc, yc), fuv(xc, yc), fp(xc, yc) ]) # rho, (u,v), p
 
+#cProfile.run("fsol = solver.solve(finit, cfl, [endtime])")
 fsol = solver.solve(finit, cfl, [endtime])
 
 solver.show_perf()
