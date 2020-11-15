@@ -6,7 +6,7 @@ explicit or forwardeuler
 rk2
 rk3ssp
 rk4
-implicit or ba
+implicit or backwardeuler
 trapezoidal or cranknicolson
 """
 import math

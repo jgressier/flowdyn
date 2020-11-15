@@ -1,0 +1,23 @@
+[tool.poetry]
+name = "pyfvm"
+version = "0.1.0"
+description = "Model of discretization of hyperbolic model, base is Finite Volume method"
+authors = ["j.gressier <jeremie.gressier@isae.fr>"]
+license = "MIT"
+
+[tool.poetry.dependencies]
+python = "^3.5"
+numpy = "^1.19.4"
+
+[tool.poetry.dev-dependencies]
+
+[build-system]
+requires = ["poetry-core>=1.0.0"]
+build-backend = "poetry.core.masonry.api"
+
+[tool.pytest.ini_options]
+minversion = "6.0"
+addopts = "--cov -v"
+testpaths = [
+    "tests"
+]
