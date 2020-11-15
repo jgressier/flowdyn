@@ -3,7 +3,6 @@
 test integration methods
 """
 
-import time
 import matplotlib.pyplot as plt
 
 import numpy as np 
@@ -20,8 +19,8 @@ mlength = 5.
 mesh50   = unimesh(ncell=50, length=mlength)
 mesh100  = unimesh(ncell=100, length=mlength)
 mesh1000 = unimesh(ncell=1000, length=mlength)
-nmesh    = nonunimesh(mlength, nclass=2, ncell0=10, periods=1) #fine,coarse,fine
-rmesh    = meshramzi(size=10, nclass = 3, length=mlength)
+#nmesh    = nonunimesh(mlength, nclass=2, ncell0=10, periods=1) #fine,coarse,fine
+#rmesh    = meshramzi(size=10, nclass = 3, length=mlength)
 
 mymodel  = burgers.model()  #it takes as an argument a timestep dtmax which is the maximum timestep we need to capture the phenomena in the case study  
 
@@ -128,7 +127,7 @@ xmeths  = [ muscl() ]
 # explicit, rk2, rk3ssp, rk4, implicit, trapezoidal=cranknicolson
 tmeths  = [ integ.rk4 ]
 #legends = [ 'O1 upwind', 'O2 upwind', 'O2 centered', 'O3 extrapol' ]
-legends = [ 'O1 muscl' ]
+legends = [ 'RK4 muscl' ]
 
 meshs      = [ mesh100 ]
 initm      = init_step
@@ -144,11 +143,9 @@ for i in range(nbcalc):
     thiscons = fdata(mymodel, thismesh, thisprim)
     bcL = { 'type': 'dirichlet', 'prim': thisprim[0]  }
     bcR = { 'type': 'dirichlet', 'prim': thisprim[-1] }
-    rhs = modeldisc.fvm(mymodel, thismesh, (xmeths*nbcalc)[i], bcL, bcR)
+    rhs = modeldisc.fvm(mymodel, thismesh, (xmeths*nbcalc)[i], bcL=bcL, bcR=bcR)
     solvers.append((tmeths*nbcalc)[i](thismesh, rhs))
-    start = time.clock()
     results.append(solvers[-1].solve(thiscons, (cfls*nbcalc)[i], tsave))
-    #print "cpu time of "+"%-11s"%(legends[i])+" computation (",solvers[-1].nit,"it) :",time.clock()-start,"s"
 
 # Figure
 
@@ -158,7 +155,7 @@ style = ['o', 'x', 'D', '*', '+', '>', '<', 'd']
 #
 fig = plt.figure(1, figsize=(10,8))
 plt.grid(linestyle='--', color='0.5')
-fig.suptitle('Density profile along the Sod shock-tube, CFL %.3f'%cfls[0], fontsize=12, y=0.93)
+fig.suptitle('Burgers velocity profile, CFL %.3f'%cfls[0], fontsize=12, y=0.93)
 # Initial solution
 plt.plot(meshs[0].centers(), results[0][0].data[0], '-')
 # Exact solution
@@ -170,5 +167,5 @@ for t in range(1,len(tsave)):
         plt.plot((meshs*nbcalc)[i].centers(), results[i][t].data[0], style[i])
         labels.append(legends[i]+", t=%.1f"%results[i][t].time)
 fig.legend(labels, loc='lower left',prop={'size':10})
-fig.savefig('density.png', bbox_inches='tight')
+fig.savefig('Burgers.png', bbox_inches='tight')
 plt.show()
