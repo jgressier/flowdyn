@@ -61,6 +61,9 @@ class fdata():
             datalist = [ np.zeros(d.shape) for d in self.data]
         return datalist
 
+    def isnan(self):
+        return any([ np.any(np.isnan(d)) for d in self.data])
+
     def phydata(self, name):
         return self.model.nameddata(name, self.data)
 

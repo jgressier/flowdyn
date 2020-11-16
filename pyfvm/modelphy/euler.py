@@ -314,7 +314,7 @@ class euler1d(base):
                          'outsub': self.bc_outsub,
                          'outsup': self.bc_outsup })
         self._numfluxdict = { 'hllc': self.numflux_hllc, 'hlle': self.numflux_hlle, 
-                        'centered': self.numflux_centeredflux, 'centered': self.numflux_centeredflux, 'centeredmassflow': self.numflux_centeredmassflow }
+                        'centered': self.numflux_centeredflux, 'centeredmassflow': self.numflux_centeredmassflow }
 
     def _derived_fromprim(self, pdata, dir):
         """
