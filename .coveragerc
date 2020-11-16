@@ -9,6 +9,7 @@ exclude_lines =
     if self.debug:
     if settings.DEBUG
     raise AssertionError
+    raise NameError
     raise NotImplementedError
     if 0:
     if __name__ == __main__:
