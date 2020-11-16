@@ -42,10 +42,9 @@ class nozzle():
             _Ps = _Pt/Is.PiPs_Mach(_M)
         #
 
-
     def Mach(self):
+        return
 
-    def P
     def primdata(self, ):
        return [q.rho, q.u, q.p]
         

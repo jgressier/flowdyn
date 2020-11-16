@@ -145,7 +145,7 @@ class refinedmesh(mesh1d):
         mesh1d.__init__(self, ncell, length)
         dx1 = (nratioa+nratiob) * length / ((nratioa+ratio*nratiob)*ncell)
         dx2 = ratio*dx1
-        nc1 = (ncell*nratioa)/(nratioa+nratiob)
+        nc1 = int((ncell*nratioa)/(nratioa+nratiob))
         nc2 = ncell-nc1
         self.xf = np.append(
                     np.linspace(    0.0, dx1*nc1, nc1, endpoint=False),
