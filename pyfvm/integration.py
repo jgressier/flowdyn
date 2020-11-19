@@ -24,7 +24,7 @@ class timemodel():
     def calcrhs(self, field):
         self.residual = self.modeldisc.rhs(field)
  
-    def step():
+    def step(self):
         print("not implemented for virtual class")
 
     def add_res(self, f, dt, subtimecoef = 1.0):

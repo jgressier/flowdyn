@@ -49,6 +49,9 @@ class fdata():
         self.__init__(f.model, f.mesh, f.data)
         self.time = f.time
 
+    def set_time(self, time):
+        self.time = time
+
     def zero_datalist(self, newdim=None):
         """returns a list of numpy.array with the same shape of self.data, possibly resizes to dim if provided"""
         if newdim:
