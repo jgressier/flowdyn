@@ -47,7 +47,7 @@ class extrapol2(virtualmeth):
         for i in range(len(data)):
             Ldata.append(np.zeros(nc+1))
             Rdata.append(np.zeros(nc+1))
-            Ldata[i][1:]   = data[i][:] + grad[i][0:-1]*(mesh.xf[1:]  -mesh.xc[:])
+            Ldata[i][1:]   = data[i][:] + grad[i][0:-1]*(mesh.xf[1:]  -mesh.xc[:])   # data are cell based index, grad are facebased index
             Rdata[i][0:-1] = data[i][:] + grad[i][1:]  *(mesh.xf[0:-1]-mesh.xc[:])
         return Ldata, Rdata
 

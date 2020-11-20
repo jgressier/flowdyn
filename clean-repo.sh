@@ -7,7 +7,7 @@ if [ -z "$rootdir" ] ; then
 else
 	echo git root dir: $rootdir
 	cd $rootdir 
-	find lessons -name \*.ipynb -exec python lessons/remove_output.py {} \;
+	find lessons -name \*.ipynb -exec python3 lessons/remove_output.py {} \;
 	find . -name \*.ipynb.bak -exec rm {} \;
 	for dirname in .ipynb_checkpoints __pycache__ ; do
 		find . -name .ipynb_checkpoints -type d -exec rm -R {} \;

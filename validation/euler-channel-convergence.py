@@ -28,15 +28,15 @@ rhs = modeldisc.fvm(model, meshsim, muscl(minmod),
       bcL=bcL, bcR=bcR)
 
 solver1 = rk3ssp(meshsim, rhs)
-solver2 = implicit(meshsim, rhs)
+solver2 = gear(meshsim, rhs)
 
 # computation
 #
-endtime = 200.
+endtime = 100.
 cfl1    = .8
-cfl2    = 80.
+cfl2    = 20.
 
-finit = rhs.fdata(model.prim2cons([  1., 0.1, 1. ])) # rho, u, p
+finit = rhs.fdata_fromprim([  1., 0.1, 1. ]) # rho, u, p
 
 fsol1 = solver1.solve(finit, cfl1, [endtime])
 solver1.show_perf()

@@ -5,7 +5,7 @@ test integration methods
 
 import time
 import cProfile
-from pylab import plot
+from pylab import *
 import numpy as np 
 
 from pyfvm.mesh  import *
@@ -16,19 +16,22 @@ import pyfvm.modelphy.euler as euler
 import pyfvm.modeldisc      as modeldisc
 import pyfvm.solution.euler_riemann as sol
 
-meshsim  = unimesh(ncell=500,  length=10., x0=-4.)
+meshsim  = unimesh(ncell=200,  length=10., x0=-4.)
 meshref  = unimesh(ncell=1000, length=10., x0=-4.)
 
-model = euler.model()
-sod   = sol.Sod_subsonic(model)
+model1 = euler.model(numflux='hllc')
+model2 = euler.model(numflux='hlle')
+sod   = sol.Sod_subsonic(model1) # sol.Sod_supersonic(model1) # 
 
-bcL = { 'type': 'dirichlet',  'prim':  sod.bcL() }
-bcR = { 'type': 'dirichlet',  'prim':  sod.bcR() }
+bcL  = { 'type': 'dirichlet',  'prim':  sod.bcL() }
+bcR  = { 'type': 'dirichlet',  'prim':  sod.bcR() }
+xnum1 = muscl(minmod) # 
+xnum2 = muscl(vanalbada) # 
 
-rhs = modeldisc.fvm(model, meshsim, muscl(minmod), 
-      bcL=bcL, bcR=bcR)
-#      bcL={'type':'per'}, bcR={'type':'per'})
-solver = rk3ssp(meshsim, rhs)
+rhs1 = modeldisc.fvm(model1, meshsim, xnum1, bcL=bcL, bcR=bcR)
+solver1 = rk3ssp(meshsim, rhs1)
+rhs2 = modeldisc.fvm(model2, meshsim, xnum1, bcL=bcL, bcR=bcR)
+solver2 = rk3ssp(meshsim, rhs2)
 
 # computation
 #
@@ -37,8 +40,10 @@ cfl     = 1.
 
 finit = sod.fdata(meshsim)
 
-fsol = solver.solve(finit, cfl, [endtime])
-solver.show_perf()
+fsol1 = solver1.solve(finit, cfl, [endtime])
+solver1.show_perf()
+fsol2 = solver2.solve(finit, cfl, [endtime])
+solver2.show_perf()
 
 # Figure / Plot
 
@@ -50,6 +55,7 @@ for name in ['density', 'pressure', 'mach']:
     grid(linestyle='--', color='0.5')
     #finit.plot(name, 'k-.')
     fref.plot(name, 'k-')
-    fsol[0].plot(name, 'b-')
+    fsol1[0].plot(name, 'b-')
+    fsol2[0].plot(name, 'r-')
     fig.savefig(name+'.png', bbox_inches='tight')
 show()

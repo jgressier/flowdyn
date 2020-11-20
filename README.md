@@ -1,6 +1,8 @@
 PyFVM
 -----
 
+[![codecov](https://codecov.io/gl/daep/pyfvm/branch/master/graph/badge.svg?token=NIMFXVKLAE)](https://codecov.io/gl/daep/pyfvm)
+
 ### Features
 Current version includes
 * linear convection model

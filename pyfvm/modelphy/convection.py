@@ -40,6 +40,8 @@ class model(base.model):
         self.has_firstorder_terms = 1
         self.convcoef = convcoef
         self.islinear = 1
+        self.shape    = [1]
+
         
     def cons2prim(self, qdata):
         return [ 1*d for d in qdata ]
@@ -47,7 +49,7 @@ class model(base.model):
     def prim2cons(self, pdata):
         return [ 1*d for d in pdata ]
 
-    def numflux(self, pL, pR):
+    def numflux(self, name, pL, pR):
         return [ self.convcoef*(pL[0]+pR[0])/2.-abs(self.convcoef)*(pR[0]-pL[0])/2. ]
     
     def timestep(self, pdata, dx, condition):

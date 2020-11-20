@@ -6,11 +6,12 @@ explicit or forwardeuler
 rk2
 rk3ssp
 rk4
-implicit or ba
+implicit or backwardeuler
 trapezoidal or cranknicolson
 """
 import math
 import numpy as np
+import sys
 import time
 
 class timemodel():
@@ -35,7 +36,11 @@ class timemodel():
             f.data[i] += dt*self.residual[i]  # time can be scalar or np.array
 
     def solve(self, f, condition, tsave, flush=None):
-        start = time.clock()
+        if float(sys.version[:3]) >= 3.3: # or 3.8
+            myclock = time.process_time
+        else:
+            myclock = time.clock
+        start = myclock()
         self._nit      = 0
         self.condition = condition
         itfield = f.copy()
@@ -57,7 +62,7 @@ class timemodel():
                     for i, q in zip(range(len(alldata)), itfield.data):
                         alldata[i] = np.vstack((alldata[i], q))
             results.append(itfield.copy())
-        self._cputime = time.clock()-start
+        self._cputime = myclock()-start
         if flush:
             np.save(flush, alldata)
         return results

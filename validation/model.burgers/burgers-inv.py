@@ -3,8 +3,7 @@
 test integration methods
 """
 
-import time
-from pylab import *
+import matplotlib.pyplot as plt
 
 import numpy as np 
 from scipy.optimize import fsolve 
@@ -12,15 +11,16 @@ from scipy.optimize import fsolve
 from pyfvm.mesh  import *
 from pyfvm.field import *
 from pyfvm.xnum  import *
-from pyfvm.integration import *
+import pyfvm.integration as integ
 import pyfvm.modelphy.burgers as burgers
 import pyfvm.modeldisc        as modeldisc
 
-mesh50   = unimesh(ncell=50, length=5.)
-mesh100  = unimesh(ncell=100, length=5.)
-mesh1000 = unimesh(ncell=1000, length=5.)
-nmesh    = nonunimesh(length=5., nclass=2, ncell0=10, periods=1) #fine,corase,fine
-rmesh    = meshramzi(size=10, nclass = 3, length=5.)
+mlength = 5.
+mesh50   = unimesh(ncell=50, length=mlength)
+mesh100  = unimesh(ncell=100, length=mlength)
+mesh1000 = unimesh(ncell=1000, length=mlength)
+#nmesh    = nonunimesh(mlength, nclass=2, ncell0=10, periods=1) #fine,coarse,fine
+#rmesh    = meshramzi(size=10, nclass = 3, length=mlength)
 
 mymodel  = burgers.model()  #it takes as an argument a timestep dtmax which is the maximum timestep we need to capture the phenomena in the case study  
 
@@ -119,46 +119,33 @@ def exact_step(init,mesh,t):
 # Set of computations
 endtime = 2.
 ntime   = 1
-tsave   = linspace(0, endtime, num=ntime+1)
+tsave   = np.linspace(0, endtime, num=ntime+1)
 cfls    = [ 0.5 ]
 # extrapol1(), extrapol2()=extrapolk(1), centered=extrapolk(-1), extrapol3=extrapolk(1./3.)
 #xmeths  = [ extrapol1(), extrapol2(), centered(), extrapol3() ]
 xmeths  = [ muscl() ]
 # explicit, rk2, rk3ssp, rk4, implicit, trapezoidal=cranknicolson
-tmeths  = [ rk4 ]
+tmeths  = [ integ.rk4 ]
 #legends = [ 'O1 upwind', 'O2 upwind', 'O2 centered', 'O3 extrapol' ]
-legends = [ 'O1 muscl' ]
-#boundary condition bc : type of boundary condition - "p"=periodic / "d"=Dirichlet / Neumann: 'n'
-bc       = 'd'
-bcvalues = []
-for i in range(mymodel.neq+1):
-    bcvalues.append(np.zeros(2))
-
-# Left Boundary
-
-bcvalues[0][0] = 2.0    #u        
-
-# Right Boundary
-
-bcvalues[0][1] = 1.0    #u                     
+legends = [ 'RK4 muscl' ]
 
 meshs      = [ mesh100 ]
 initm      = init_step
-exactPdata = exact_step(initm,meshs[0],endtime)
-
-#print len(meshs[0].dx()), meshs[0].dx()
+exactPdata = exact_step(initm, meshs[0], endtime)
 
 solvers = []
 results = []
 nbcalc  = max(len(cfls), len(tmeths), len(xmeths), len(meshs))
 for i in range(nbcalc):
     #f = field(mymodel, mesh100, np.zeros(100))
-    field0 = fdata(mymodel, (meshs*nbcalc)[i], [initm((meshs*nbcalc)[i])])
-    rhs = modeldisc.fvm(mymodel, (meshs*nbcalc)[i], (xmeths*nbcalc)[i], bc, bcvalues)
-    solvers.append((tmeths*nbcalc)[i]((meshs*nbcalc)[i], rhs))
-    start = time.clock()
-    results.append(solvers[-1].solve(field0, (cfls*nbcalc)[i], tsave))
-    #print "cpu time of "+"%-11s"%(legends[i])+" computation (",solvers[-1].nit,"it) :",time.clock()-start,"s"
+    thismesh = (meshs*nbcalc)[i]
+    thisprim = [initm(thismesh)]
+    thiscons = fdata(mymodel, thismesh, thisprim)
+    bcL = { 'type': 'dirichlet', 'prim': thisprim[0]  }
+    bcR = { 'type': 'dirichlet', 'prim': thisprim[-1] }
+    rhs = modeldisc.fvm(mymodel, thismesh, (xmeths*nbcalc)[i], bcL=bcL, bcR=bcR)
+    solvers.append((tmeths*nbcalc)[i](thismesh, rhs))
+    results.append(solvers[-1].solve(thiscons, (cfls*nbcalc)[i], tsave))
 
 # Figure
 
@@ -166,19 +153,19 @@ style = ['o', 'x', 'D', '*', '+', '>', '<', 'd']
 #
 # Density
 #
-fig = figure(1, figsize=(10,8))
-grid(linestyle='--', color='0.5')
-fig.suptitle('Density profile along the Sod shock-tube, CFL %.3f'%cfls[0], fontsize=12, y=0.93)
+fig = plt.figure(1, figsize=(10,8))
+plt.grid(linestyle='--', color='0.5')
+fig.suptitle('Burgers velocity profile, CFL %.3f'%cfls[0], fontsize=12, y=0.93)
 # Initial solution
-plot(meshs[0].centers(), results[0][0].data[0], '-')
+plt.plot(meshs[0].centers(), results[0][0].data[0], '-')
 # Exact solution
-plot(meshs[0].centers(), exactPdata[1], '-')
+plt.plot(meshs[0].centers(), exactPdata[1], '-')
 labels = ["initial condition","exact solution"+", t=%.1f"%results[0][len(tsave)-1].time]
 # Numerical solution
 for t in range(1,len(tsave)):
     for i in range(nbcalc):
-        plot((meshs*nbcalc)[i].centers(), results[i][t].data[0], style[i])
+        plt.plot((meshs*nbcalc)[i].centers(), results[i][t].data[0], style[i])
         labels.append(legends[i]+", t=%.1f"%results[i][t].time)
-legend(labels, loc='lower left',prop={'size':10})
-fig.savefig('density.png', bbox_inches='tight')
-show()
+fig.legend(labels, loc='lower left',prop={'size':10})
+fig.savefig('Burgers.png', bbox_inches='tight')
+plt.show()

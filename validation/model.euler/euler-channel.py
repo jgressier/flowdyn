@@ -33,16 +33,19 @@ solver = rk2(meshsim, rhs)
 endtime = 500.
 cfl     = .5
 
-finit = rhs.fdata(model.prim2cons([  1., 0., 1. ])) # rho, u, p
+finit = rhs.fdata_fromprim([ 1., 0., 1. ]) # rho, u, p
 
 fsol = solver.solve(finit, cfl, [endtime])
 
 solver.show_perf()
-print "theoretical Mach", np.sqrt(((bcL['ptot']/bcR['p'])**(1./3.5)-1.)/.2)
+mach_th = np.sqrt(((bcL['ptot']/bcR['p'])**(1./3.5)-1.)/.2)
+error = np.sqrt(np.sum((fsol[-1].phydata('mach')-mach_th)**2)/nx)/mach_th 
+print ("theoretical Mach : {:3.3f}\nerror : {:.2}".format(mach_th, error*100))
 
 # Figure / Plot
 for name in ['density', 'pressure', 'mach']:
 	fig = figure(figsize=(10,8))
+	fig.suptitle('flow in straight duct')
 	ylabel(name)
 	grid(linestyle='--', color='0.5')
 	#finit.plot(name, 'k-.')
