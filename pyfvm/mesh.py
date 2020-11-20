@@ -57,20 +57,20 @@ class nonunimesh(virtualmesh):
       
         for i in range(periods):
             if i == 0:
-                self.xf = np.linspace(0.,rlength, rcells[nclass-1]+1) #creates linspace array of rcell cells
+                self.xf = np.linspace(0.,int(rlength), int(rcells[nclass-1]+1)) #creates linspace array of rcell cells
             else:
                 idel = len(self.xf)
-                self.xf = np.hstack((self.xf,np.linspace(i*length,rlength+i*length,rcells[nclass-1]+1))) #stacks another linspace array
+                self.xf = np.hstack((self.xf,np.linspace(i*length,int(rlength+i*length),int(rcells[nclass-1]+1)))) #stacks another linspace array
                 self.xf = np.delete(self.xf,idel) #deleting item in index ncell1 due to duplication  
 
             for r in range(nclass-2,-1,-1):  #creates from left to right till the middle
                 idel = len(self.xf)
-                self.xf = np.hstack((self.xf,np.linspace((nclass-r-1)*rlength+i*length,(nclass-r)*rlength+i*length,rcells[r]+1))) #stacks another linspace array
+                self.xf = np.hstack((self.xf,np.linspace(int((nclass-r-1)*rlength+i*length),int((nclass-r)*rlength+i*length),int(rcells[r]+1)))) #stacks another linspace array
                 self.xf = np.delete(self.xf,idel) #deleting item in index ncell1 due to duplication   
             
             for r in range(nclass):        #creates from left to right from the middle
                 idel = len(self.xf)
-                self.xf = np.hstack((self.xf,np.linspace((nclass+r)*rlength+i*length,(nclass+r+1)*rlength+i*length,rcells[r]+1))) #stacks another linspace array
+                self.xf = np.hstack((self.xf,np.linspace(int((nclass+r)*rlength+i*length),int((nclass+r+1)*rlength+i*length),int(rcells[r]+1)))) #stacks another linspace array
                 self.xf = np.delete(self.xf,idel) #deleting item in index ncell1 due to duplication               
         
         self.ncell = len(self.xf)-1
@@ -142,8 +142,8 @@ class refinedmesh(virtualmesh):
         nc1 = (ncell*nratioa)/(nratioa+nratiob)
         nc2 = ncell-nc1
         self.xf = np.append(
-                    np.linspace(    0.0, dx1*nc1, nc1, endpoint=False),
-                    np.linspace(dx1*nc1,  length, nc2+1) )
+                    np.linspace(    0.0, int(dx1*nc1), int(nc1), endpoint=False),
+                    np.linspace(int(dx1*nc1),  int(length), int(nc2+1)) )
         self.xc = self.centers()
 
 class morphedmesh(virtualmesh):
