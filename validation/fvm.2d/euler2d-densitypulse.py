@@ -24,11 +24,15 @@ meshsim  = mesh2d.unimesh(nx, ny)
 model = euler.euler2d()
 
 #bcL = { 'type': 'insub',  'ptot': 1.4, 'rttot': 1. }
-bcR = { 'type': 'outsub', 'p': 1. }
+#bcR = { 'type': 'outsub', 'p': 1. }
+bcper = { 'type': 'per' }
+bcsym = { 'type': 'sym' }
 
-rhs = modeldisc.fvm2d(model, meshsim, num=None, numflux='centered', bclist={} )
+rhs = modeldisc.fvm2d(model, meshsim, 
+		num=None, numflux='centered', 
+		bclist={'left': bcper, 'right': bcper, 'top': bcper, 'bottom': bcper} )
+#		bclist={'left': bcper, 'right': bcper, 'top': bcsym, 'bottom': bcsym} )
 solver = rk3ssp(meshsim, rhs)
-
 # computation
 #
 endtime = 5.

@@ -338,7 +338,7 @@ class euler1d(base):
         return [ rh, -dir*np.sqrt(g*m2*p/rh), p ] 
 
     def bc_insup(self, dir, data, param):
-        # 
+        # needed parameters : ptot, rttot
         g   = self.gamma
         gmu = g-1.
         p  = data[2]
@@ -399,7 +399,7 @@ class euler2d(base):
                           'velocity': self.velocity, 'velocity_x': self.velocity_x, 'velocity_y': self.velocity_y,
                           'mach': self.mach, 'enthalpy': self.enthalpy,
                           'entropy': self.entropy, 'ptot': self.ptot, 'htot': self.htot }
-        self._bcdict.update({ #'sym': self.bc_sym,
+        self._bcdict.update({ 'sym': self.bc_sym#,
                         #  'insub': self.bc_insub,
                         #  'insup': self.bc_insup,
                         #  'outsub': self.bc_outsub,
@@ -430,16 +430,14 @@ class euler2d(base):
     def numflux_centeredflux(self, pdataL, pdataR, dir): # centered flux ; pL[ieq][face]
         gam  = self.gamma
         gam1 = gam-1.
-
         rhoL, unL, VL, pL, HL, cL2 = self._derived_fromprim(pdataL, dir)
-        rhoR, unR, VR, pR, HR, cR2 = self._derived_fromprim(pdataR, dir)
-    
+        rhoR, unR, VR, pR, HR, cR2 = self._derived_fromprim(pdataR, dir)    
         # final flux
         Frho  = .5*( rhoL*unL + rhoR*unR )
         Frhou = .5*( (rhoL*unL)*VL + pL*dir + (rhoR*unR)*VR + pR*dir)
         FrhoE = .5*( (rhoL*unL*HL) + (rhoR*unR*HR))
-
         return [Frho, Frhou, FrhoE]
+
     def bc_sym(self, dir, data, param):
         "symmetry boundary condition, for inviscid equations, it is equivalent to a wall, do not need user parameters"
         VL=data[1]

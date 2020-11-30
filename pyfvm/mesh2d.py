@@ -13,7 +13,7 @@ import pyfvm.meshbase as meshbase
 class mesh2d(meshbase.virtualmesh):
     """
     cartesian uniform 2D mesh
-    cells are sorted row-wise (i is fast index), global index is: ny*j+i
+    cells are sorted row-wise (i is fast index), global index is: nx*j+i
     faces are ordered as i/x varying vertical faces ny*(nx+1) followed by j/y (ny+1)*nx faces
         index of related cell has the same order (i fast index, as rows)
     """
@@ -25,6 +25,7 @@ class mesh2d(meshbase.virtualmesh):
         self.lx    = lx
         self.ly    = ly
         self._bctags = ['top', 'bottom', 'left', 'right' ]
+        self._bcfaces_orientation = {'top':'outward', 'bottom':'inward', 'left':'inward', 'right':'outward' }
         self._io_bcfaces = {
             'left'   :  np.arange(ny)*(nx+1),
             'right'  : (np.arange(ny)+1)*(nx+1)-1,
@@ -60,11 +61,23 @@ class mesh2d(meshbase.virtualmesh):
         # print("min dy : ", dy.min())
         # print("max dy : ", dy.max())        
 
+    def list_of_bctags(self):
+        """
+        return list of BC tags
+        """
+        return self._bctags
+
     def index_of_bc(self, tag):
         """
         return list of index of faces for a given boundary condition
         """
         return self._io_bcfaces[tag]
+
+    def bcface_orientation(self, tag):
+        """
+        return list of index of faces for a given boundary condition
+        """
+        return self._bcfaces_orientation[tag]
 
 class unimesh(mesh2d):
     pass

@@ -163,7 +163,7 @@ class fvm2dcart(base):
     """
     def __init__(self, model, mesh, num, bclist, numflux=None):
         base.__init__(self, model, mesh, num, numflux)
-        self.bclist = bclist
+        self._bclist = bclist
         # TODO: should check bclist tags in mesh definition
             
     def calc_grad(self):
@@ -207,36 +207,35 @@ class fvm2dcart(base):
                     self.pR[p][fshift+ j   *nx:fshift+(j+1)*nx] = self.pdata[p][j*nx:(j+1)*nx]
     
     def calc_bc(self):
-        # DEV: only consider periodic conditions
+        """
+        loop on all bc tags and apply BC from model and list and index 
+        """
+        _connect = { 'top': 'bottom', 'bottom': 'top', 'right': 'left', 'left': 'right'}
+        for bctag, bcvalue in self._bclist.items():
+            if bcvalue['type'] == 'per':
+                conbctag = _connect[bctag]
+                # check connected BC is type 'per' too
+                if self._bclist[conbctag]['type'] != 'per':
+                    raise NameError("both conditions "+bctag+" and "+conbctag+" should be periodic")
+                for i in range(self.neq):
+                    if self.model.shape[i] == 2: # if i-th data is a vector
+                        if self.mesh.bcface_orientation(bctag) == 'inward': # inward faces, L data must be computed
+                            self.pL[i][:,self.mesh.index_of_bc(bctag)] = self.pL[i][:,self.mesh.index_of_bc(conbctag)]
+                        elif self.mesh.bcface_orientation(bctag) == 'outward':
+                            self.pR[i][:,self.mesh.index_of_bc(bctag)] = self.pR[i][:,self.mesh.index_of_bc(conbctag)]
+                        else:
+                            NameError("unknown face orientation")
+                    else: # if i-th data is a scalar
+                        if self.mesh.bcface_orientation(bctag) == 'inward': # inward faces, L data must be computed
+                            self.pL[i][self.mesh.index_of_bc(bctag)] = self.pL[i][self.mesh.index_of_bc(conbctag)]
+                        elif self.mesh.bcface_orientation(bctag) == 'outward':
+                            self.pR[i][self.mesh.index_of_bc(bctag)] = self.pR[i][self.mesh.index_of_bc(conbctag)]
+                        else:
+                            NameError("unknown face orientation")
+        #    else: # all other boundary conditions
+        #    dir = self.mesh.normal_of_bc(bctag)
         #
-        for i in range(self.neq):
-            if self.model.shape[i] == 2:
-                # copy 'right' bc left state to 'left' bc left state
-                self.pL[i][:,self.mesh.index_of_bc('left')] = self.pL[i][:,self.mesh.index_of_bc('right')]
-                # copy 'left' bc right state to 'right' bc right state
-                self.pR[i][:,self.mesh.index_of_bc('right')] = self.pR[i][:,self.mesh.index_of_bc('left')]
-                # copy 'top' bc left state to 'bottom' bc left state
-                self.pL[i][:,self.mesh.index_of_bc('bottom')] = self.pL[i][:,self.mesh.index_of_bc('top')]
-                # copy 'bottom' bc right state to 'top' bc right state
-                self.pR[i][:,self.mesh.index_of_bc('top')] = self.pR[i][:,self.mesh.index_of_bc('bottom')]
-            else:
-                # copy 'right' bc left state to 'left' bc left state
-                self.pL[i][self.mesh.index_of_bc('left')] = self.pL[i][self.mesh.index_of_bc('right')]
-                # copy 'left' bc right state to 'right' bc right state
-                self.pR[i][self.mesh.index_of_bc('right')] = self.pR[i][self.mesh.index_of_bc('left')]
-                # copy 'top' bc left state to 'bottom' bc left state
-                self.pL[i][self.mesh.index_of_bc('bottom')] = self.pL[i][self.mesh.index_of_bc('top')]
-                # copy 'bottom' bc right state to 'top' bc right state
-                self.pR[i][self.mesh.index_of_bc('top')] = self.pR[i][self.mesh.index_of_bc('bottom')]
-
-        # commented 1D condition as an example
-        # if (self.bcL['type'] == 'per') and (self.bcR['type'] == 'per'):     #periodic boundary conditions
-        #     for i in range(self.neq):
-        #         self.pL[i][0]          = self.pL[i][self.nelem] 
-        #         self.pR[i][self.nelem] = self.pR[i][0] 
-        # elif (self.bcL['type'] == 'per') or (self.bcR['type'] == 'per'):     # inconsistent periodic boundary conditions:
-        #     raise NameError("both conditions should be periodic")
-        # else:
+        #    data_in = [self.pR[i][0] for i in range(self.neq)]
         #     q_bcL  = self.model.namedBC(self.bcL['type'],
         #                                 -1, [self.pR[i][0] for i in range(self.neq)], self.bcL)
         #     q_bcR  = self.model.namedBC(self.bcR['type'],
