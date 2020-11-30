@@ -164,7 +164,9 @@ class fvm2dcart(base):
     def __init__(self, model, mesh, num, bclist, numflux=None):
         base.__init__(self, model, mesh, num, numflux)
         self._bclist = bclist
-        # TODO: should check bclist tags in mesh definition
+        for tag in self.mesh.list_of_bctags():
+            if tag not in bclist:
+                raise NameError("missing BC tag '"+tag+"' in bclist argument")
             
     def calc_grad(self):
         """
@@ -212,6 +214,14 @@ class fvm2dcart(base):
         """
         _connect = { 'top': 'bottom', 'bottom': 'top', 'right': 'left', 'left': 'right'}
         for bctag, bcvalue in self._bclist.items():
+            if self.mesh.bcface_orientation(bctag) == 'inward': # inward faces, L data must be computed
+                data_in = self.pR
+                data_bc = self.pL
+            elif self.mesh.bcface_orientation(bctag) == 'outward': # outward faces, L data must be computed
+                data_in = self.pL
+                data_bc = self.pR
+            else:
+                NameError("unknown face orientation")
             if bcvalue['type'] == 'per':
                 conbctag = _connect[bctag]
                 # check connected BC is type 'per' too
@@ -219,21 +229,11 @@ class fvm2dcart(base):
                     raise NameError("both conditions "+bctag+" and "+conbctag+" should be periodic")
                 for i in range(self.neq):
                     if self.model.shape[i] == 2: # if i-th data is a vector
-                        if self.mesh.bcface_orientation(bctag) == 'inward': # inward faces, L data must be computed
-                            self.pL[i][:,self.mesh.index_of_bc(bctag)] = self.pL[i][:,self.mesh.index_of_bc(conbctag)]
-                        elif self.mesh.bcface_orientation(bctag) == 'outward':
-                            self.pR[i][:,self.mesh.index_of_bc(bctag)] = self.pR[i][:,self.mesh.index_of_bc(conbctag)]
-                        else:
-                            NameError("unknown face orientation")
+                        data_bc[i][:,self.mesh.index_of_bc(bctag)] = data_bc[i][:,self.mesh.index_of_bc(conbctag)]
                     else: # if i-th data is a scalar
-                        if self.mesh.bcface_orientation(bctag) == 'inward': # inward faces, L data must be computed
-                            self.pL[i][self.mesh.index_of_bc(bctag)] = self.pL[i][self.mesh.index_of_bc(conbctag)]
-                        elif self.mesh.bcface_orientation(bctag) == 'outward':
-                            self.pR[i][self.mesh.index_of_bc(bctag)] = self.pR[i][self.mesh.index_of_bc(conbctag)]
-                        else:
-                            NameError("unknown face orientation")
-        #    else: # all other boundary conditions
-        #    dir = self.mesh.normal_of_bc(bctag)
+                        data_bc[i][self.mesh.index_of_bc(bctag)] = data_bc[i][self.mesh.index_of_bc(conbctag)]
+            # else: # all other boundary conditions
+            #     dir = self.mesh.normal_of_bc(bctag)
         #
         #    data_in = [self.pR[i][0] for i in range(self.neq)]
         #     q_bcL  = self.model.namedBC(self.bcL['type'],

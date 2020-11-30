@@ -14,9 +14,11 @@ nx = 50
 ny = 50
 meshsim  = mesh2d.unimesh(nx, ny)
 
+bcper = { 'type': 'per' }
 model = euler.euler2d()
 
-rhs    = modeldisc.fvm2d(model, meshsim, num=None, numflux='centered', bclist={} )
+rhs    = modeldisc.fvm2d(model, meshsim, num=None, numflux='centered', 
+    bclist={ tag:bcper for tag in meshsim.list_of_bctags()} )
 solver = integ.rk3ssp(meshsim, rhs)
 
 def fuv(x,y):
