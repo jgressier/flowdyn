@@ -441,7 +441,7 @@ class euler2d(base):
     def bc_sym(self, dir, data, param):
         "symmetry boundary condition, for inviscid equations, it is equivalent to a wall, do not need user parameters"
         VL=data[1]
-        Vn=np.dot(VL,dir)
+        Vn=_vec_dot_vec(VL,dir)
         VR=VL-2.0*(Vn*dir)
         return [ data[0], VR, data[2] ]
 

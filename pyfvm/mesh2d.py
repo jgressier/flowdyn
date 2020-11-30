@@ -79,5 +79,21 @@ class mesh2d(meshbase.virtualmesh):
         """
         return self._bcfaces_orientation[tag]
 
+    def normal_of_bc(self, tag):
+        """
+        return normal array for all faces of tag BC
+        """
+        if tag in ['top','bottom']:
+            dir = np.zeros((2,self.nx))
+            dir[1,:] = 1.
+        elif tag in ['left','right']:
+            dir = np.zeros((2,self.ny))
+            dir[0,:] = 1.
+        else:
+            raise NameError("unexpected tag "+tag)
+        if self._bcfaces_orientation[tag] == 'inward':
+            dir = -dir
+        return dir
+
 class unimesh(mesh2d):
     pass

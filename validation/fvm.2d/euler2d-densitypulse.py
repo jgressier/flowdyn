@@ -30,18 +30,18 @@ bcsym = { 'type': 'sym' }
 
 rhs = modeldisc.fvm2d(model, meshsim, 
 		num=None, numflux='centered', 
-		bclist={'left': bcper, 'right': bcper, 'top': bcper, 'bottom': bcper} )
-#		bclist={'left': bcper, 'right': bcper, 'top': bcsym, 'bottom': bcsym} )
+#		bclist={'left': bcper, 'right': bcper, 'top': bcper, 'bottom': bcper} )
+		bclist={'left': bcper, 'right': bcper, 'top': bcsym, 'bottom': bcsym} )
 solver = rk3ssp(meshsim, rhs)
 # computation
 #
 endtime = 5.
-cfl     = 2.5
+cfl     = 2.
 
 # initial functions
 def fuv(x,y):
     vmag = .01 ; k = 10.
-    return euler.datavector(0.*x+.4, 0.*x+.2)
+    return euler.datavector(0.*x+.4, 0.*x)
 def fp(x,y): # gamma = 1.4
     return 0.*x+1.
 def frho(x,y):

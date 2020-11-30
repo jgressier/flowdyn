@@ -232,18 +232,22 @@ class fvm2dcart(base):
                         data_bc[i][:,self.mesh.index_of_bc(bctag)] = data_bc[i][:,self.mesh.index_of_bc(conbctag)]
                     else: # if i-th data is a scalar
                         data_bc[i][self.mesh.index_of_bc(bctag)] = data_bc[i][self.mesh.index_of_bc(conbctag)]
-            # else: # all other boundary conditions
-            #     dir = self.mesh.normal_of_bc(bctag)
-        #
-        #    data_in = [self.pR[i][0] for i in range(self.neq)]
-        #     q_bcL  = self.model.namedBC(self.bcL['type'],
-        #                                 -1, [self.pR[i][0] for i in range(self.neq)], self.bcL)
-        #     q_bcR  = self.model.namedBC(self.bcR['type'],
-        #                                 1, [self.pL[i][self.nelem] for i in range(self.neq)], self.bcR)
-        #     for i in range(self.neq):
-        #         self.pL[i][0]          = q_bcL[i]
-        #         self.pR[i][self.nelem] = q_bcR[i]
-
+            else: # all other boundary conditions
+                dir = self.mesh.normal_of_bc(bctag)
+                bcdata_in = [None]*len(data_in)
+                iofaces   = self.mesh.index_of_bc(bctag)
+                for i,p in enumerate(data_in):
+                    if p.ndim == 1:
+                        bcdata_in[i] = p[iofaces]
+                    elif p.ndim == 2:
+                        bcdata_in[i] = p[:,iofaces]
+                bcdata_bc = self.model.namedBC(bcvalue['type'], dir, bcdata_in, bcvalue)
+                for i,p in enumerate(bcdata_bc):
+                        if p.ndim == 1:
+                            data_bc[i][iofaces] = p
+                        elif p.ndim == 2:
+                            data_bc[i][:,iofaces] = p
+    
     def calc_bc_grad(self):
         # if (self.bcL['type'] == 'per') and (self.bcR['type'] == 'per'):     #periodic boundary conditions
         #     for i in range(self.neq):
