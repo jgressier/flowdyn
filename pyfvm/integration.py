@@ -13,6 +13,25 @@ import math
 import numpy as np
 import sys
 import time
+import pyfvm.field as field
+
+#--------------------------------------------------------------------
+class fakemodel():
+    def __init__(self):
+        self.neq = 1
+        self.shape = [1]
+class fakemesh():
+    def __init__(self):
+        self.ncell = 1
+class fakedisc():
+    def __init__(self, z):
+        self.z = z
+    def rhs(self, f):
+        return [f.data[0]*self.z]
+
+#--------------------------------------------------------------------
+# generic model
+#--------------------------------------------------------------------
 
 class timemodel():
     def __init__(self, mesh, modeldisc):
@@ -24,8 +43,8 @@ class timemodel():
     def calcrhs(self, field):
         self.residual = self.modeldisc.rhs(field)
  
-    def step():
-        print("not implemented for virtual class")
+    def step(self, f, dt):
+        raise NameError("not implemented for virtual class")
 
     def add_res(self, f, dt, subtimecoef = 1.0):
         f.time += np.min(dt)*subtimecoef
@@ -77,14 +96,27 @@ class timemodel():
     def show_perf(self):
         print("cpu time computation ({0:d} it) : {1:.3f}s\n  {2:.2f} µs/cell/it".format(
             self._nit, self._cputime, self._cputime*1.e6/self._nit/self.modeldisc.nelem))
-    
+
+    def propagator(self, z):
+        # save actual modeldisc
+        saved_model = self.modeldisc
+        self.modeldisc = fakedisc(z)
+        # make virtual field
+        f = field.fdata(fakemodel(), fakemesh(), [0*z+1.])
+        self.step(f, dtloc=1.)
+        # get back actual modeldisc
+        self.modeldisc = saved_model
+        return f.data[0]
+        
+#--------------------------------------------------------------------
+
 class explicit(timemodel):
     def step(self, field, dtloc):
         self.calcrhs(field)
         self.add_res(field, dtloc)
         return 
 
-class forwardeuler(explicit):
+class forwardeuler(explicit): # alias of explicit
     pass
     
 #--------------------------------------------------------------------
