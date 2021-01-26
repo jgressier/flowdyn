@@ -7,7 +7,7 @@
  
     :Example:
  
-    >>> import pyfvm.modelphy.base as modelbase
+    >>> import flowdyn.modelphy.base as modelbase
     >>> model = modelbase.model(name='test', neq=1)
     >>> print(model.neq, model.equation)
     1 test
@@ -20,7 +20,7 @@
 
 import numpy as np
 import math
-#import pyfvm.modelphy.base as base
+#import flowdyn.modelphy.base as base
 
 # ===============================================================
 # implementation of MODEL class

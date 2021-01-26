@@ -1,8 +1,8 @@
 [tool.poetry]
-name = "pyfvm"
+name = "flowdyn"
 version = "0.1.0"
 description = "Model of discretization of hyperbolic model, base is Finite Volume method"
-authors = ["j.gressier <jeremie.gressier@isae.fr>"]
+authors = ["j.gressier <jeremie.gressier@isae-supaero.fr>"]
 license = "MIT"
 
 [tool.poetry.dependencies]

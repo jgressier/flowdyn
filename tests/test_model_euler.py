@@ -1,12 +1,12 @@
 import pytest
 #
 # import numpy as np
-import pyfvm.mesh  as mesh
-import pyfvm.modelphy.euler as euler
-import pyfvm.modeldisc as modeldisc
-import pyfvm.field as field
-from pyfvm.xnum  import *
-import pyfvm.integration as integ
+import flowdyn.mesh  as mesh
+import flowdyn.modelphy.euler as euler
+import flowdyn.modeldisc as modeldisc
+import flowdyn.field as field
+from flowdyn.xnum  import *
+import flowdyn.integration as integ
 
 mesh100 = mesh.unimesh(ncell=100, length=1.)
 mesh50  = mesh.unimesh(ncell=50, length=1.)

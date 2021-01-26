@@ -22,9 +22,9 @@
 
 
 import numpy               as np
-import pyfvm.modelphy.base as model
-#import pyfvm.mesh          as mesh
-import pyfvm.field         as field
+import flowdyn.modelphy.base as model
+#import flowdyn.mesh          as mesh
+import flowdyn.field         as field
 
 _default_bc = { 'type': 'per' }
 

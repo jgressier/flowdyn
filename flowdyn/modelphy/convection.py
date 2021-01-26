@@ -18,7 +18,7 @@
 
 import numpy as np
 import math
-import pyfvm.modelphy.base as base
+import flowdyn.modelphy.base as base
 
 # ===============================================================
 # implementation of MODEL class

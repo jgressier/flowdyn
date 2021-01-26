@@ -4,9 +4,9 @@ test integration methods
 """
 
 import numpy as np
-import pyfvm.field           as field
-import pyfvm.modelphy.euler  as euler
-import pyfvm.modeldisc       as modeldisc
+import flowdyn.field           as field
+import flowdyn.modelphy.euler  as euler
+import flowdyn.modeldisc       as modeldisc
 import hades.aero.Isentropic as Is
 import hades.aero.ShockWave  as sw
 import hades.aero.MassFlow   as mf

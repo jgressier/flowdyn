@@ -21,7 +21,7 @@
 
 import numpy as np
 import math
-import pyfvm.modelphy.base as mbase
+import flowdyn.modelphy.base as mbase
 
 # ===============================================================
 def _vecmag(qdata):
