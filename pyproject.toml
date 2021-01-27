@@ -1,13 +1,19 @@
 [tool.poetry]
 name = "flowdyn"
-version = "0.1.0"
+version = "1.0.0"
 description = "Model of discretization of hyperbolic model, base is Finite Volume method"
 authors = ["j.gressier <jeremie.gressier@isae-supaero.fr>"]
 license = "MIT"
+classifiers = [
+    "Development Status :: 5 - Production/Stable",
+    "Intended Audience :: Science/Research",
+    "Topic :: Scientific/Engineering :: Physics",
+    "Topic :: Software Development :: Libraries :: Python Modules" ]
+exclude = [ "examples", "lessons" 
 
 [tool.poetry.dependencies]
 python = "^3.5"
-numpy = "^1.19.4"
+numpy = "^1.14"
 
 [tool.poetry.dev-dependencies]
 

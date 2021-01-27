@@ -1,10 +1,5 @@
-# compiled python files
-*.pyc
-
 # misc
-*.png
 *.dat
-*.txt
 *.pdf
 *.bak
 
@@ -12,7 +7,10 @@
 __pycache__/
 *.pyc
 
-# doxygen output folder
+# build
+dist
+site
+poetry.lock
 
 # Unit test / coverage reports
 htmlcov/
