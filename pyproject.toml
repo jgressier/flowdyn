@@ -9,13 +9,22 @@ classifiers = [
     "Intended Audience :: Science/Research",
     "Topic :: Scientific/Engineering :: Physics",
     "Topic :: Software Development :: Libraries :: Python Modules" ]
-exclude = [ "examples", "lessons" 
+exclude = [ "examples", "lessons" ]
 
 [tool.poetry.dependencies]
-python = "^3.5"
+python = "^3.7"
 numpy = "^1.14"
 
 [tool.poetry.dev-dependencies]
+#python = "^3.6"
+pytest = "^6.0"
+pytest-cov = "^2.11.1"
+mkdocs = "^1.1"
+mkdocs-material = "^6.2.5"
+mkdocs-jupyter = "^0.15"
+#markdown-include = "^0.6.0"
+mkdocs-include-markdown-plugin = ""
+mkdocs-exclude = ""
 
 [build-system]
 requires = ["poetry-core>=1.0.0"]

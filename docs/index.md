@@ -19,7 +19,7 @@
 
 ## numerical methods
 
-* [Finite Volume RHS discretization](num/fvm) `modeldisc`
+* [Finite Volume RHS discretization](userguide/num#finite-volume-method) `modeldisc`
 * [time integrators](num/time_integrators)
 
 ## development
