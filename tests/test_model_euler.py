@@ -39,7 +39,7 @@ def test_acousticpacket_sym(flux):
     assert not fsol[-1].isnan()
 
 def test_ductflow():
-    endtime = 200.
+    endtime = 100.
     cfl     = 1.2
     xnum    = muscl(minmod) 
     tnum    = integ.rk4

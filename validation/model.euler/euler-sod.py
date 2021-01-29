@@ -19,8 +19,8 @@ import flowdyn.solution.euler_riemann as sol
 meshsim  = unimesh(ncell=200,  length=10., x0=-4.)
 meshref  = unimesh(ncell=1000, length=10., x0=-4.)
 
-model1 = euler.model(numflux='hllc')
-model2 = euler.model(numflux='hlle')
+model1 = euler.model()
+model2 = euler.model()
 sod   = sol.Sod_subsonic(model1) # sol.Sod_supersonic(model1) # 
 
 bcL  = { 'type': 'dirichlet',  'prim':  sod.bcL() }
@@ -28,14 +28,14 @@ bcR  = { 'type': 'dirichlet',  'prim':  sod.bcR() }
 xnum1 = muscl(minmod) # 
 xnum2 = muscl(vanalbada) # 
 
-rhs1 = modeldisc.fvm(model1, meshsim, xnum1, bcL=bcL, bcR=bcR)
+rhs1 = modeldisc.fvm(model1, meshsim, xnum1, numflux='hllc', bcL=bcL, bcR=bcR)
 solver1 = rk3ssp(meshsim, rhs1)
-rhs2 = modeldisc.fvm(model2, meshsim, xnum1, bcL=bcL, bcR=bcR)
+rhs2 = modeldisc.fvm(model2, meshsim, xnum1, numflux='hlle', bcL=bcL, bcR=bcR)
 solver2 = rk3ssp(meshsim, rhs2)
 
 # computation
 #
-endtime = 2.8
+endtime = 2.8 # 2.8 for subsonic, 2.8 for supersonic
 cfl     = 1.
 
 finit = sod.fdata(meshsim)

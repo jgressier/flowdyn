@@ -14,10 +14,13 @@ exclude = [ "examples", "lessons" ]
 [tool.poetry.dependencies]
 python = "^3.6"
 numpy = "^1.15"
-matplotlib = "3.3"
+matplotlib = { version="^3.3", optional = true }
+aerokit = { version="1.0", optional = true }
+
 
 [tool.poetry.dev-dependencies]
-#python = "^3.6"
+matplotlib = "^3.3"
+aerokit = "^1.0"
 pytest = "^6.0"
 pytest-cov = "^2.11.1"
 mkdocs = "^1.1"

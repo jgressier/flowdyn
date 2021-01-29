@@ -26,8 +26,8 @@ def test_mesh():
         finit = field.fdata(mymodel, curmesh, [ init_sinperk(curmesh, k=2) ] )
         rhs = modeldisc.fvm(mymodel, curmesh, xnum)
         solver = tnum(curmesh, rhs)
-        solver.solve(finit, cfl, [endtime])
-    assert 1
+        fsol = solver.solve(finit, cfl, [endtime])
+        assert not fsol[-1].isnan()
 
 def test_wavelength():
     curmesh = mesh50
@@ -41,8 +41,8 @@ def test_wavelength():
         finit = field.fdata(mymodel, curmesh, [ init_sinperk(curmesh, k=k) ] )
         rhs = modeldisc.fvm(mymodel, curmesh, xnum)
         solver = tnum(curmesh, rhs)
-        solver.solve(finit, cfl, [endtime])
-    assert 1
+        fsol = solver.solve(finit, cfl, [endtime])
+        assert not fsol[-1].isnan()
 
 def test_integrators():
     curmesh = mesh50

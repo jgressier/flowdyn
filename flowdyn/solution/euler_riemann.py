@@ -7,8 +7,8 @@ import numpy as np
 import flowdyn.field           as field
 import flowdyn.modelphy.euler  as euler
 import flowdyn.modeldisc       as modeldisc
-import hades.aero.unsteady1D as uq
-import hades.aero.riemann    as riem
+import aerokit.aero.unsteady1D as uq
+import aerokit.aero.riemann    as riem
 
 class riemann():
 

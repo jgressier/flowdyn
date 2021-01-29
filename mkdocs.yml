@@ -28,9 +28,9 @@ nav:
 plugins:
   - search
   - include-markdown
-  - mkdocs-jupyter:
-      execute: True
-      include_source: False
+  # - mkdocs-jupyter:
+  #     execute: True
+  #     include_source: False
   - exclude:
       glob:
         - "*.ipynb"
