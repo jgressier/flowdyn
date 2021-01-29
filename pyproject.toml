@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "flowdyn"
-version = "1.0.0"
+version = "1.0.1"
 description = "Model of discretization of hyperbolic model, base is Finite Volume method"
 authors = ["j.gressier <jeremie.gressier@isae-supaero.fr>"]
 license = "MIT"
@@ -12,8 +12,9 @@ classifiers = [
 exclude = [ "examples", "lessons" ]
 
 [tool.poetry.dependencies]
-python = "^3.7"
-numpy = "^1.14"
+python = "^3.6"
+numpy = "^1.15"
+matplotlib = "3.3"
 
 [tool.poetry.dev-dependencies]
 #python = "^3.6"
@@ -21,7 +22,7 @@ pytest = "^6.0"
 pytest-cov = "^2.11.1"
 mkdocs = "^1.1"
 mkdocs-material = "^6.2.5"
-mkdocs-jupyter = "^0.15"
+#mkdocs-jupyter = "^0.15"
 #markdown-include = "^0.6.0"
 mkdocs-include-markdown-plugin = ""
 mkdocs-exclude = ""

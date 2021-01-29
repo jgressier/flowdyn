@@ -16,6 +16,11 @@ pip show flowdyn
 
 ## Versions
 
+### [1.0.1](https://pypi.org/project/flowdyn/) (2021-01-27)
+
+#### Bug fix
+
+- fix computation of `modelphy.euler` supersonic inlet condition 
 ### [1.0.0](https://pypi.org/project/flowdyn/) (2021-01-27)
 
 - models: convection, Burgers, Euler and derived (nozzle)
