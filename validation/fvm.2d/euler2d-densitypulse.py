@@ -8,13 +8,13 @@ import cProfile
 import matplotlib.pyplot as plt
 import numpy as np 
 
-import pyfvm.mesh2d as mesh2d
-from pyfvm.field import *
-from pyfvm.xnum  import *
-import pyfvm.integration    as integ
-import pyfvm.modelphy.euler as euler
-import pyfvm.modeldisc      as modeldisc
-#import pyfvm.solution.euler_riemann as sol
+import flowdyn.mesh2d as mesh2d
+from flowdyn.field import *
+from flowdyn.xnum  import *
+import flowdyn.integration    as integ
+import flowdyn.modelphy.euler as euler
+import flowdyn.modeldisc      as modeldisc
+#import flowdyn.solution.euler_riemann as sol
 
 nx = 100
 ny = 100

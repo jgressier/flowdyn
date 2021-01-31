@@ -8,7 +8,7 @@ Created on Fri May 10 15:42:29 2013
 import sys
 import math
 import numpy as np
-import pyfvm.meshbase as meshbase
+import flowdyn.meshbase as meshbase
 
 class mesh2d(meshbase.virtualmesh):
     """

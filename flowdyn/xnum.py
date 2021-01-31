@@ -100,11 +100,12 @@ def minmod(a,b):
 
 def vanalbada(a,b):
     p = a*b
-    return np.where(p <= 0., 0,  p*(a+b)/(a**2+b**2) )
+    return np.where(p <= 1e-40, 0.,  p*(a+b)/(a**2+b**2+1e-20) )
 
 def vanleer(a,b):
     p = a*b
-    return np.where(p <= 0., 0, 2*p/(a+b) )
+    s = np.abs(a+b)+1.e-20
+    return np.where(p <= 1e-40, 0., 2*np.abs(p)/s )
 
 def superbee(a,b):
     p = a*b

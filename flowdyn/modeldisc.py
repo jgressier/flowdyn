@@ -6,7 +6,7 @@
  
     :Example:
  
-    >>> import hades.aero.Isentropic as Is
+    >>> import aerokit.aero.Isentropic as Is
     >>> Is.TiTs_Mach(1.)
     1.2
     >>> Is.TiTs_Mach(2., gamma=1.6)
@@ -17,14 +17,14 @@
  
     Provides Ti/Ts Pi/Ps ratios from Mach number and reversed functions.
     Specific heat ratio `gamma` is optionnal and can be specified in the functions itself
-    or using hades.common.defaultgas module
+    or using aerokit.common.defaultgas module
  """
 
 
 import numpy               as np
-import pyfvm.modelphy.base as model
-#import pyfvm.mesh          as mesh
-import pyfvm.field         as field
+import flowdyn.modelphy.base as model
+#import flowdyn.mesh          as mesh
+import flowdyn.field         as field
 
 _default_bc = { 'type': 'per' }
 
@@ -144,7 +144,7 @@ class fvm1d(base):
         self.residual = []
         for i in range(self.neq):
             self.residual.append(-(self.flux[i][1:self.nelem+1]-self.flux[i][0:self.nelem]) \
-                                  /(self.mesh.xf[1:self.nelem+1]-self.mesh.xf[0:self.nelem]))
+                                  /(self.mesh.dx()))
         return self.residual
 
     def add_source(self):
@@ -190,7 +190,7 @@ class fvm2dcart(base):
             if self.pdata[p].ndim == 2:
             # distribute cell states (by j rows) to i faces
                 for j in range(ny):
-                    self.pL[p][:,j*(nx+1)+1:(j+1)*(nx+1)] = self.pdata[p][:,j*nx:(j+1)*nx]
+                    self.pL[p][:,j*(nx+1)+1:(j+1)*(nx+1)] = self.pdata[p][:,j*nx:(j+1)*nx] # extrapol_function(middlecell, leftcell, rightcell)
                     self.pR[p][:,j*(nx+1):(j+1)*(nx+1)-1] = self.pdata[p][:,j*nx:(j+1)*nx]
                 # distribute cell states  (by j rows) to j faces (starting at index ny*(nx+1))
                 for j in range(ny):

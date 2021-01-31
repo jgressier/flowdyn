@@ -10,11 +10,11 @@ import matplotlib as mpl
 import matplotlib.pyplot as plt
 from pylab import *
 
-from pyfvm.mesh  import *
-from pyfvm.model import *
-from pyfvm.field import *
-from pyfvm.xnum  import *
-from pyfvm.integration import *
+from flowdyn.mesh  import *
+from flowdyn.model import *
+from flowdyn.field import *
+from flowdyn.xnum  import *
+from flowdyn.integration import *
 
 mpl.rcParams['figure.dpi']      = 100
 mpl.rcParams['savefig.dpi']     = 150

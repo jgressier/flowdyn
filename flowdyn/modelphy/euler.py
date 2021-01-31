@@ -7,7 +7,7 @@
  
     :Example:
  
-    >>> import hades.aero.Isentropic as Is
+    >>> import aerokit.aero.Isentropic as Is
     >>> Is.TiTs_Mach(1.)
     1.2
     >>> Is.TiTs_Mach(2., gamma=1.6)
@@ -21,7 +21,7 @@
 
 import numpy as np
 import math
-import pyfvm.modelphy.base as mbase
+import flowdyn.modelphy.base as mbase
 
 # ===============================================================
 def _vecmag(qdata):
@@ -339,11 +339,10 @@ class euler1d(base):
         return [ rh, -dir*np.sqrt(g*m2*p/rh), p ] 
 
     def bc_insup(self, dir, data, param):
-        # 
+        # expected parameters are 'ptot', 'rttot' and 'p'
         g   = self.gamma
         gmu = g-1.
-        p  = data[2]
-        m2 = np.maximum(0., ((param['ptot']/p)**(gmu/g)-1.)*2./gmu)
+        m2 = np.maximum(0., ((param['ptot']/param['p'])**(gmu/g)-1.)*2./gmu)
         rh = param['ptot']/param['rttot']/(1.+.5*gmu*m2)**(1./gmu)
         return param
 

@@ -5,16 +5,16 @@ test integration methods
 
 import time
 import cProfile
-from pylab import *
+from matplotlib.pyplot import *
 import numpy as np 
 
-from pyfvm.mesh  import *
-from pyfvm.field import *
-from pyfvm.xnum  import *
-from pyfvm.integration import *
-import pyfvm.modelphy.euler as euler
-import pyfvm.modeldisc      as modeldisc
-#import pyfvm.solution.euler_riemann as sol
+from flowdyn.mesh  import *
+from flowdyn.field import *
+from flowdyn.xnum  import *
+from flowdyn.integration import *
+import flowdyn.modelphy.euler as euler
+import flowdyn.modeldisc      as modeldisc
+#import flowdyn.solution.euler_riemann as sol
 
 nx = 50
 

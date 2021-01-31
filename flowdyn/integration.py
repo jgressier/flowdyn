@@ -13,7 +13,7 @@ import math
 import numpy as np
 import sys
 import time
-import pyfvm.field as field
+import flowdyn.field as field
 
 #--------------------------------------------------------------------
 class fakemodel():
