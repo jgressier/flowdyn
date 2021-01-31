@@ -58,6 +58,7 @@ class base(mbase.model):
         
     def cons2prim(self, qdata): # qdata[ieq][cell] :
         """
+        Primitives variables are rho, u, p
         >>> model().cons2prim([[5.], [10.], [20.]])
         True
         """

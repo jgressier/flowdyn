@@ -10,6 +10,7 @@ import pyfvm.integration as integ
 
 mesh100 = mesh.unimesh(ncell=100, length=1.)
 mesh50  = mesh.unimesh(ncell=50, length=1.)
+mesh20  = mesh.unimesh(ncell=20, length=1.)
 
 model = euler.model()
 
@@ -39,11 +40,11 @@ def test_acousticpacket_sym(flux):
     assert not fsol[-1].isnan()
 
 def test_ductflow():
-    endtime = 200.
+    endtime = 100.
     cfl     = 1.2
     xnum    = muscl(minmod) 
     tnum    = integ.rk4
-    meshsim = mesh50
+    meshsim = mesh20
     bcL = { 'type': 'insub',  'ptot': 1.4, 'rttot': 1. }
     bcR = { 'type': 'outsub', 'p': 1. }
     rhs = modeldisc.fvm(model, meshsim, xnum, bcL=bcL, bcR=bcR)
