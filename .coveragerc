@@ -1,5 +1,5 @@
 [run]
-  source = pyfvm
+  source = flowdyn
   omit=*/__init__.py
 
 [report]

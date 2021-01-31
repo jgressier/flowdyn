@@ -6,12 +6,12 @@ test integration methods
 import time
 from pylab import *
 
-import pyfvm.mesh  as mesh
-import pyfvm.modelphy.convection as conv
-import pyfvm.modeldisc as modeldisc
-import pyfvm.field as field
-from pyfvm.xnum  import *
-from pyfvm.integration import *
+import flowdyn.mesh  as mesh
+import flowdyn.modelphy.convection as conv
+import flowdyn.modeldisc as modeldisc
+import flowdyn.field as field
+from flowdyn.xnum  import *
+from flowdyn.integration import *
 
 mlength = 1.0
 mesh50  = mesh.unimesh(ncell=50, length=mlength)

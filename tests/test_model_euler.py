@@ -1,12 +1,12 @@
 import pytest
 #
 # import numpy as np
-import pyfvm.mesh  as mesh
-import pyfvm.modelphy.euler as euler
-import pyfvm.modeldisc as modeldisc
-import pyfvm.field as field
-from pyfvm.xnum  import *
-import pyfvm.integration as integ
+import flowdyn.mesh  as mesh
+import flowdyn.modelphy.euler as euler
+import flowdyn.modeldisc as modeldisc
+import flowdyn.field as field
+from flowdyn.xnum  import *
+import flowdyn.integration as integ
 
 mesh100 = mesh.unimesh(ncell=100, length=1.)
 mesh50  = mesh.unimesh(ncell=50, length=1.)
@@ -22,7 +22,7 @@ def fp(x): # gamma = 1.4
 def frho(x):
     return 1.4 * fp(x)**(1./1.4)
 
-@pytest.mark.parametrize("flux", ["hlle", "hllc"])
+@pytest.mark.parametrize("flux", ["hlle", "hllc", "centered", "centeredmassflow"])
 def test_acousticpacket_sym(flux):
     endtime = 2.
     cfl     = 0.6
@@ -39,7 +39,7 @@ def test_acousticpacket_sym(flux):
     assert not fsol[-1].isnan()
 
 def test_ductflow():
-    endtime = 200.
+    endtime = 100.
     cfl     = 1.2
     xnum    = muscl(minmod) 
     tnum    = integ.rk4

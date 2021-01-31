@@ -2,13 +2,13 @@ import pytest
 #
 import numpy as np
 #
-import pyfvm.mesh2d as mesh2d
-import pyfvm.field as field
-import pyfvm.integration as integ
-import pyfvm.modelphy.euler as euler
-import pyfvm.modeldisc      as modeldisc
-from pyfvm.xnum  import *
-#import pyfvm.solution.euler_riemann as sol
+import flowdyn.mesh2d as mesh2d
+import flowdyn.field as field
+import flowdyn.integration as integ
+import flowdyn.modelphy.euler as euler
+import flowdyn.modeldisc      as modeldisc
+from flowdyn.xnum  import *
+#import flowdyn.solution.euler_riemann as sol
 
 nx = 50
 ny = 50

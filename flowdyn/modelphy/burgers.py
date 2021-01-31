@@ -7,7 +7,7 @@
  
    :Example:
  
-    >>> import pyfvm.modelphy.burgers as burg
+    >>> import flowdyn.modelphy.burgers as burg
     >>> model = burg.model()
     >>> print(model.neq, model.equation)
     1 burgers
@@ -20,7 +20,7 @@
 
 import numpy as np
 import math
-import pyfvm.modelphy.base as base
+import flowdyn.modelphy.base as base
 
 # ===============================================================
 # implementation of MODEL class

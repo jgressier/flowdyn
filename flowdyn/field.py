@@ -5,7 +5,11 @@ Created on Fri May 10 16:58:31 2013
 @author: j.gressier
 """
 import numpy as np
-import matplotlib.pyplot as plt
+try:
+    import matplotlib.pyplot as plt
+except ImportError:
+    print("unable to import matplotlib, some features will be missing")
+
 #import model
 #import mesh
 

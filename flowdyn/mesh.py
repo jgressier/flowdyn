@@ -8,7 +8,7 @@ Created on Fri May 10 15:42:29 2013
 import sys
 import math
 import numpy as np
-import pyfvm.meshbase as meshbase
+import flowdyn.meshbase as meshbase
 
 class mesh1d(meshbase.virtualmesh):
     " class defining a uniform mesh: ncell and length"
@@ -17,13 +17,17 @@ class mesh1d(meshbase.virtualmesh):
         self.ncell  = ncell
         self.length = length
         self.xf     = np.linspace(0., length, ncell+1)+x0
-        self.xc     = self.centers()
+        self.xc     = self.calc_centers()
 
     def nbfaces(self):
         "returns number of faces"
         return self.ncell+1
 
     def centers(self):
+        "returns centers of cells in a mesh"
+        return self.xc
+
+    def calc_centers(self):
         "compute centers of cells in a mesh"
         xc = np.zeros(self.ncell)
         for i in np.arange(self.ncell):
@@ -32,10 +36,10 @@ class mesh1d(meshbase.virtualmesh):
 
     def vol(self):
         "compute cell sizes in a mesh"
-        dx = np.zeros(self.ncell)
-        for i in np.arange(self.ncell):
-            dx[i] = (self.xf[i+1]-self.xf[i])
-        return dx
+        # dx = np.zeros(self.ncell)
+        # for i in np.arange(self.ncell):
+        #     dx[i] = (self.xf[i+1]-self.xf[i])
+        return (self.xf[1:self.ncell+1]-self.xf[0:self.ncell])
 
     def __repr__(self):
         print("length : ", self.length)
@@ -148,13 +152,13 @@ class refinedmesh(mesh1d):
         nc1 = int((ncell*nratioa)/(nratioa+nratiob))
         nc2 = ncell-nc1
         self.xf = np.append(
-                    np.linspace(    0.0, int(dx1*nc1), int(nc1), endpoint=False),
-                    np.linspace(int(dx1*nc1),  int(length), int(nc2+1)) )
-        self.xc = self.centers()
+                    np.linspace(    0.0, dx1*nc1, nc1, endpoint=False),
+                    np.linspace(dx1*nc1,  length, nc2+1) )
+        self.xc = self.calc_centers()
 
 class morphedmesh(mesh1d):
     " class defining a mesh with a morphing function: ncell and length"
     def __init__(self, ncell=100, length=1., x0=0., morph=lambda x: x):
         mesh1d.__init__(self, ncell, length)
         self.xf     = morph(np.linspace(0., length, ncell+1)+x0)
-        self.xc     = self.centers()
+        self.xc     = self.calc_centers()

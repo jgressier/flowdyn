@@ -27,12 +27,7 @@ class virtualmesh():
 
     def vol(self):
         "compute cell sizes in a mesh"
-        raise NotImplementedError()
 
     def __repr__(self):
-        print("length : ", self.length)
-        print("ncell  : ", self.ncell)
-        dx = self.dx()
-        print("min dx : ", dx.min())
-        print("max dx : ", dx.max())
+        raise NotImplementedError()
 
