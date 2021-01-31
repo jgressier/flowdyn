@@ -5,7 +5,7 @@ test integration methods
 
 import time
 import cProfile
-from pylab import *
+from matplotlib.pyplot import *
 import numpy as np 
 
 from flowdyn.mesh  import *

@@ -29,6 +29,7 @@ mkdocs-material = "^6.2.5"
 #markdown-include = "^0.6.0"
 mkdocs-include-markdown-plugin = ""
 mkdocs-exclude = ""
+pylint = "^2.6.0"
 
 [build-system]
 requires = ["poetry-core>=1.0.0"]

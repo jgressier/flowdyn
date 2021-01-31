@@ -22,7 +22,7 @@ def fp(x): # gamma = 1.4
 def frho(x):
     return 1.4 * fp(x)**(1./1.4)
 
-@pytest.mark.parametrize("flux", ["hlle", "hllc"])
+@pytest.mark.parametrize("flux", ["hlle", "hllc", "centered", "centeredmassflow"])
 def test_acousticpacket_sym(flux):
     endtime = 2.
     cfl     = 0.6

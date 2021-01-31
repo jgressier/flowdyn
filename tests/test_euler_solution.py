@@ -4,6 +4,7 @@ import pytest
 import flowdyn.mesh  as mesh
 import flowdyn.modelphy.euler as euler
 import flowdyn.solution.euler_riemann as solR
+import flowdyn.solution.euler_nozzle  as solN
 import flowdyn.modeldisc as modeldisc
 import flowdyn.field as field
 from flowdyn.xnum  import *
@@ -34,7 +35,7 @@ def test_shocktube(case, endtime):
 
 @pytest.mark.no_cover
 @pytest.mark.parametrize("flux", ["hlle", "hllc"])
-def test_shocktube_sodsub(flux):
+def test_shocktube_sodsub_th(flux):
     model = euler.model()
     sod   = solR.Sod_subsonic(model) # sol.Sod_supersonic(model) # 
     bcL  = { 'type': 'dirichlet',  'prim':  sod.bcL() }
@@ -56,7 +57,7 @@ def test_shocktube_sodsub(flux):
 
 @pytest.mark.no_cover
 @pytest.mark.parametrize("flux", ["hlle", "hllc"])
-def test_shocktube_sodsup(flux):
+def test_shocktube_sodsup_th(flux):
     model = euler.model()
     sod   = solR.Sod_supersonic(model) # sol.Sod_supersonic(model) # 
     bcL  = { 'type': 'dirichlet',  'prim':  sod.bcL() }
@@ -75,3 +76,52 @@ def test_shocktube_sodsup(flux):
     for name in ['density', 'pressure', 'mach']:
         error = np.sqrt(np.sum((fsol[-1].phydata(name)-fref.phydata(name))**2))/np.sum(np.abs(fref.phydata(name)))
         assert error < 5.e-3
+
+@pytest.mark.parametrize("NPR", [1.05, 1.1])
+def test_nozzle(NPR):
+    def S(x): # section law, throat is at x=5
+        return 1.-.5*np.exp(-.5*(x-5.)**2)
+
+    model    = euler.nozzle(sectionlaw=S)
+    meshsim  = mesh.unimesh(ncell=50,  length=10.)
+    nozz     = solN.nozzle(model, S(meshsim.centers()), NPR=NPR)
+    fref     = nozz.fdata(meshsim)
+    # BC
+    bcL = { 'type': 'insub',  'ptot': NPR, 'rttot': 1. }
+    bcR = { 'type': 'outsub', 'p': 1. }
+    #
+    rhs = modeldisc.fvm(model, meshsim, muscl(vanleer), bcL=bcL, bcR=bcR)
+    solver = integ.rk3ssp(meshsim, rhs)
+    # computation
+    endtime = 100.
+    cfl     = .8
+    finit   = rhs.fdata_fromprim([  1., 0.1, 1. ]) # rho, u, p
+    fsol    = solver.solve(finit, cfl, [endtime])
+    # error
+    error = np.sqrt(np.sum((fsol[-1].phydata('mach')-fref.phydata('mach'))**2))/np.sum(np.abs(fref.phydata('mach')))
+    assert error < 5.e-2
+
+@pytest.mark.no_cover
+@pytest.mark.parametrize("gam, NPR", [(1.4, 1.05), (1.4, 1.1), (1.35, 1.1)])
+def test_nozzle_th(gam, NPR):
+    def S(x): # section law, throat is at x=5
+        return 1.-.5*np.exp(-.5*(x-5.)**2)
+
+    model    = euler.nozzle(sectionlaw=S, gamma=gam)
+    meshsim  = mesh.unimesh(ncell=200,  length=10.)
+    nozz     = solN.nozzle(model, S(meshsim.centers()), NPR=NPR)
+    fref     = nozz.fdata(meshsim)
+    # BC
+    bcL = { 'type': 'insub',  'ptot': NPR, 'rttot': 1. }
+    bcR = { 'type': 'outsub', 'p': 1. }
+    #
+    rhs = modeldisc.fvm(model, meshsim, muscl(vanalbada), bcL=bcL, bcR=bcR)
+    solver = integ.rk3ssp(meshsim, rhs)
+    # computation
+    endtime = 100.
+    cfl     = .8
+    finit   = rhs.fdata_fromprim([  1., 0.1, 1. ]) # rho, u, p
+    fsol    = solver.solve(finit, cfl, [endtime])
+    # error
+    error = np.sqrt(np.sum((fsol[-1].phydata('mach')-fref.phydata('mach'))**2))/np.sum(np.abs(fref.phydata('mach')))
+    assert error < 1.e-2

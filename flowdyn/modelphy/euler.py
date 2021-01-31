@@ -7,7 +7,7 @@
  
     :Example:
  
-    >>> import hades.aero.Isentropic as Is
+    >>> import aerokit.aero.Isentropic as Is
     >>> Is.TiTs_Mach(1.)
     1.2
     >>> Is.TiTs_Mach(2., gamma=1.6)
