@@ -338,13 +338,13 @@ class euler1d(base):
         return [ rh, -dir*np.sqrt(g*m2*p/rh), p ] 
 
     def bc_insup(self, dir, data, param):
-        # needed parameters : ptot, rttot
+        # needed parameters : ptot, rttot, p
         g   = self.gamma
         gmu = g-1.
         p  = data[2]
         m2 = np.maximum(0., ((param['ptot']/p)**(gmu/g)-1.)*2./gmu)
         rh = param['ptot']/param['rttot']/(1.+.5*gmu*m2)**(1./gmu)
-        return param
+        return [rh, -dir*np.sqrt(g*m2*p/rh), p]
 
     def bc_outsub(self, dir, data, param):
         return [ data[0], data[1], param['p'] ] 
@@ -444,6 +444,31 @@ class euler2d(base):
         Vn=_vec_dot_vec(VL,dir)
         VR=VL-2.0*(Vn*dir)
         return [ data[0], VR, data[2] ]
+
+    def bc_insub(self, dir, data, param):
+        #needed parameters : ptot, rttot
+        g   = self.gamma
+        gmu = g-1.
+        p  = data[2]
+        m2 = np.maximum(0., ((param['ptot']/p)**(gmu/g)-1.)*2./gmu)
+        rh = param['ptot']/param['rttot']/(1.+.5*gmu*m2)**(1./gmu)
+        return [ rh, _sca_mult_vec(-np.sqrt(m2),dir), p ] 
+
+    def bc_insup(self, dir, data, param):
+        # needed parameters : ptot, rttot
+        g   = self.gamma
+        gmu = g-1.
+        p  = param['p']
+        m2 = np.maximum(0., ((param['ptot']/p)**(gmu/g)-1.)*2./gmu)
+        rh = param['ptot']/param['rttot']/(1.+.5*gmu*m2)**(1./gmu)
+        return [rh, _sca_mult_vec(-np.sqrt(m2),dir), p]
+
+    def bc_outsub(self, dir, data, param):
+        return [ data[0], data[1], param['p'] ] 
+
+    def bc_outsup(self, dir, data, param):
+        return data
+
 
 # ===============================================================
 # automatic testing
