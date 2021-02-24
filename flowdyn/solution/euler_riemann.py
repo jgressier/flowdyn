@@ -8,7 +8,7 @@ import flowdyn.field           as field
 import flowdyn.modelphy.euler  as euler
 import flowdyn.modeldisc       as modeldisc
 import aerokit.aero.unsteady1D as uq
-import aerokit.aero.riemann    as riem
+import aerokit.instance.riemann as riem
 
 class riemann():
     """ Defines a Riemann problem
