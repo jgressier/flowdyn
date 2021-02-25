@@ -10,7 +10,7 @@ import flowdyn.modeldisc       as modeldisc
 import aerokit.aero.Isentropic as Is
 import aerokit.aero.ShockWave  as sw
 import aerokit.aero.MassFlow   as mf
-import aerokit.aero.nozzle     as nz
+import aerokit.aero.nozzle as nz
 import aerokit.common.defaultgas as defg
 
 class nozzle():
@@ -18,7 +18,7 @@ class nozzle():
 
     :param model: define a `modelphy.euler` model, needs the gamma coefficient
     :param section: array of section law
-    :param NPR: NPR value (>1)
+    :param NPR: NPR value (>1); if None (default), can be set with nozzle.set_NPR(NPR)
     :param ref_rttot: additional definition of r*Ttot to complete state (default 1.)
     :param scale_ps: arbitrary scaling of static (and associated total) pressure (default 1. at the outlet)
     """
@@ -30,7 +30,8 @@ class nozzle():
         self.section = section
         self.ithroat = section.argmin()
         self.AsoAc   = section[-1]/section[self.ithroat]
-        self.NPR0, self.NPRsw, self.NPR1, self.Msub, self.Msh, self.Msup = nz._NPR_Ms_list(self.AsoAc)
+        self.nozzle  = nz.nozzle(x=None, section=section, gamma=self._gam) #for future version: , ref_rttot=ref_rttot, scale_ps=1.)
+        self.NPR0, self.NPRsw, self.NPR1 = self.nozzle.NPR0, self.nozzle.NPRsw, self.nozzle.NPR1
         self._ref_rttot = ref_rttot
         self._scale_ps  = scale_ps
         if NPR:

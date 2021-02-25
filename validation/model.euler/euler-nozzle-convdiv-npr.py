@@ -21,7 +21,7 @@ NPR = 1.1
 def S(x): # section law, throat is at x=5
     return 1.-.5*np.exp(-.5*(x-5.)**2)
 
-model = euler.nozzle(sectionlaw=S)
+model = euler.nozzle(gamma=1.35, sectionlaw=S)
 
 meshsim  = mesh.unimesh(ncell=200,  length=10.)
 meshref  = mesh.unimesh(ncell=1000, length=10.)
