@@ -51,7 +51,7 @@ def test_integrators():
     # extrapol1(), extrapol2()=extrapolk(1), centered=extrapolk(-1), extrapol3=extrapolk(1./3.)
     xnum = extrapol1()
     # explicit, rk2, rk3ssp, rk4, implicit, trapezoidal=cranknicolson
-    for tnum in [ explicit,rk2, rk3ssp, implicit, cranknicolson ]:
+    for tnum in [ explicit, rk2, rk3ssp, implicit, cranknicolson ]:
         finit = field.fdata(mymodel, curmesh, [ init_sinperk(curmesh, k=2) ] )
         rhs = modeldisc.fvm(mymodel, curmesh, xnum)
         solver = tnum(curmesh, rhs)

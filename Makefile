@@ -10,24 +10,30 @@ help:
 	@echo "\n$$(poetry version): use target ; available Makefile following targets\n"
 	@echo "  for USERS:"
 	@echo "    install: install local package"
-	@echo "  for DEVELOPERS:"
+	@echo "  for DEVELOPERS (poetry based):"
 	@echo "    install_dev: install local package and requirements"
 
 install:
 	pip install -e $(SRC)
 
-install_dev:
+install_pipdev:
 	pip install -r $(SRC)/requirements.txt
 	pip install -e $(SRC)
 	pip install -r $(SRC)/requirements-dev.txt
 	pip install -r $(SRC)/docs/requirements.txt
 
-check:
+poetry.lock: pyproject.toml
+	poetry update
+
+install_dev:
+	poetry install
+
+check_pyproject:
 	cat requirements.txt | grep -E '^[^# ]' | cut -d= -f1 | xargs -n 1 poetry add
 	cat requirements-dev.txt | grep -E '^[^# ]' | cut -d= -f1 | xargs -n 1 poetry add -D
 	cat docs/requirements.txt | grep -E '^[^# ]' | cut -d= -f1 | xargs -n 1 poetry add -D
 
-test:
+test: install_dev
 	poetry run pytest
 
 serve:
