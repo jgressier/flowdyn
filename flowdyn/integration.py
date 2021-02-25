@@ -13,7 +13,9 @@ import math
 import numpy as np
 import sys
 import time
-
+# from scipy.sparse import csc_matrix
+# import scipy.sparse.linalg as splinalg
+# from numpy.linalg import inv
 class timemodel():
     def __init__(self, mesh, modeldisc):
         self.mesh      = mesh
@@ -27,7 +29,7 @@ class timemodel():
     def calcrhs(self, field):
         self.residual = self.modeldisc.rhs(field)
  
-    def step():
+    def step(self):
         print("not implemented for virtual class")
 
     def add_res(self, f, dt, subtimecoef = 1.0):
@@ -91,6 +93,10 @@ class forwardeuler(explicit):
 #--------------------------------------------------------------------
     
 class rkmodel(timemodel):
+    """
+       generic implementation classical Runge-Kutta method
+       needs specification of Butcher array from derived class
+    """
     def step(self, field, dtloc, butcher):
         #butcher = [ np.array([1.]), \
         #            np.array([0.25, 0.25]), \
@@ -141,11 +147,34 @@ class rk4(rkmodel):
                     np.array([1., 2., 2., 1.])/6. ]
         return rkmodel.step(self, field, dtloc, butcher)
 
+
+class rk2_heun(rkmodel): 
+    "RK 2nd order Heun's method (or trapezoidal)"
+    def step(self, field, dtloc):
+        butcher = [ np.array([1.]), \
+                    np.array([0.5, .5]) ]
+        return rkmodel.step(self, field, dtloc, butcher)
+
+class rk3_heun(rkmodel): # Omnes2020
+    "RK 3rd order Heun's method"
+    def step(self, field, dtloc):
+        butcher = [ np.array([1./3.]), \
+                    np.array([0, 2./3.]), \
+                    np.array([0.25, 0, 0.75]) ]
+        return rkmodel.step(self, field, dtloc, butcher)
+    
+
 #--------------------------------------------------------------------
 # IMPLICIT MODELS
 #--------------------------------------------------------------------
 
 class implicitmodel(timemodel):
+    """
+    generic class for implicit models
+    needs specific implementation of step method for derived classes
+    TODO: define keywords for inversion method
+    TODO: define options, maxit, residuals, save local convergence, condition number
+    """
     def step(self, field, dtloc):
         print("not implemented for virtual implicit class")
         
@@ -173,7 +202,7 @@ class implicitmodel(timemodel):
         self.jacobian_use = 0
         return self.jacobian
 
-    def solve_implicit(self, field, dtloc, invert=np.linalg.solve, theta=1., xi=0):
+    def solve_implicit(self, field, dtloc, invertion=np.linalg.solve, theta=1., xi=0):
         ""
         diag = np.repeat(np.ones(field.nelem)/dtloc, self.neq)   # dtloc can be scalar or np.array, neq is the fast index
         mat = (1+xi)*np.diag(diag)-theta*self.jacobian
@@ -183,7 +212,8 @@ class implicitmodel(timemodel):
         if xi != 0: 
             for q in range(self.neq):
                 rhs[q::self.neq] += xi* self._lastresidual[q]
-        newrhs = invert(mat, rhs)
+        newrhs = invertion(mat, rhs)
+        # may change diagonal of mat to avoid division by dtloc
         self.residual = [ newrhs[iq::self.neq]/dtloc for iq in range(self.neq) ]
     
 class implicit(implicitmodel):
