@@ -3,16 +3,18 @@
 *.pdf
 *.bak
 
-# Byte-compiled / optimized / DLL files
+# python, Byte-compiled / optimized / DLL files
 __pycache__/
 *.pyc
+.python-version
 
 # build
 dist
 site
 poetry.lock
 
-# Unit test / coverage reports
+# project / coverage reports
+.codecov_token
 htmlcov/
 .tox/
 .nox/
