@@ -37,11 +37,11 @@ meshs   = [ mesh100 ]
 
 # Set of computations
 
-endtime = 5
+endtime = 10
 ntime   = 1
 tsave   = linspace(0, endtime, num=ntime+1)
 cfls    = [ .5 ]
-# extrapol1(), extrapol2()=extrapolk(1), centered=extrapolk(-1), extrapol3=extrapolk(1./3.)
+# extrapol1(), extrapol2()=extrapolk(-1), centered=extrapolk(1), extrapol3=extrapolk(1./3.)
 xmeths  = [ extrapol1(), extrapol2(), centered(), extrapol3() ]
 # explicit, rk2, rk3ssp, rk4, implicit, trapezoidal=cranknicolson
 tmeths  = [ rk3ssp ]

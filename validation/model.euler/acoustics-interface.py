@@ -52,17 +52,6 @@ solver.show_perf()
 
 # Figure / Plot
 
-# for name in ['pressure']:
-#     fig = figure(figsize=(10,8))
-#     ylabel(name)
-#     grid(linestyle='--', color='0.5')
-#     #finit.plot(name, 'k-.')
-#     finit.plot(name, 'k-')
-#     fsol[-1].plot(name, 'b-')
-#     #legend(['initial', flux1, flux2], loc='upper left',prop={'size':10})  
-#     fig.savefig(name+'.png', bbox_inches='tight')
-# show()
-
 varname='pressure' # mach, pressure, entropy
 ttime = [ fsol[i].time for i in range(nsol+1) ]
 xx, xt = np.meshgrid(xc, ttime)

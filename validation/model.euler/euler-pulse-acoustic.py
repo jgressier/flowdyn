@@ -36,7 +36,7 @@ cfl     = 1.
 
 # initial functions
 def fu(x):
-    vmag = .01 ; k = 10.
+    vmag = .001 ; k = 10.
     return vmag*np.exp(-200*(x-.2)**2) #*np.sin(2*np.pi*k*x)
 def fp(x): # gamma = 1.4
     return (1. + .2*fu(x))**7.  # satisfies C- invariant to make only C+ wave
