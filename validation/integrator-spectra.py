@@ -9,8 +9,8 @@ fig, (ax1, ax2, ax3) = plt.subplots(1, 3, figsize=(16,6))
 colors=colour_codes = map('C{}'.format, cycle(range(10)))
 #
 dt = 1.
-x = np.r_[-2.8:.25:30j]/dt
-y = np.r_[0:3.:60j]/dt
+x = np.r_[-3.5:.5:60j]/dt
+y = np.r_[0:4.5:80j]/dt
 X, Y = np.meshgrid(x, y)
 vpgrid = dt*(X+Y*1j)
 vpimag = dt*y*1j

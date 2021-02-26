@@ -7,10 +7,10 @@ PKG := flowdyn
 #	mkvirtualenv --python=$(which python3.7) $(PKG)
 
 help:
-	@echo "\n$$(poetry version): use target ; available Makefile following targets\n"
-	@echo "  for USERS:"
+	@echo "\n$$(poetry version): use target ; available Makefile following targets"
+	@echo "\n  for USERS:"
 	@echo "    install: install local package"
-	@echo "  for DEVELOPERS (poetry based):"
+	@echo "\n  for DEVELOPERS (poetry based):"
 	@echo "    install_dev: install local package and requirements"
 
 install:

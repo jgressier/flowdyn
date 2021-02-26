@@ -59,19 +59,20 @@ class model():
         return self._vardict.keys()
 
     def cons2prim(self):  # NEEDS definition by derived model
-        print("cons2prim method not implemented")
+        raise NameError("must be implemented in derived class")
+
     
     def prim2cons(self):  # NEEDS definition by derived model
-        print("prim2cons method not implemented")
+        raise NameError("must be implemented in derived class")
     
     def initdisc(self, mesh):
         return
     
     def numflux(self): # NEEDS definition by derived model
-        pass
+        raise NameError("must be implemented in derived class")
     
     def timestep(self, data, dx, condition):  # NEEDS definition by derived model
-        pass
+        raise NameError("must be implemented in derived class")
 
     def nameddata(self, name, data):
         return (self._vardict[name])(data)

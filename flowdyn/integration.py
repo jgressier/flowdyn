@@ -81,25 +81,23 @@ class timemodel:
         self._nit = 0
 
     def calcrhs(self, field):
-        """
+        """compute RHS with a call to modeldisc function
 
         Args:
           field:
 
-        Returns:
-
+        Returns: residual/rhs as self.residual
         """
         self.residual = self.modeldisc.rhs(field)
 
     def step(self, f, dt):
-        """
+        """virtual method for one step integration
 
         Args:
           f:
           dt:
 
         Returns:
-
         """
         raise NameError("not implemented for virtual class")
 
@@ -242,6 +240,9 @@ class rkmodel(timemodel):
         """check butcher array and define some algorithm properties"""
         if hasattr(self, '_butcher'):
             self.nstage = len(self._butcher)
+            self._subtimecoef = np.zeros(self.nstage)
+            for s, pcoef in enumerate(self._butcher):
+                self._subtimecoef[s] = np.sum(pcoef)
         else:
             raise NameError("bad implementation of RK model in "+self.__class__.__name__+": Butcher array is missing")
 
@@ -256,22 +257,20 @@ class rkmodel(timemodel):
         """
         prhs = []
         pfield = field.copy()
-        for pcoef in self._butcher:
-            subtimecoef = np.sum(pcoef)
+        for s, pcoef in enumerate(self._butcher):
             # compute residual of previous stage and memorize it in prhs[]
             self.calcrhs(pfield)  # result in self.residual
             prhs.append([q.copy() for q in self.residual])
             # revert to initial step
-            # pfield.data = [ q.copy() for q in field.data ]
             pfield = field.copy()
             # aggregate residuals
-            for qf in self.residual:
+            for qf in self.residual: # multiply last residual first ...
                 qf *= pcoef[-1]
             for i in range(pcoef.size - 1):
                 for q in range(pfield.neq):
-                    self.residual[q] += pcoef[i] * prhs[i][q]
+                    self.residual[q] += pcoef[i] * prhs[i][q] # ... and add previous RHS
             # substep
-            self.add_res(pfield, dtloc, subtimecoef)
+            self.add_res(pfield, dtloc, self._subtimecoef[s])
         field.set(pfield)
         return
 
@@ -326,6 +325,64 @@ class rk3_heun(rkmodel):
             np.array([0.25, 0, 0.75])     ]
 
 
+# --------------------------------------------------------------------
+# LOW STORAGE RUNGE KUTTA MODELS
+# --------------------------------------------------------------------
+
+class LSrkmodelHH(rkmodel):
+    """generic implementation of LOW-STORAGE Runge-Kutta method
+
+    Hu and Hussaini (JCP, 1996) method needs p-1 coefficients (_beta)
+    needs specification of Butcher array from derived class
+        $ for 1<=s<=p, Qs = Q0 + dt * _beta_s RHS(Q_{s-1}) $
+
+    Args:
+
+    Returns:
+
+    """
+    # def __init__(self, mesh, modeldisc):
+    #     timemodel.__init__(self, mesh, modeldisc)
+    #     self.check()
+
+    def check(self):
+        """check butcher array and define some algorithm properties"""
+        if hasattr(self, '_beta'):
+            self.nstage = len(self._beta)
+            self._subtimecoef = self._beta
+        else:
+            raise NameError("bad implementation of RK model in "+self.__class__.__name__+": LSRK array is missing")
+
+    def step(self, field, dtloc):
+        """
+
+        Args:
+          field:
+          dtloc:
+
+        Returns:
+        """
+        pfield = field.copy()
+        for beta in self._beta:
+            # compute residual of previous stage and memorize it in prhs[]
+            self.calcrhs(pfield)  # result in self.residual
+            # substep
+            pfield = field.copy()
+            self.add_res(pfield, dtloc*beta, beta) # beta is the subtimecoef
+        field.set(pfield)
+        return
+
+class lsrk25bb(LSrkmodelHH):
+    """Low Storage implementation of Bogey Bailly (JCP 2004) 2nd order 5 stages Runge Kutta """
+    _beta = [ 0.1815754863270908, 0.238260222208392, 0.330500707328, 0.5, 1. ]
+
+class lsrk26bb(LSrkmodelHH):
+    """Low Storage implementation of Bogey Bailly (JCP 2004) 2nd order 6 stages Runge Kutta """
+    _beta = [  0.11797990162882 , 0.18464696649448 , 0.24662360430959 , 0.33183954253762 , 0.5, 1. ]
+
+class lsrk4(LSrkmodelHH):
+    """RK4 to check"""
+    _beta = [ 1./4. , 1./3. , 0.5, 1. ]
 
 # --------------------------------------------------------------------
 # IMPLICIT MODELS
@@ -505,165 +562,29 @@ class gear(trapezoidal):
         return
 
 
-# --------------------------------------------------------------------
-# LOW STORAGE MODELS; rk1 / rk22 / rk3lsw / rk3ssp / rk4
-# --------------------------------------------------------------------
 
 
-class LowStorageRKmodel(timemodel):
-    """ """
+# class LSrk3lsw(LowStorageRKmodel):
+#     """ """
 
-    def solve(self, field, condition, tsave):
-        """
+#     def __init__(self, mesh, num):
 
-        Args:
-          field:
-          condition:
-          tsave:
+#         self.mesh = mesh
+#         self.num = num
+#         self.nstage = 3
+#         self.RKcoeff = np.array(
+#             [
+#                 [8.0 / 15.0, 0.0, 0.0],
+#                 [-17.0 / 60.0, 5.0 / 12.0, 0.0],
+#                 [0.0, -5.0 / 12.0, 3.0 / 4.0],
+#             ]
+#         )
 
-        Returns:
-
-        """
-        self.nit = 0
-        self.condition = condition
-        self.neq = field.neq  # to have the number of equations available
-        self.nelem = field.nelem  # to have the number of elements available
-        self.new_rhs = np.zeros((self.nstage, self.neq, self.nelem))
-
-        itfield = numfield(field)
-        itfield.cons2prim()
-        results = []
-        for t in np.arange(tsave.size):
-            endcycle = 0
-            while endcycle == 0:
-                dtloc = itfield.calc_timestep(self.mesh, condition)
-                dtglob = min(dtloc)
-                self.nit += 1
-                itfield.nit = self.nit
-                if itfield.time + dtglob >= tsave[t]:
-                    endcycle = 1
-                    dtglob = tsave[t] - itfield.time
-                if dtglob > np.spacing(dtglob):
-                    self.new_rhs[:, :, :] = 0.0
-                    for irkstep in range(self.nstage):
-                        itfield = self.step(itfield, dtglob, irkstep)
-                        itfield.cons2prim()
-                itfield.time += dtglob
-            results.append(itfield.copy())
-        return results
-
-    def step(self, field, dt, irkstep):
-        """
-
-        Args:
-          field:
-          dt:
-          irkstep:
-
-        Returns:
-
-        """
-        self.calcrhs(field)
-        for j in range(self.neq):
-            for k in range(self.nelem):
-                self.new_rhs[irkstep, j, k] = field.residual[j][k]
-        self.add_res(field, dt, irkstep)
-        return field
-
-    def add_res(self, field, dt, irkstep):
-        """
-
-        Args:
-          field:
-          dt:
-          irkstep:
-
-        Returns:
-
-        """
-        for rk_coeff_index in range(irkstep + 1):
-            for i in range(self.neq):
-                field.qdata[i] += (
-                    dt
-                    * self.RKcoeff[irkstep, rk_coeff_index]
-                    * self.new_rhs[rk_coeff_index, i, :]
-                )  # time can be scalar or np.array
-
-
-class LSrk1(LowStorageRKmodel):
-    """ """
-
-    def __init__(self, mesh, num):
-
-        self.mesh = mesh
-        self.num = num
-        self.nstage = 1
-        self.RKcoeff = np.array([[1.0]])
-
-
-class LSrk22(LowStorageRKmodel):
-    """ """
-
-    def __init__(self, mesh, num):
-
-        self.mesh = mesh
-        self.num = num
-        self.nstage = 2
-        self.RKcoeff = np.array([[0.5, 0.0], [-0.5, 1.0]])
-
-
-class LSrk3ssp(LowStorageRKmodel):
-    """ """
-
-    def __init__(self, mesh, num):
-
-        self.mesh = mesh
-        self.num = num
-        self.nstage = 3
-        self.RKcoeff = np.array(
-            [
-                [1.0, 0.0, 0.0],
-                [-3.0 / 4.0, 1.0 / 4.0, 0.0],
-                [-1.0 / 12.0, -1.0 / 12.0, 2.0 / 3.0],
-            ]
-        )
-
-
-class LSrk3lsw(LowStorageRKmodel):
-    """ """
-
-    def __init__(self, mesh, num):
-
-        self.mesh = mesh
-        self.num = num
-        self.nstage = 3
-        self.RKcoeff = np.array(
-            [
-                [8.0 / 15.0, 0.0, 0.0],
-                [-17.0 / 60.0, 5.0 / 12.0, 0.0],
-                [0.0, -5.0 / 12.0, 3.0 / 4.0],
-            ]
-        )
-
-
-class LSrk4(LowStorageRKmodel):
-    """ """
-
-    def __init__(self, mesh, num):
-
-        self.mesh = mesh
-        self.num = num
-        self.nstage = 4
-        self.RKcoeff = np.array(
-            [
-                [1.0 / 2.0, 0.0, 0.0, 0.0],
-                [-1.0 / 2.0, 1.0 / 2.0, 0.0, 0.0],
-                [0.0, -1.0 / 2.0, 1.0, 0.0],
-                [1.0 / 6.0, 1.0 / 3.0, -2.0 / 3.0, 1.0 / 6.0],
-            ]
-        )
 
 # --------------------------------------------------------------------
 # for tests
 
-List_Explicit_Integrators = [ explicit, rk2, rk2_heun, rk3_heun, rk3ssp, rk4 ]
+List_LSRK_Integrators = [ lsrk25bb, lsrk26bb ]
+List_RK_Integrators = [ rk2, rk2_heun, rk3_heun, rk3ssp, rk4 ] + List_LSRK_Integrators
+List_Explicit_Integrators = [ explicit ] + List_RK_Integrators
+List_Implicit_Integrators = [ implicit, cranknicolson, gear ]

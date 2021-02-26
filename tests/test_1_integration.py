@@ -17,7 +17,7 @@ def init_sinperk(mesh, k):
     return np.sin(2*k*np.pi/mesh.length*mesh.centers())
 
 
-@pytest.mark.parametrize("tnum", [explicit, rk2, rk3ssp, rk4, rk2_heun, rk3_heun, implicit, cranknicolson, gear])
+@pytest.mark.parametrize("tnum", List_Explicit_Integrators + List_Implicit_Integrators)
 def test_integrators_conv(tnum):
     curmesh = mesh50
     endtime = 5

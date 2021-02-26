@@ -8,6 +8,7 @@ exclude_lines =
     def __repr__
     if self.debug:
     if settings.DEBUG
+    pass
     raise AssertionError
     raise NameError
     raise NotImplementedError
