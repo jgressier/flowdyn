@@ -55,6 +55,9 @@ class base(mbase.model):
         self.shape       = [1, 1, 1]
         self.gamma       = gamma
         self.source      = source
+        self._vardict = { 'pressure': self.pressure, 'density': self.density,
+                          'velocity': self.velocity, 'mach': self.mach, 'enthalpy': self.enthalpy,
+                          'entropy': self.entropy, 'ptot': self.ptot, 'rttot': self.rttot, 'htot': self.htot }
         
     def cons2prim(self, qdata): # qdata[ieq][cell] :
         """
@@ -105,6 +108,10 @@ class base(mbase.model):
     def ptot(self, qdata):
         gm1 = self.gamma-1.
         return self.pressure(qdata)*(1.+.5*gm1*self.mach(qdata)**2)**(self.gamma/gm1)
+
+    def rttot(self, qdata):
+        ec = 0.5*qdata[1]**2/qdata[0]
+        return ((qdata[2]-ec)*self.gamma + ec)/qdata[0]/self.gamma*(self.gamma-1.)
 
     def htot(self, qdata):
         ec = 0.5*qdata[1]**2/qdata[0]
@@ -306,9 +313,7 @@ class euler1d(base):
     def __init__(self, gamma=1.4, source=None):
         base.__init__(self, gamma=gamma, source=source)
         self.shape       = [1, 1, 1]
-        self._vardict = { 'pressure': self.pressure, 'density': self.density,
-                          'velocity': self.velocity, 'mach': self.mach, 'enthalpy': self.enthalpy,
-                          'entropy': self.entropy, 'ptot': self.ptot, 'htot': self.htot }
+        self._vardict.update({  })
         self._bcdict.update({'sym': self.bc_sym,
                          'insub': self.bc_insub,
                          'insup': self.bc_insup,
@@ -365,8 +370,14 @@ class nozzle(euler1d):
     attributes:
 
     """
-    def __init__(self, sectionlaw, gamma=1.4):
-        euler1d.__init__(self, gamma=gamma, source=[ self.src_mass, self.src_mom, self.src_energy ])
+    def __init__(self, sectionlaw, gamma=1.4, source=None):
+        nozsrc = [ self.src_mass, self.src_mom, self.src_energy ]
+        allsrc = nozsrc # init all sources to nozzle sources
+        if source: # additional sources ?
+            for i,isrc in enumerate(source):
+                if isrc:
+                    allsrc[i] = lambda x,q: isrc(x,q)+nozsrc[i](x,q)
+        euler1d.__init__(self, gamma=gamma, source=allsrc)
         self.sectionlaw = sectionlaw
  
     def initdisc(self, mesh):
@@ -395,10 +406,8 @@ class euler2d(base):
     def __init__(self, gamma=1.4, source=None):
         base.__init__(self, gamma=gamma, source=source)
         self.shape       = [1, 2, 1]
-        self._vardict = { 'pressure': self.pressure, 'density': self.density,
-                          'velocity': self.velocity, 'velocity_x': self.velocity_x, 'velocity_y': self.velocity_y,
-                          'mach': self.mach, 'enthalpy': self.enthalpy,
-                          'entropy': self.entropy, 'ptot': self.ptot, 'htot': self.htot }
+        self._vardict.update({ 'velocity_x': self.velocity_x, 'velocity_y': self.velocity_y,
+                         })
         self._bcdict.update({ #'sym': self.bc_sym,
                         #  'insub': self.bc_insub,
                         #  'insup': self.bc_insup,
