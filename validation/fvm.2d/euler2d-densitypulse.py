@@ -29,14 +29,14 @@ bcper = { 'type': 'per' }
 bcsym = { 'type': 'sym' }
 
 rhs = modeldisc.fvm2d(model, meshsim, 
-		num=None, numflux='centered', 
+		num=None, numflux='hlle', 
 #		bclist={'left': bcper, 'right': bcper, 'top': bcper, 'bottom': bcper} )
 		bclist={'left': bcper, 'right': bcper, 'top': bcsym, 'bottom': bcsym} )
 solver = rk3ssp(meshsim, rhs)
 # computation
 #
-endtime = 5.
-cfl     = 2.
+endtime = 2.5
+cfl     = 1.
 
 # initial functions
 def fuv(x,y):

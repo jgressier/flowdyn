@@ -109,6 +109,17 @@ class base(mbase.model):
         ec = 0.5*qdata[1]**2/qdata[0]
         return ((qdata[2]-ec)*self.gamma + ec)/qdata[0]
 
+    def _Roe_average(self, rhoL, uL, HL, rhoR, uR, HR):
+        """returns Roe averaged rho, u, usound"""
+        # Roe's averaging
+        Rrho = np.sqrt(rhoR/rhoL)
+        tmp    = 1.0/(1.0+Rrho)
+        velRoe = tmp*(uL + uR*Rrho)
+        uRoe   = tmp*(uL + uR*Rrho)
+        hRoe   = tmp*(HL + HR*Rrho)
+        cRoe  = np.sqrt((hRoe - 0.5*uRoe**2)*(self.gamma-1.))
+        return Rrho, uRoe, cRoe
+
     def numflux(self, name, pdataL, pdataR, dir=None):
         if name==None: name='hllc'
         return (self._numfluxdict[name])(pdataL, pdataR, dir)
@@ -184,16 +195,7 @@ class base(mbase.model):
         eR   = HR-pR/rhoR
 
         # Roe's averaging
-        Rrho = np.sqrt(rhoR/rhoL)
-        #
-        tmp    = 1.0/(1.0+Rrho);
-        velRoe = tmp*(uL + uR*Rrho)
-        uRoe   = tmp*(uL + uR*Rrho)
-        hRoe   = tmp*(HL + HR*Rrho)
-
-        gamPdivRho = tmp*( (cL2+0.5*gam1*uL*uL) + (cR2+0.5*gam1*uR*uR)*Rrho )
-        cRoe  = np.sqrt(gamPdivRho - gam1*0.5*velRoe**2)
-
+        Rrho, uRoe, cRoe = self._Roe_average(rhoL, uL, HL, rhoR, uR, HR)
         # max HLL 2 waves "velocities"
         sL = np.minimum(0., np.minimum(uRoe-cRoe, unL-np.sqrt(cL2)))
         sR = np.maximum(0., np.maximum(uRoe+cRoe, unR+np.sqrt(cR2)))
@@ -231,15 +233,7 @@ class base(mbase.model):
         eR   = HR-pR/rhoR
 
         # Roe's averaging
-        Rrho = np.sqrt(rhoR/rhoL)
-
-        tmp    = 1.0/(1.0+Rrho);
-        velRoe = tmp*(uL + uR*Rrho)
-        uRoe   = tmp*(uL + uR*Rrho)
-        hRoe   = tmp*(HL + HR*Rrho)
-
-        gamPdivRho = tmp*( (cL2+0.5*gam1*uL*uL) + (cR2+0.5*gam1*uR*uR)*Rrho )
-        cRoe  = np.sqrt(gamPdivRho - gam1*0.5*velRoe**2)
+        Rrho, uRoe, cRoe = self._Roe_average(rhoL, uL, HL, rhoR, uR, HR)
 
         # speed of sound at L and R
         sL = np.minimum(uRoe-cRoe, unL-np.sqrt(cL2))
@@ -405,7 +399,7 @@ class euler2d(base):
                         #  'outsub': self.bc_outsub,
                         #  'outsup': self.bc_outsup 
                         })
-        self._numfluxdict = { #'hllc': self.numflux_hllc, 'hlle': self.numflux_hlle, 
+        self._numfluxdict = { 'hlle': self.numflux_hlle, #'hllc': self.numflux_hllc, 
                         'centered': self.numflux_centeredflux  }
 
     def _derived_fromprim(self, pdata, dir):
@@ -427,6 +421,17 @@ class euler2d(base):
         rhoUmag = _vecmag(qdata[1])
         return rhoUmag/np.sqrt(self.gamma*((self.gamma-1.0)*(qdata[0]*qdata[2]-0.5*rhoUmag**2)))
 
+    def _Roe_average(self, rhoL, unL, UL, HL, rhoR, unR, UR, HR):
+        """returns Roe averaged rho, u, usound"""
+        # Roe's averaging
+        Rrho = np.sqrt(rhoR/rhoL)
+        tmp    = 1.0/(1.0+Rrho)
+        unRoe  = tmp*(unL + unR*Rrho)
+        URoe   = tmp*(UL + UR*Rrho)
+        hRoe   = tmp*(HL + HR*Rrho)
+        cRoe  = np.sqrt((hRoe - 0.5*_vecsqrmag(URoe))*(self.gamma-1.))
+        return Rrho, unRoe, cRoe
+
     def numflux_centeredflux(self, pdataL, pdataR, dir): # centered flux ; pL[ieq][face]
         gam  = self.gamma
         gam1 = gam-1.
@@ -436,6 +441,25 @@ class euler2d(base):
         Frho  = .5*( rhoL*unL + rhoR*unR )
         Frhou = .5*( (rhoL*unL)*VL + pL*dir + (rhoR*unR)*VR + pR*dir)
         FrhoE = .5*( (rhoL*unL*HL) + (rhoR*unR*HR))
+        return [Frho, Frhou, FrhoE]
+
+    def numflux_hlle(self, pdataL, pdataR, dir): # HLLE Riemann solver ; pL[ieq][face]
+        gam  = self.gamma
+        gam1 = gam-1.
+        rhoL, unL, VL, pL, HL, cL2 = self._derived_fromprim(pdataL, dir)
+        rhoR, unR, VR, pR, HR, cR2 = self._derived_fromprim(pdataR, dir)    
+        # The HLLE Riemann solver
+        etL   = HL-pL/rhoL
+        etR   = HR-pR/rhoR
+        # Roe's averaging
+        Rrho, uRoe, cRoe = self._Roe_average(rhoL, unL, VL, HL, rhoR, unR, VR, HR)
+        # max HLL 2 waves "velocities"
+        sL = np.minimum(0., np.minimum(uRoe-cRoe, unL-np.sqrt(cL2)))
+        sR = np.maximum(0., np.maximum(uRoe+cRoe, unR+np.sqrt(cR2)))
+        # final flux
+        Frho  = (sR*rhoL*unL - sL*rhoR*unR + sL*sR*(rhoR-rhoL))/(sR-sL)
+        Frhou = (sR*((rhoL*unL)*VL + pL*dir) - sL*((rhoR*unR)*VR + pR*dir) + sL*sR*(rhoR*VR-rhoL*VL))/(sR-sL)
+        FrhoE = (sR*(rhoL*unL*HL) - sL*(rhoR*unR*HR) + sL*sR*(rhoR*etR-rhoL*etL))/(sR-sL)
         return [Frho, Frhou, FrhoE]
 
     def bc_sym(self, dir, data, param):
