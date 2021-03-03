@@ -313,7 +313,7 @@ class euler1d(base):
     def __init__(self, gamma=1.4, source=None):
         base.__init__(self, gamma=gamma, source=source)
         self.shape       = [1, 1, 1]
-        self._vardict.update({  })
+        self._vardict.update({ 'massflow': self.massflow })
         self._bcdict.update({'sym': self.bc_sym,
                          'insub': self.bc_insub,
                          'insup': self.bc_insup,
@@ -330,6 +330,9 @@ class euler1d(base):
         c2 = self.gamma * pdata[2] / pdata[0]
         H  = c2/(self.gamma-1.) + .5*pdata[1]**2
         return pdata[0], pdata[1], pdata[1], c2, H
+
+    def massflow(self,qdata): # for 1D model only
+        return qdata[1].copy()
 
     def bc_sym(self, dir, data, param):
         "symmetry boundary condition, for inviscid equations, it is equivalent to a wall, do not need user parameters"
@@ -385,6 +388,9 @@ class nozzle(euler1d):
                     (self.sectionlaw(mesh.xf[1:mesh.ncell+1])-self.sectionlaw(mesh.xf[0:mesh.ncell])) / \
                     (mesh.xf[1:mesh.ncell+1]-mesh.xf[0:mesh.ncell])
         return 
+
+    def massflow(self,qdata):
+        return qdata[1]*self.sectionlaw(mesh.centers())
 
     def src_mass(self, x, qdata):
         return -self.geomterm * qdata[1]
