@@ -18,14 +18,24 @@ pip show flowdyn
 
 ### [1.x.x](https://pypi.org/project/flowdyn/) (2021-xx-xx)
 
+#### new features
+
+- Runge-Kutta methods `rk2_heun`and `'rk3_heun` from Heun 
+- low storage Runge-Kutta (LSRK) methods from Hu and Hussaini
+- LSRK implementation of Bogey and Bailly `lsrk25bb`and `lsrk26bb``
+
+
 #### changed
 
-- avoid warnings with `vanalbada` and `vanleer` limiters when uniform flows
 - analytical 1D solution for nozzle flows in `solution.euler_nozzle`
 - improve test coverage
 - optimize some mesh computation
+- allow additional sources in (source based) `nozzle` euler model
+- `euler1d` and `nozzle` models have new `massflow` output variable
 
 #### fixed
+
+- avoid warnings with `vanalbada` and `vanleer` limiters when uniform flows
 
 ### [1.0.1](https://pypi.org/project/flowdyn/) (2021-01-29)
 
