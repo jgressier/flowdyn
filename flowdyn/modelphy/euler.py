@@ -294,7 +294,7 @@ class base(mbase.model):
         return [Frho, Frhou, FrhoE]
 
     def timestep(self, data, dx, condition):
-        "computation of timestep: data(=pdata) is not used, dx is an array of cell sizes, condition is the CFL number"
+        "computation of timestep with conservative data"
         #        dt = CFL * dx / ( |u| + c )
         # dt = np.zeros(len(dx)) #test use zeros instead
         #dt = condition*dx/ (data[1] + np.sqrt(self.gamma*data[2]/data[0]) )

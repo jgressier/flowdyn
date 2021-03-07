@@ -22,7 +22,7 @@
 
 import numpy as np
 import math
-import pyfvm.modelphy.base as mbase
+import flowdyn.modelphy.base as mbase
 
 
 # ===============================================================
@@ -42,7 +42,7 @@ class model(mbase.model):
         self.g           = g # gravity attraction
         self.source      = source
         
-        self._vardict = { 'heigth': self.heigth, 'velocity': self.velocity, 'massflow': self.massflow}
+        self._vardict = { 'height': self.height, 'velocity': self.velocity, 'massflow': self.massflow}
         self._bcdict.update({'sym': self.bc_sym, 'infinite':self.bc_inf })
         self._numfluxdict = {'centered': self.numflux_centeredflux, 
                              'rusanov': self.numflux_Rusanov, 'HLL': self.numflux_HLL }
@@ -65,7 +65,7 @@ class model(mbase.model):
         qdata = [ pdata[0], pdata[0]*pdata[1]]
         return qdata # Convervative variables
 
-    def heigth(self, qdata):
+    def height(self, qdata):
         return qdata[0].copy()
     
     def massflow(self,qdata):
@@ -94,40 +94,20 @@ class model(mbase.model):
 
     def numflux_Rusanov(self, pdataL, pdataR, dir=None): # Rusanov flux ; pL[ieq][face]
         g  = self.g
-  
+        #
         hL = pdataL[0]
         uL = pdataL[1]
         hR = pdataR[0]
         uR = pdataR[1]
-        
+        cL = np.sqrt(g*hL)
+        cR = np.sqrt(g*hR)
         # Eigen values definition
-        if (hL[:]>=0).all() :
-            lambda1L = uL + np.sqrt(g*hL)
-            lambda2L = uL - np.sqrt(g*hL)
-        else:
-            print('WARNING : negative height value encountered !')
-            lambda1L = uL + np.sqrt(g*abs(hL))
-            lambda2L = uL - np.sqrt(g*abs(hL))
-                                    
-        if (hR[:]>=0).all():
-            lambda1R = uR + np.sqrt(g*hR)
-            lambda2R = uR - np.sqrt(g*hR)
-        
-        else:
-            print('WARNING : negative height value encountered !')
-            lambda1R = uR + np.sqrt(abs(g*hR))
-            lambda2R = uR - np.sqrt(abs(g*hR))
-        
-        c=np.zeros(len(hL))
-        for i in range(len(hL)):
-            c[i] = max(abs(lambda1L[i]),abs(lambda2L[i]), abs(lambda1R[i]), abs(lambda2R[i]))
-        #c = max(abs(lambda1L),abs(lambda2L), abs(lambda1R), abs(lambda2R))
-
+        cmax = np.maximum(abs(uL)+cL,abs(uR)+cR)
         # final Rusanov flux
-        Fh = .5*( hL*uL + hR*uR ) - 0.5*c*(hR - hL)
-        Fu = .5*( (hL*uL**2 + 0.5*g*hL**2) + (hR*uR**2 + 0.5*g*hR**2)) - 0.5*c*(hR*uR - hL*uL)
+        Fh = .5*( hL*uL + hR*uR ) - 0.5*cmax*(hR - hL)
+        Fq = .5*( (hL*uL**2 + 0.5*g*hL**2) + (hR*uR**2 + 0.5*g*hR**2)) - 0.5*cmax*(hR*uR - hL*uL)
 
-        return [Fh, Fu]
+        return [Fh, Fq]
 
     def numflux_HLL(self, pdataL, pdataR, dir=None): # HLL flux ; pL[ieq][face]
         g  = self.g
@@ -189,24 +169,8 @@ class model(mbase.model):
         "computation of timestep: data(=pdata) is not used, dx is an array of cell sizes, condition is the CFL number"
         #        dt = CFL * dx / c where c is the highest eigen value velocity
         g = self.g
-        
-        if (data[0][:]>=0).all():
-            lambda1 = data[1] + np.sqrt(g*data[0])
-            lambda2 = data[1] - np.sqrt(g*data[0])
-            
-        else:
-            print('WARNING : negative height value encountered !')
-            lambda1 = data[1] + np.sqrt(g*abs(data[0]))
-            lambda2 = data[1] - np.sqrt(g*abs(data[0]))
-            
-        #c = max(abs(lambda1),abs(lambda2))
-        
-        dt = np.zeros(len(dx)) 
-        for i in range(len(dx)):
-            c = max(abs(lambda1[i]),abs(lambda2[i]))
-            dt[i] = condition*dx[i]/ c
-
-        #dt = condition*dx / c 
+        c = abs(data[1]/data[0])+np.sqrt(g*data[0]) 
+        dt = condition*dx / c 
         return dt
 
     def bc_sym(self, dir, data, param): # In primitive values here
