@@ -16,8 +16,8 @@ import pyfvm.modelphy.euler as euler
 import pyfvm.modeldisc      as modeldisc
 #import pyfvm.solution.euler_riemann as sol
 
-nx = 60
-ny = 60
+nx = 5
+ny = 5
 lx = 20
 ly = 20
 gam = 1.4
@@ -26,10 +26,10 @@ meshsim  = mesh2d.unimesh(nx, ny, lx, ly)
 
 model = euler.euler2d()
 
-#bcL = { 'type': 'per'}
-#bcR = { 'type': 'per'}
-
-rhs = modeldisc.fvm2d(model, meshsim, num=None, numflux='centered', bclist={'','','per','per'} )
+bcper = { 'type': 'per' }
+bcsym = { 'type': 'sym' }
+xnum=extrapol2d1()
+rhs = modeldisc.fvm2d(model, meshsim, num=xnum, numflux='centered', bclist={'left': bcper, 'right': bcper, 'top': bcper, 'bottom': bcper} )
 solver = rk3ssp(meshsim, rhs)
 
 # computation
@@ -48,7 +48,7 @@ def frho(x,y):
     return (1-(((gam-1)*b**2)/(8*gam*np.pi**2))*np.exp(1-r**2))**(1/(gam-1))
 
 xc, yc = meshsim.centers()
-print(xc,yc)
+
 finit = rhs.fdata_fromprim([ frho(xc, yc), fuv(xc, yc), fp(xc, yc) ]) # rho, (u,v), p
 
 #cProfile.run("fsol = solver.solve(finit, cfl, [endtime])")

@@ -71,6 +71,74 @@ class extrapolk(virtualmeth):
             Rdata[i][0:-1] = data[i][:] + ((1-self.kprec)*grad[i][1:]   +(1+self.kprec)*grad[i][0:-1])/2*(mesh.xf[0:-1]-mesh.xc[:])
         return Ldata, Rdata
 
+class extrapol2d1(virtualmeth):
+    "first order method"
+    def interp_face(self, mesh, data,  field, neq,xgrad='none',ygrad='none'):
+        Ldata = []
+        Rdata = []
+        Ldata = field.zero_datalist(newdim=mesh.nbfaces())
+        Rdata = field.zero_datalist(newdim=mesh.nbfaces())
+        # reorder data for 1st order extrapolation, except for boundary conditions
+        nx = mesh.nx
+        ny = mesh.ny
+        fshift = ny*(nx+1)
+        for p in range(neq):
+            if data[p].ndim == 2:
+            # distribute cell states (by j rows) to i faces
+                for j in range(ny):
+                    Ldata[p][:,j*(nx+1)+1:(j+1)*(nx+1)] = data[p][:,j*nx:(j+1)*nx]
+                    Rdata[p][:,j*(nx+1):(j+1)*(nx+1)-1] = data[p][:,j*nx:(j+1)*nx]
+                # distribute cell states  (by j rows) to j faces (starting at index ny*(nx+1))
+                for j in range(ny):
+                    Ldata[p][:,fshift+(j+1)*nx:fshift+(j+2)*nx] = data[p][:,j*nx:(j+1)*nx]
+                    Rdata[p][:,fshift+ j   *nx:fshift+(j+1)*nx] = data[p][:,j*nx:(j+1)*nx]
+            else:
+                # distribute cell states (by j rows) to i faces
+                for j in range(ny):
+                    Ldata[p][j*(nx+1)+1:(j+1)*(nx+1)] = data[p][j*nx:(j+1)*nx]
+                    Rdata[p][j*(nx+1):(j+1)*(nx+1)-1] = data[p][j*nx:(j+1)*nx]
+                # distribute cell states  (by j rows) to j faces (starting at index ny*(nx+1))
+                for j in range(ny):
+                    Ldata[p][fshift+(j+1)*nx:fshift+(j+2)*nx] = data[p][j*nx:(j+1)*nx]
+                    Rdata[p][fshift+ j   *nx:fshift+(j+1)*nx] = data[p][j*nx:(j+1)*nx]
+        return Ldata, Rdata
+
+class extrapol2dk(virtualmeth):
+    def __init__(self, k):
+        self.gradmeth = 'face'
+        self.kprec    = k
+
+    def interp_face(self, mesh, data,field, neq, grad):
+        Ldata = []
+        Rdata = []
+        Ldata = field.zero_datalist(newdim=mesh.nbfaces())
+        Rdata = field.zero_datalist(newdim=mesh.nbfaces())
+        nx = mesh.nx
+        ny = mesh.ny
+        fshift = ny*(nx+1)
+        #definition of alpha, beta and gamma
+        alphak = (1+self.kprec)/4
+        betak = (2-self.kprec)/2
+        gammak = (self.kprec-1)/4
+        if data[p].ndim == 2:
+                for j in range(ny):
+                    Ldata[p][:,j*(nx+1)+1:(j+1)*(nx+1)] = data[p][:] + (alphak * grad[p][0:-1] + betak * grad[p][0] + gammak * grad[p][1:])
+                    Rdata[p][:,j*(nx+1):(j+1)*(nx+1)-1] = data[p][:] + (alphak * grad[p][1:] + betak * grad[p][0] + gammak * grad[p][0:-1])
+                for j in range(ny):
+                    Ldata[p][:,fshift+(j+1)*nx:fshift+(j+2)*nx] = data[p][:] + (alphak * grad[p][0:-1] + betak * grad[p][0] + gammak * grad[p][1:])
+                    Rdata[p][:,fshift+ j   *nx:fshift+(j+1)*nx] = data[p][:] + (alphak * grad[p][1:] + betak * grad[p][0] + gammak * grad[p][0:-1])
+        else:
+            # distribute cell states (by j rows) to i faces
+            for j in range(ny):
+                Ldata[p][j*(nx+1)+1:(j+1)*(nx+1)] = data[p][j*nx:(j+1)*nx]
+                Rdata[p][j*(nx+1):(j+1)*(nx+1)-1] = data[p][j*nx:(j+1)*nx]
+                # distribute cell states  (by j rows) to j faces (starting at index ny*(nx+1))
+            for j in range(ny):
+                Ldata[p][fshift+(j+1)*nx:fshift+(j+2)*nx] = data[p][j*nx:(j+1)*nx]
+                Rdata[p][fshift+ j   *nx:fshift+(j+1)*nx] = data[p][j*nx:(j+1)*nx]
+        return Ldata, Rdata
+
+
 class centered(extrapolk):
     "second order method without limitation, k=1 (Centered)"
     def __init__(self):

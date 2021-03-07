@@ -103,7 +103,7 @@ class fvm1d(base):
         """
         Computes left and right interpolation to a face, using self (cell) primitive data and (face) gradients
         """
-        self.pL, self.pR = self.num.interp_face(self.mesh, self.pdata, self.grad)                
+        self.pL, self.pR = self.num.interp_face(self.mesh, self.pdata, self.grad)             
     
     def calc_bc(self):
         if (self.bcL['type'] == 'per') and (self.bcR['type'] == 'per'):     #periodic boundary conditions
@@ -164,6 +164,7 @@ class fvm2dcart(base):
     def __init__(self, model, mesh, num, bclist, numflux=None):
         base.__init__(self, model, mesh, num, numflux)
         self._bclist = bclist
+        
         for tag in self.mesh.list_of_bctags():
             if tag not in bclist:
                 raise NameError("missing BC tag '"+tag+"' in bclist argument")
@@ -172,41 +173,52 @@ class fvm2dcart(base):
         """
         Computes face-based gradients of each primitive data
         """
-        self.grad = []
-        # for d in self.pdata:
-        #     g = np.zeros(self.mesh.ncell+1)
-        #     g[1:-1] = (d[1:]-d[0:-1]) / (self.mesh.xc[1:]-self.mesh.xc[0:-1])
-        #     self.grad.append(g)
+        self.xgrad=[]
+        self.ygrad=[]
+        nx = self.mesh.nx
+        ny = self.mesh.ny
+        self.xgrad = self.field.zero_datalist(newdim=ny*(nx+1))
+        self.ygrad = self.field.zero_datalist(newdim=nx*(ny+1))
+        for p in range(self.neq):
+            if self.pdata[p].ndim == 2:
+                for j in range(ny):
+                    self.xgrad[p][:,j*(nx+1)+1:j*(nx+1)+nx]= self.pdata[p][:,j*nx+1:(j+1)*nx]-self.pdata[p][:,nx*j:(j+1)*nx-1]
+                    self.ygrad[p][:,nx+j:(nx*nx)+j:nx] = self.pdata[p][:,nx+j:(nx-1)*nx+(j+1):nx]-self.pdata[p][:,j:(nx-1)*nx+j:nx]
+            else:
+                for j in range(ny):
+                    self.xgrad[p][j*(nx+1)+1:j*(nx+1)+nx]= self.pdata[p][j*nx+1:(j+1)*nx]-self.pdata[p][nx*j:(j+1)*nx-1]
+                    self.ygrad[p][nx+j:(nx*nx)+j:nx] = self.pdata[p][nx+j:(nx-1)*nx+(j+1):nx]-self.pdata[p][j:(nx-1)*nx+j:nx]
     
     def interp_face(self):
         """
         Computes left and right interpolation to a face, using self (cell) primitive data and (face) gradients
         """
-        self.pL = self.field.zero_datalist(newdim=self.mesh.nbfaces())
-        self.pR = self.field.zero_datalist(newdim=self.mesh.nbfaces())
-        # reorder data for 1st order extrapolation, except for boundary conditions
-        nx = self.mesh.nx
-        ny = self.mesh.ny
-        fshift = ny*(nx+1)
-        for p in range(self.neq):
-            if self.pdata[p].ndim == 2:
-            # distribute cell states (by j rows) to i faces
-                for j in range(ny):
-                    self.pL[p][:,j*(nx+1)+1:(j+1)*(nx+1)] = self.pdata[p][:,j*nx:(j+1)*nx]
-                    self.pR[p][:,j*(nx+1):(j+1)*(nx+1)-1] = self.pdata[p][:,j*nx:(j+1)*nx]
-                # distribute cell states  (by j rows) to j faces (starting at index ny*(nx+1))
-                for j in range(ny):
-                    self.pL[p][:,fshift+(j+1)*nx:fshift+(j+2)*nx] = self.pdata[p][:,j*nx:(j+1)*nx]
-                    self.pR[p][:,fshift+ j   *nx:fshift+(j+1)*nx] = self.pdata[p][:,j*nx:(j+1)*nx]
-            else:
-                # distribute cell states (by j rows) to i faces
-                for j in range(ny):
-                    self.pL[p][j*(nx+1)+1:(j+1)*(nx+1)] = self.pdata[p][j*nx:(j+1)*nx]
-                    self.pR[p][j*(nx+1):(j+1)*(nx+1)-1] = self.pdata[p][j*nx:(j+1)*nx]
-                # distribute cell states  (by j rows) to j faces (starting at index ny*(nx+1))
-                for j in range(ny):
-                    self.pL[p][fshift+(j+1)*nx:fshift+(j+2)*nx] = self.pdata[p][j*nx:(j+1)*nx]
-                    self.pR[p][fshift+ j   *nx:fshift+(j+1)*nx] = self.pdata[p][j*nx:(j+1)*nx]
+        self.pL, self.pR = self.num.interp_face(self.mesh, self.pdata,self.field,self.neq, self.xgrad, self.ygrad)    
+        #self.pL = self.field.zero_datalist(newdim=self.mesh.nbfaces())
+        #self.pR = self.field.zero_datalist(newdim=self.mesh.nbfaces())
+        ## reorder data for 1st order extrapolation, except for boundary conditions
+        #nx = self.mesh.nx
+        #ny = self.mesh.ny
+        #fshift = ny*(nx+1)
+        #for p in range(self.neq):
+        #    if self.pdata[p].ndim == 2:
+            ## distribute cell states (by j rows) to i faces
+        #        for j in range(ny):
+        #            self.pL[p][:,j*(nx+1)+1:(j+1)*(nx+1)] = self.pdata[p][:,j*nx:(j+1)*nx]
+        #            self.pR[p][:,j*(nx+1):(j+1)*(nx+1)-1] = self.pdata[p][:,j*nx:(j+1)*nx]
+        #        # distribute cell states  (by j rows) to j faces (starting at index ny*(nx+1))
+        #        for j in range(ny):
+        #            self.pL[p][:,fshift+(j+1)*nx:fshift+(j+2)*nx] = self.pdata[p][:,j*nx:(j+1)*nx]
+        #            self.pR[p][:,fshift+ j   *nx:fshift+(j+1)*nx] = self.pdata[p][:,j*nx:(j+1)*nx]
+        #    else:
+        #        # distribute cell states (by j rows) to i faces
+        #        for j in range(ny):
+        #            self.pL[p][j*(nx+1)+1:(j+1)*(nx+1)] = self.pdata[p][j*nx:(j+1)*nx]
+        #            self.pR[p][j*(nx+1):(j+1)*(nx+1)-1] = self.pdata[p][j*nx:(j+1)*nx]
+        #        # distribute cell states  (by j rows) to j faces (starting at index ny*(nx+1))
+        #        for j in range(ny):
+        #            self.pL[p][fshift+(j+1)*nx:fshift+(j+2)*nx] = self.pdata[p][j*nx:(j+1)*nx]
+        #            self.pR[p][fshift+ j   *nx:fshift+(j+1)*nx] = self.pdata[p][j*nx:(j+1)*nx]
     
     def calc_bc(self):
         """
@@ -249,17 +261,30 @@ class fvm2dcart(base):
                             data_bc[i][:,iofaces] = p
     
     def calc_bc_grad(self):
-        # if (self.bcL['type'] == 'per') and (self.bcR['type'] == 'per'):     #periodic boundary conditions
-        #     for i in range(self.neq):
-        #         self.grad[i][0]  = 0.
-        #         self.grad[i][-1] = 0.
-        #         self.grad[i][0] = self.grad[i][-1] = (self.pdata[i][0]-self.pdata[i][-1]) / (self.mesh.xc[0]+self.mesh.length-self.mesh.xc[-1])
-        # elif (self.bcL['type'] == 'per') or (self.bcR['type'] == 'per'):     # inconsistent periodic boundary conditions:
-        #     raise NameError("both conditions should be periodic")
-        # else:
-        #     for i in range(self.neq):
-        #         self.grad[i][0]  = 0.
-        #         self.grad[i][-1] = 0.
+        bcper = { 'type': 'per' }
+        bclist = self._bclist
+        nx = self.mesh.nx
+        ny = self.mesh.ny
+        if bclist['left'] == bcper and bclist['right'] == bcper:
+            for p in range(self.neq):
+                if self.pdata[p].ndim == 2:
+                    for j in range(ny):
+                        self.xgrad[p][:,(nx+1)*j:(nx+1)*(j+1):nx] = 0
+                else:
+                    for j in range(ny):
+                        self.xgrad[p][(nx+1)*j:(nx+1)*(j+1):nx] = 0
+
+        if bclist['left'] == bcper and bclist['right'] == bcper:
+            for p in range(self.neq):
+                if self.pdata[p].ndim == 2:
+                    for j in range(nx):
+                        self.ygrad[p][:,j] = 0
+                        self.ygrad[p][:,ny*(nx-1)+j] = 0
+                else:
+                    for j in range(nx):
+                        self.ygrad[p][j] = 0
+                        self.ygrad[p][ny*(nx-1)+j] = 0
+
         return
 
     def calc_flux(self):

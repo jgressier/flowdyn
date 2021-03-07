@@ -22,8 +22,8 @@ model = euler.model()
 
 bcL  = { 'type': 'sym' } # not physical but can work
 bcR  = { 'type': 'sym' } # for wall
-xnum = muscl(vanalbada) ; flux = 'hllc'
-#xnum = extrapol1() ; flux = 'centered'
+#xnum = muscl(vanalbada) ; flux = 'hllc'
+xnum = extrapol1() ; flux = 'centered'
 
 rhs = modeldisc.fvm(model, meshsim, numflux=flux, num=xnum, bcL=bcL, bcR=bcR)
 solver = rk3ssp(meshsim, rhs)
