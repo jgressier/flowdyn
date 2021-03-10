@@ -16,7 +16,7 @@ pip show flowdyn
 
 ## Versions
 
-### [1.x.x](https://pypi.org/project/flowdyn/) (2021-xx-xx)
+### [1.1.0](https://pypi.org/project/flowdyn/) (2021-03-10)
 
 #### new features
 

@@ -42,14 +42,14 @@ serve:
 build:
 	poetry build
 
-publish: build
+publish: build 
 	poetry publish
 
 cov_run:
 	poetry run pytest --cov-report=xml
 
 cov_publish: .codecov_token
-	CODECOV_TOKEN=$(cat .codecov_token) bash <(curl -s https://codecov.io/bash)
+	CODECOV_TOKEN=$$(cat .codecov_token)  bash <(curl -s https://codecov.io/bash)
 
 clean:
 	find . -name "__pycache__" -exec rm -rf {} +
