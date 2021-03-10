@@ -29,10 +29,10 @@ bcper = { 'type': 'per' }
 bcsym = { 'type': 'sym' }
 
 rhs = modeldisc.fvm2d(model, meshsim, 
-		num=None, numflux='hlle', 
+		num=extrapol2dk(1./3.), numflux='hlle', 
 #		bclist={'left': bcper, 'right': bcper, 'top': bcper, 'bottom': bcper} )
 		bclist={'left': bcper, 'right': bcper, 'top': bcsym, 'bottom': bcsym} )
-solver = rk3ssp(meshsim, rhs)
+solver = integ.rk3ssp(meshsim, rhs)
 # computation
 #
 endtime = 2.5

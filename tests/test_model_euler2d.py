@@ -17,7 +17,7 @@ meshsim  = mesh2d.unimesh(nx, ny)
 bcper = { 'type': 'per' }
 model = euler.euler2d()
 
-rhs    = modeldisc.fvm2d(model, meshsim, num=None, numflux='centered', 
+rhs    = modeldisc.fvm2d(model, meshsim, num=extrapol2d1(), numflux='centered', 
     bclist={ tag:bcper for tag in meshsim.list_of_bctags()} )
 solver = integ.rk3ssp(meshsim, rhs)
 
