@@ -9,11 +9,11 @@ import time
 from pylab import *
 #from math import *
 
-from pyfvm.mesh  import *
-from pyfvm.model import *
-from pyfvm.field import *
-from pyfvm.xnum  import *
-from pyfvm.integration import *
+from flowdyn.mesh  import *
+from flowdyn.model import *
+from flowdyn.field import *
+from flowdyn.xnum  import *
+from flowdyn.integration import *
 
 mesh100 = unimesh(ncell=100, length=1.)
 mesh50  = unimesh(ncell=50, length=1.)

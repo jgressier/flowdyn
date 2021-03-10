@@ -1,12 +1,12 @@
 import pytest
 #
 import numpy as np
-import pyfvm.mesh  as mesh
-import pyfvm.modelphy.convection as conv
-import pyfvm.modeldisc as modeldisc
-import pyfvm.field as field
-from pyfvm.xnum  import *
-from pyfvm.integration import *
+import flowdyn.mesh  as mesh
+import flowdyn.modelphy.convection as conv
+import flowdyn.modeldisc as modeldisc
+import flowdyn.field as field
+from flowdyn.xnum  import *
+from flowdyn.integration import *
 
 mesh100 = mesh.unimesh(ncell=100, length=1.)
 mesh50  = mesh.unimesh(ncell=50, length=1.)
@@ -28,8 +28,8 @@ def test_mesh():
         finit = field.fdata(mymodel, curmesh, [ init_sinperk(curmesh, k=2) ] )
         rhs = modeldisc.fvm(mymodel, curmesh, xnum)
         solver = tnum(curmesh, rhs)
-        solver.solve(finit, cfl, [endtime])
-    assert 1
+        fsol = solver.solve(finit, cfl, [endtime])
+        assert not fsol[-1].isnan()
 
 @pytest.mark.parametrize("k", [2, 5, 10, 20 ])
 def test_wavelength(k):
@@ -43,8 +43,8 @@ def test_wavelength(k):
     finit = field.fdata(mymodel, curmesh, [ init_sinperk(curmesh, k=k) ] )
     rhs = modeldisc.fvm(mymodel, curmesh, xnum)
     solver = tnum(curmesh, rhs)
-    solver.solve(finit, cfl, [endtime])
-    assert 1
+    fsol = solver.solve(finit, cfl, [endtime])
+    assert not fsol[-1].isnan()
 
 @pytest.mark.parametrize("tnum", [ explicit,rk2, rk3ssp, implicit, cranknicolson ])
 def test_integrators(tnum):
@@ -57,8 +57,8 @@ def test_integrators(tnum):
     finit = field.fdata(mymodel, curmesh, [ init_sinperk(curmesh, k=2) ] )
     rhs = modeldisc.fvm(mymodel, curmesh, xnum)
     solver = tnum(curmesh, rhs)
-    solver.solve(finit, cfl, [endtime])
-    assert 1
+    fsol = solver.solve(finit, cfl, [endtime])
+    assert not fsol[-1].isnan()
 
 def test_numscheme():
     curmesh = mesh50

@@ -1,5 +1,5 @@
 [run]
-  source = pyfvm
+  source = flowdyn
   omit=*/__init__.py
 
 [report]
@@ -8,6 +8,7 @@ exclude_lines =
     def __repr__
     if self.debug:
     if settings.DEBUG
+    pass
     raise AssertionError
     raise NameError
     raise NotImplementedError

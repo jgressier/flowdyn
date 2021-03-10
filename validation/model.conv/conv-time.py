@@ -6,12 +6,12 @@ test integration methods
 import time
 from pylab import *
 
-from pyfvm.mesh  import *
-import pyfvm.modelphy.convection as convection
-import pyfvm.modeldisc as modeldisc
-from pyfvm.field import *
-from pyfvm.xnum  import *
-from pyfvm.integration import *
+from flowdyn.mesh  import *
+import flowdyn.modelphy.convection as convection
+import flowdyn.modeldisc as modeldisc
+from flowdyn.field import *
+from flowdyn.xnum  import *
+from flowdyn.integration import *
 
 mesh100 = unimesh(ncell=100, length=1.)
 mesh50  = unimesh(ncell=50, length=1.)
@@ -57,7 +57,7 @@ for i in range(nbcalc):
     solvers.append((tmeths*nbcalc)[i](curmesh, rhs))
     start = time.clock()
     results.append(solvers[-1].solve(finit, (cfls*nbcalc)[i], tsave)) #, flush="resfilename"))
-    print("cpu time of "+"%-4s"%(legends[i])+" computation (",solvers[-1].nit,"it) :",time.clock()-start,"s")
+    print("cpu time of "+"%-4s"%(legends[i])+" computation (",solvers[-1].nit(),"it) :",time.clock()-start,"s")
 
 # First figure
 
@@ -78,15 +78,15 @@ show()
 
 # Second set of computations
 
-endtime = 50.
+endtime = 20.
 ntime   = 1
 tsave   = linspace(0, endtime, num=ntime+1)
-cfls    = [ 1.0 ]
+cfls    = [ 0.8 ]
 # extrapol1(), extrapol2()=extrapolk(1), centered=extrapolk(-1), extrapol3=extrapolk(1./3.)
 xmeths  = [ extrapol3() ]
 # explicit, rk2, rk3ssp, rk4, implicit, trapezoidal=cranknicolson
-tmeths  = [ rk3ssp, rk4, gear, trapezoidal ]
-legends = [ 'RK3', 'RK4', 'BDF2', 'CK2' ]
+tmeths  = [ rk2, rk3ssp, rk4, gear, trapezoidal ]
+legends = [ 'RK2', 'RK3', 'RK4', 'BDF2', 'CK2' ]
 
 solvers = []
 results = []
@@ -98,7 +98,7 @@ for i in range(nbcalc):
     solvers.append((tmeths*nbcalc)[i](curmesh, rhs))
     start = time.clock()
     results.append(solvers[-1].solve(finit, (cfls*nbcalc)[i], tsave)) #, flush="resfilename"))
-    print("cpu time of "+"%-4s"%(legends[i])+" computation (",solvers[-1].nit,"it) :",time.clock()-start,"s")
+    print("cpu time of "+"%-4s"%(legends[i])+" computation (",solvers[-1].nit(),"it) :",time.clock()-start,"s")
 
 # Second figure
 

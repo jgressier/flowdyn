@@ -1,20 +1,20 @@
-# compiled python files
-*.pyc
-
 # misc
-*.png
 *.dat
-*.txt
 *.pdf
 *.bak
 
-# Byte-compiled / optimized / DLL files
+# python, Byte-compiled / optimized / DLL files
 __pycache__/
 *.pyc
+.python-version
 
-# doxygen output folder
+# build
+dist
+site
+poetry.lock
 
-# Unit test / coverage reports
+# project / coverage reports
+.codecov_token
 htmlcov/
 .tox/
 .nox/
@@ -31,6 +31,7 @@ cover/
 
 # Jupyter Notebook
 .ipynb_checkpoints
+Untitled*.ipynb
 
 # Visual Studio Code
 .vscode

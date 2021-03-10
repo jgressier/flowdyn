@@ -8,12 +8,12 @@ import matplotlib.pyplot as plt
 import numpy as np 
 from scipy.optimize import fsolve 
 
-from pyfvm.mesh  import *
-from pyfvm.field import *
-from pyfvm.xnum  import *
-import pyfvm.integration as integ
-import pyfvm.modelphy.burgers as burgers
-import pyfvm.modeldisc        as modeldisc
+from flowdyn.mesh  import *
+from flowdyn.field import *
+from flowdyn.xnum  import *
+import flowdyn.integration as integ
+import flowdyn.modelphy.burgers as burgers
+import flowdyn.modeldisc        as modeldisc
 
 mlength = 5.
 mesh50   = unimesh(ncell=50, length=mlength)

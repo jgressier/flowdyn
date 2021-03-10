@@ -6,12 +6,12 @@ test integration methods
 import time
 from pylab import *
 
-import pyfvm.mesh  as mesh
-import pyfvm.modelphy.convection as conv
-import pyfvm.modeldisc as modeldisc
-import pyfvm.field as field
-from pyfvm.xnum  import *
-from pyfvm.integration import *
+import flowdyn.mesh  as mesh
+import flowdyn.modelphy.convection as conv
+import flowdyn.modeldisc as modeldisc
+import flowdyn.field as field
+from flowdyn.xnum  import *
+from flowdyn.integration import *
 
 mesh100 = mesh.unimesh(ncell=100, length=1.)
 mesh50  = mesh.unimesh(ncell=50, length=1.)
@@ -37,11 +37,11 @@ meshs   = [ mesh100 ]
 
 # Set of computations
 
-endtime = 5
+endtime = 10
 ntime   = 1
 tsave   = linspace(0, endtime, num=ntime+1)
 cfls    = [ .5 ]
-# extrapol1(), extrapol2()=extrapolk(1), centered=extrapolk(-1), extrapol3=extrapolk(1./3.)
+# extrapol1(), extrapol2()=extrapolk(-1), centered=extrapolk(1), extrapol3=extrapolk(1./3.)
 xmeths  = [ extrapol1(), extrapol2(), centered(), extrapol3() ]
 # explicit, rk2, rk3ssp, rk4, implicit, trapezoidal=cranknicolson
 tmeths  = [ rk3ssp ]

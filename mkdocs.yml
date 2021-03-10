@@ -1,0 +1,36 @@
+site_name: Flowdyn
+repo_name: flowdyn
+repo_url: https://github.com/jgressier/flowdyn
+edit_uri: ''  #disables edit button
+
+theme:
+  name: material
+  icon:
+    repo: fontawesome/brands/github
+  language: en
+  features:
+    - navigation.tabs
+
+nav:
+  - Home: index.md
+  - User Guide:
+    - Models: userguide/models.md
+    - Numerical methods: userguide/num.md
+  - Examples: 
+    - Examples: examples.md
+    - Nozzle: examples/euler-nozzle.ipynb
+    - Rayleigh flow: examples/euler-rayleigh-flow.ipynb
+  - Code reference: coderef.md
+  - About: 
+    - About: about.md
+    - Change log: changelog.md
+
+plugins:
+  - search
+  - include-markdown
+  - mkdocs-jupyter:
+      execute: True
+      include_source: False
+  - exclude:
+      glob:
+        - ".ipynb_checkpoints"

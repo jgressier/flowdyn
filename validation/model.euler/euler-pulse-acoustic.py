@@ -8,12 +8,12 @@ import cProfile
 from pylab import *
 import numpy as np 
 
-from pyfvm.mesh  import *
-from pyfvm.field import *
-from pyfvm.xnum  import *
-from pyfvm.integration import *
-import pyfvm.modelphy.euler as euler
-import pyfvm.modeldisc      as modeldisc
+from flowdyn.mesh  import *
+from flowdyn.field import *
+from flowdyn.xnum  import *
+from flowdyn.integration import *
+import flowdyn.modelphy.euler as euler
+import flowdyn.modeldisc      as modeldisc
 
 meshsim  = unimesh(ncell=200,  length=1.)
 meshref  = unimesh(ncell=1000, length=1.)
@@ -36,7 +36,7 @@ cfl     = 1.
 
 # initial functions
 def fu(x):
-    vmag = .01 ; k = 10.
+    vmag = .001 ; k = 10.
     return vmag*np.exp(-200*(x-.2)**2) #*np.sin(2*np.pi*k*x)
 def fp(x): # gamma = 1.4
     return (1. + .2*fu(x))**7.  # satisfies C- invariant to make only C+ wave

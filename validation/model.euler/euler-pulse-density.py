@@ -8,12 +8,12 @@ import cProfile
 from pylab import *
 import numpy as np 
 
-from pyfvm.mesh  import *
-from pyfvm.field import *
-from pyfvm.xnum  import *
-from pyfvm.integration import *
-import pyfvm.modelphy.euler as euler
-import pyfvm.modeldisc      as modeldisc
+from flowdyn.mesh  import *
+from flowdyn.field import *
+from flowdyn.xnum  import *
+from flowdyn.integration import *
+import flowdyn.modelphy.euler as euler
+import flowdyn.modeldisc      as modeldisc
 
 meshsim  = unimesh(ncell=200,  length=1.)
 meshref  = unimesh(ncell=1000, length=1.)

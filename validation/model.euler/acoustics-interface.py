@@ -8,12 +8,12 @@ import cProfile
 from pylab import *
 import numpy as np 
 
-from pyfvm.mesh  import *
-from pyfvm.field import *
-from pyfvm.xnum  import *
-from pyfvm.integration import *
-import pyfvm.modelphy.euler as euler
-import pyfvm.modeldisc      as modeldisc
+from flowdyn.mesh  import *
+from flowdyn.field import *
+from flowdyn.xnum  import *
+from flowdyn.integration import *
+import flowdyn.modelphy.euler as euler
+import flowdyn.modeldisc      as modeldisc
 
 meshsim  = unimesh(ncell=200,  length=1.)
 #meshref  = unimesh(ncell=1000, length=1.)
@@ -51,17 +51,6 @@ fsol = solver.solve(finit, cfl, np.linspace(0., endtime, nsol+1))
 solver.show_perf()
 
 # Figure / Plot
-
-# for name in ['pressure']:
-#     fig = figure(figsize=(10,8))
-#     ylabel(name)
-#     grid(linestyle='--', color='0.5')
-#     #finit.plot(name, 'k-.')
-#     finit.plot(name, 'k-')
-#     fsol[-1].plot(name, 'b-')
-#     #legend(['initial', flux1, flux2], loc='upper left',prop={'size':10})  
-#     fig.savefig(name+'.png', bbox_inches='tight')
-# show()
 
 varname='pressure' # mach, pressure, entropy
 ttime = [ fsol[i].time for i in range(nsol+1) ]
