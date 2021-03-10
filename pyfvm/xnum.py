@@ -108,7 +108,7 @@ class extrapol2dk(virtualmeth):
         self.gradmeth = 'face'
         self.kprec    = k
 
-    def interp_face(self, mesh, data,field, neq, grad):
+    def interp_face(self, mesh, data,field, neq, xgrad, ygrad):
         Ldata = []
         Rdata = []
         Ldata = field.zero_datalist(newdim=mesh.nbfaces())
@@ -117,25 +117,23 @@ class extrapol2dk(virtualmeth):
         ny = mesh.ny
         fshift = ny*(nx+1)
         #definition of alpha, beta and gamma
-        alphak = (1+self.kprec)/4
-        betak = (2-self.kprec)/2
-        gammak = (self.kprec-1)/4
-        if data[p].ndim == 2:
+        for p in range(neq):
+            if data[p].ndim == 2:
                 for j in range(ny):
-                    Ldata[p][:,j*(nx+1)+1:(j+1)*(nx+1)] = data[p][:] + (alphak * grad[p][0:-1] + betak * grad[p][0] + gammak * grad[p][1:])
-                    Rdata[p][:,j*(nx+1):(j+1)*(nx+1)-1] = data[p][:] + (alphak * grad[p][1:] + betak * grad[p][0] + gammak * grad[p][0:-1])
+                    Ldata[p][:,j*(nx+1)+1:(j+1)*(nx+1)] = data[p][:,j*nx:(j+1)*nx] + (1+self.kprec)/4 * xgrad[p][:,(nx+1)*j:j*(nx+1)+nx] + (self.kprec-1)/4 * xgrad[p][:,j*(nx+1)+1:(j+1)*(nx+1)]
+                    Rdata[p][:,j*(nx+1):(j+1)*(nx+1)-1] = data[p][:,j*nx:(j+1)*nx] + (1+self.kprec)/4 * xgrad[p][:,j*(nx+1)+1:(j+1)*(nx+1)] + (self.kprec-1)/4 * xgrad[p][:,(nx+1)*j:j*(nx+1)+nx]
                 for j in range(ny):
-                    Ldata[p][:,fshift+(j+1)*nx:fshift+(j+2)*nx] = data[p][:] + (alphak * grad[p][0:-1] + betak * grad[p][0] + gammak * grad[p][1:])
-                    Rdata[p][:,fshift+ j   *nx:fshift+(j+1)*nx] = data[p][:] + (alphak * grad[p][1:] + betak * grad[p][0] + gammak * grad[p][0:-1])
-        else:
-            # distribute cell states (by j rows) to i faces
-            for j in range(ny):
-                Ldata[p][j*(nx+1)+1:(j+1)*(nx+1)] = data[p][j*nx:(j+1)*nx]
-                Rdata[p][j*(nx+1):(j+1)*(nx+1)-1] = data[p][j*nx:(j+1)*nx]
-                # distribute cell states  (by j rows) to j faces (starting at index ny*(nx+1))
-            for j in range(ny):
-                Ldata[p][fshift+(j+1)*nx:fshift+(j+2)*nx] = data[p][j*nx:(j+1)*nx]
-                Rdata[p][fshift+ j   *nx:fshift+(j+1)*nx] = data[p][j*nx:(j+1)*nx]
+                    Ldata[p][:,fshift+(j+1)*nx:fshift+(j+2)*nx] = data[p][:,j*nx:(j+1)*nx] + (1+self.kprec)/4 * ygrad[p][:,j:(nx*nx)+j:nx] + (self.kprec-1)/4 * ygrad[p][:,nx+j:(nx*nx)+j+1:nx]
+                    Rdata[p][:,fshift+ j   *nx:fshift+(j+1)*nx] = data[p][:,j*nx:(j+1)*nx] + (1+self.kprec)/4 * ygrad[p][:,nx+j:(nx*nx)+j+1:nx] + (self.kprec-1)/4 * ygrad[p][:,j:(nx*nx)+j:nx]
+            else:
+                # distribute cell states (by j rows) to i faces
+                for j in range(ny):
+                    Ldata[p][j*(nx+1)+1:(j+1)*(nx+1)] = data[p][j*nx:(j+1)*nx] + (1+self.kprec)/4 * xgrad[p][(nx+1)*j:j*(nx+1)+nx] + (self.kprec-1)/4 * xgrad[p][j*(nx+1)+1:(j+1)*(nx+1)]
+                    Rdata[p][j*(nx+1):(j+1)*(nx+1)-1] = data[p][j*nx:(j+1)*nx] + (1+self.kprec)/4 * xgrad[p][j*(nx+1)+1:(j+1)*(nx+1)] + (self.kprec-1)/4 * xgrad[p][(nx+1)*j:j*(nx+1)+nx]
+                    # distribute cell states  (by j rows) to j faces (starting at index ny*(nx+1))
+                for j in range(ny):
+                    Ldata[p][fshift+(j+1)*nx:fshift+(j+2)*nx] = data[p][j*nx:(j+1)*nx] + (1+self.kprec)/4 * ygrad[p][j:(nx*nx)+j:nx] + (self.kprec-1)/4 * ygrad[p][nx+j:(nx*nx)+j+1:nx]
+                    Rdata[p][fshift+ j   *nx:fshift+(j+1)*nx] = data[p][j*nx:(j+1)*nx] + (1+self.kprec)/4 * ygrad[p][nx+j:(nx*nx)+j+1:nx] + (self.kprec-1)/4 * ygrad[p][j:(nx*nx)+j:nx]
         return Ldata, Rdata
 
 

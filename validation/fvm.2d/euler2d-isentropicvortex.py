@@ -16,26 +16,27 @@ import pyfvm.modelphy.euler as euler
 import pyfvm.modeldisc      as modeldisc
 #import pyfvm.solution.euler_riemann as sol
 
-nx = 5
-ny = 5
+nx = 100
+ny = 100
 lx = 20
 ly = 20
 gam = 1.4
-b=0.5
+b=1.5
 meshsim  = mesh2d.unimesh(nx, ny, lx, ly)
 
 model = euler.euler2d()
 
 bcper = { 'type': 'per' }
 bcsym = { 'type': 'sym' }
-xnum=extrapol2d1()
-rhs = modeldisc.fvm2d(model, meshsim, num=xnum, numflux='centered', bclist={'left': bcper, 'right': bcper, 'top': bcper, 'bottom': bcper} )
+xnum=extrapol2dk(k=1./3.)
+#xnum=extrapol2d1()
+rhs = modeldisc.fvm2d(model, meshsim, num=xnum, numflux='hlle', bclist={'left': bcper, 'right': bcper, 'top': bcper, 'bottom': bcper} )
 solver = rk3ssp(meshsim, rhs)
 
 # computation
 #
-endtime = 40.
-cfl     = 2.5
+endtime = 2. #10.
+cfl     = 1.
 
 # initial functions
 def fuv(x,y):
@@ -57,7 +58,7 @@ fsol = solver.solve(finit, cfl, [endtime])
 solver.show_perf()
 
 # Figure / Plot
-vars = ['density', 'velocity_x']#, 'mach']
+vars = ['pressure', 'density']#, 'mach']
 nvars = len(vars)
 fig, ax = plt.subplots(ncols=nvars, figsize=(10*nvars-2,6))
 fig.suptitle('Isentropic Vortex: ')
