@@ -122,9 +122,11 @@ class extrapol2dk(virtualmeth):
                 for j in range(ny):
                     Ldata[p][:,j*(nx+1)+1:(j+1)*(nx+1)] = data[p][:,j*nx:(j+1)*nx] + (1+self.kprec)/4 * xgrad[p][:,(nx+1)*j:j*(nx+1)+nx] + (self.kprec-1)/4 * xgrad[p][:,j*(nx+1)+1:(j+1)*(nx+1)]
                     Rdata[p][:,j*(nx+1):(j+1)*(nx+1)-1] = data[p][:,j*nx:(j+1)*nx] + (1+self.kprec)/4 * xgrad[p][:,j*(nx+1)+1:(j+1)*(nx+1)] + (self.kprec-1)/4 * xgrad[p][:,(nx+1)*j:j*(nx+1)+nx]
+                    
                 for j in range(ny):
-                    Ldata[p][:,fshift+(j+1)*nx:fshift+(j+2)*nx] = data[p][:,j*nx:(j+1)*nx] + (1+self.kprec)/4 * ygrad[p][:,j:(nx*nx)+j:nx] + (self.kprec-1)/4 * ygrad[p][:,nx+j:(nx*nx)+j+1:nx]
-                    Rdata[p][:,fshift+ j   *nx:fshift+(j+1)*nx] = data[p][:,j*nx:(j+1)*nx] + (1+self.kprec)/4 * ygrad[p][:,nx+j:(nx*nx)+j+1:nx] + (self.kprec-1)/4 * ygrad[p][:,j:(nx*nx)+j:nx]
+                    Ldata[p][:,fshift+(j+1)*nx:fshift+(j+2)*nx] = data[p][:,j*nx:(j+1)*nx] + (1+self.kprec)/4 * ygrad[p][:,j*nx:(j+1)*nx] + (self.kprec-1)/4 * ygrad[p][:,nx*(j+1):(j+2)*nx]
+                    Rdata[p][:,fshift+ j   *nx:fshift+(j+1)*nx] = data[p][:,j*nx:(j+1)*nx] + (1+self.kprec)/4 * ygrad[p][:,nx*(j+1):(j+2)*nx] + (self.kprec-1)/4 * ygrad[p][:,j*nx:(j+1)*nx]
+                    
             else:
                 # distribute cell states (by j rows) to i faces
                 for j in range(ny):
@@ -132,8 +134,9 @@ class extrapol2dk(virtualmeth):
                     Rdata[p][j*(nx+1):(j+1)*(nx+1)-1] = data[p][j*nx:(j+1)*nx] + (1+self.kprec)/4 * xgrad[p][j*(nx+1)+1:(j+1)*(nx+1)] + (self.kprec-1)/4 * xgrad[p][(nx+1)*j:j*(nx+1)+nx]
                     # distribute cell states  (by j rows) to j faces (starting at index ny*(nx+1))
                 for j in range(ny):
-                    Ldata[p][fshift+(j+1)*nx:fshift+(j+2)*nx] = data[p][j*nx:(j+1)*nx] + (1+self.kprec)/4 * ygrad[p][j:(nx*nx)+j:nx] + (self.kprec-1)/4 * ygrad[p][nx+j:(nx*nx)+j+1:nx]
-                    Rdata[p][fshift+ j   *nx:fshift+(j+1)*nx] = data[p][j*nx:(j+1)*nx] + (1+self.kprec)/4 * ygrad[p][nx+j:(nx*nx)+j+1:nx] + (self.kprec-1)/4 * ygrad[p][j:(nx*nx)+j:nx]
+                    Ldata[p][fshift+(j+1)*nx:fshift+(j+2)*nx] = data[p][j*nx:(j+1)*nx] + (1+self.kprec)/4 * ygrad[p][j*nx:(j+1)*nx] + (self.kprec-1)/4 * ygrad[p][nx*(j+1):(j+2)*nx]
+                    Rdata[p][fshift+ j   *nx:fshift+(j+1)*nx] = data[p][j*nx:(j+1)*nx] + (1+self.kprec)/4 * ygrad[p][nx*(j+1):(j+2)*nx] + (self.kprec-1)/4 * ygrad[p][j*nx:(j+1)*nx]
+        
         return Ldata, Rdata
 
 

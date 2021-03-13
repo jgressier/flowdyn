@@ -31,7 +31,7 @@ bcsym = { 'type': 'sym' }
 rhs = modeldisc.fvm2d(model, meshsim, 
 		num=extrapol2dk(1./3.), numflux='hlle', 
 #		bclist={'left': bcper, 'right': bcper, 'top': bcper, 'bottom': bcper} )
-		bclist={'left': bcper, 'right': bcper, 'top': bcsym, 'bottom': bcsym} )
+		bclist={'left': bcper, 'right': bcper, 'top': bcper, 'bottom': bcper} )
 solver = integ.rk3ssp(meshsim, rhs)
 # computation
 #

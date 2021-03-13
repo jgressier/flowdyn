@@ -192,7 +192,9 @@ class fvm2dcart(base):
         """
         Computes left and right interpolation to a face, using self (cell) primitive data and (face) gradients
         """
+        
         self.pL, self.pR = self.num.interp_face(self.mesh, self.pdata,self.field,self.neq, self.xgrad, self.ygrad)    
+       
         #self.pL = self.field.zero_datalist(newdim=self.mesh.nbfaces())
         #self.pR = self.field.zero_datalist(newdim=self.mesh.nbfaces())
         ## reorder data for 1st order extrapolation, except for boundary conditions
@@ -273,16 +275,16 @@ class fvm2dcart(base):
                     for j in range(ny):
                         self.xgrad[p][(nx+1)*j:(nx+1)*(j+1):nx] = 0
 
-        if bclist['left'] == bcper and bclist['right'] == bcper:
+        if bclist['top'] == bcper and bclist['bottom'] == bcper:
             for p in range(self.neq):
                 if self.pdata[p].ndim == 2:
                     for j in range(nx):
                         self.ygrad[p][:,j] = 0
-                        self.ygrad[p][:,ny*(nx-1)+j] = 0
+                        self.ygrad[p][:,ny*ny+j] = 0
                 else:
                     for j in range(nx):
                         self.ygrad[p][j] = 0
-                        self.ygrad[p][ny*(nx-1)+j] = 0
+                        self.ygrad[p][ny*ny+j] = 0
 
         return
 
