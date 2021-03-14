@@ -95,5 +95,5 @@ class mesh2d(meshbase.virtualmesh):
             dir = -dir
         return dir
 
-class unimesh(mesh2d):
+class unimesh(mesh2d): # alias
     pass

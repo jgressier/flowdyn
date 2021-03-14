@@ -84,7 +84,7 @@ class extrapol2d1(virtualmeth):
         fshift = ny*(nx+1)
         for p in range(neq):
             if data[p].ndim == 2:
-            # distribute cell states (by j rows) to i faces
+                # distribute cell states (by j rows) to i faces
                 for j in range(ny):
                     Ldata[p][:,j*(nx+1)+1:(j+1)*(nx+1)] = data[p][:,j*nx:(j+1)*nx]
                     Rdata[p][:,j*(nx+1):(j+1)*(nx+1)-1] = data[p][:,j*nx:(j+1)*nx]
@@ -113,29 +113,30 @@ class extrapol2dk(virtualmeth):
         Rdata = []
         Ldata = field.zero_datalist(newdim=mesh.nbfaces())
         Rdata = field.zero_datalist(newdim=mesh.nbfaces())
+        kp = (1+self.kprec)/4.
+        km = (1-self.kprec)/4.
         nx = mesh.nx
         ny = mesh.ny
         fshift = ny*(nx+1)
-        #definition of alpha, beta and gamma
         for p in range(neq):
             if data[p].ndim == 2:
-                for j in range(ny):
-                    Ldata[p][:,j*(nx+1)+1:(j+1)*(nx+1)] = data[p][:,j*nx:(j+1)*nx] + (1+self.kprec)/4 * xgrad[p][:,(nx+1)*j:j*(nx+1)+nx] + (self.kprec-1)/4 * xgrad[p][:,j*(nx+1)+1:(j+1)*(nx+1)]
-                    Rdata[p][:,j*(nx+1):(j+1)*(nx+1)-1] = data[p][:,j*nx:(j+1)*nx] + (1+self.kprec)/4 * xgrad[p][:,j*(nx+1)+1:(j+1)*(nx+1)] + (self.kprec-1)/4 * xgrad[p][:,(nx+1)*j:j*(nx+1)+nx]
+                for j in range(ny): # loop of cell rows
+                    Ldata[p][:,j*(nx+1)+1:(j+1)*(nx+1)] = data[p][:,j*nx:(j+1)*nx] + kp * xgrad[p][:,(nx+1)*j:j*(nx+1)+nx] + km * xgrad[p][:,j*(nx+1)+1:(j+1)*(nx+1)]
+                    Rdata[p][:,j*(nx+1):(j+1)*(nx+1)-1] = data[p][:,j*nx:(j+1)*nx] - kp * xgrad[p][:,j*(nx+1)+1:(j+1)*(nx+1)] - km * xgrad[p][:,(nx+1)*j:j*(nx+1)+nx]
                     
-                for j in range(ny):
-                    Ldata[p][:,fshift+(j+1)*nx:fshift+(j+2)*nx] = data[p][:,j*nx:(j+1)*nx] + (1+self.kprec)/4 * ygrad[p][:,j*nx:(j+1)*nx] + (self.kprec-1)/4 * ygrad[p][:,nx*(j+1):(j+2)*nx]
-                    Rdata[p][:,fshift+ j   *nx:fshift+(j+1)*nx] = data[p][:,j*nx:(j+1)*nx] + (1+self.kprec)/4 * ygrad[p][:,nx*(j+1):(j+2)*nx] + (self.kprec-1)/4 * ygrad[p][:,j*nx:(j+1)*nx]
+                for j in range(ny):  # loop of cell rows
+                    Ldata[p][:,fshift+(j+1)*nx:fshift+(j+2)*nx] = data[p][:,j*nx:(j+1)*nx] + kp * ygrad[p][:,j*nx:(j+1)*nx] + km * ygrad[p][:,nx*(j+1):(j+2)*nx]
+                    Rdata[p][:,fshift+ j   *nx:fshift+(j+1)*nx] = data[p][:,j*nx:(j+1)*nx] - kp * ygrad[p][:,nx*(j+1):(j+2)*nx] - km * ygrad[p][:,j*nx:(j+1)*nx]
                     
             else:
                 # distribute cell states (by j rows) to i faces
-                for j in range(ny):
-                    Ldata[p][j*(nx+1)+1:(j+1)*(nx+1)] = data[p][j*nx:(j+1)*nx] + (1+self.kprec)/4 * xgrad[p][(nx+1)*j:j*(nx+1)+nx] + (self.kprec-1)/4 * xgrad[p][j*(nx+1)+1:(j+1)*(nx+1)]
-                    Rdata[p][j*(nx+1):(j+1)*(nx+1)-1] = data[p][j*nx:(j+1)*nx] + (1+self.kprec)/4 * xgrad[p][j*(nx+1)+1:(j+1)*(nx+1)] + (self.kprec-1)/4 * xgrad[p][(nx+1)*j:j*(nx+1)+nx]
+                for j in range(ny): # loop of cell rows
+                    Ldata[p][j*(nx+1)+1:(j+1)*(nx+1)] = data[p][j*nx:(j+1)*nx] + kp * xgrad[p][(nx+1)*j:j*(nx+1)+nx] + km * xgrad[p][j*(nx+1)+1:(j+1)*(nx+1)]
+                    Rdata[p][j*(nx+1):(j+1)*(nx+1)-1] = data[p][j*nx:(j+1)*nx] - kp * xgrad[p][j*(nx+1)+1:(j+1)*(nx+1)] - km * xgrad[p][(nx+1)*j:j*(nx+1)+nx]
                     # distribute cell states  (by j rows) to j faces (starting at index ny*(nx+1))
-                for j in range(ny):
-                    Ldata[p][fshift+(j+1)*nx:fshift+(j+2)*nx] = data[p][j*nx:(j+1)*nx] + (1+self.kprec)/4 * ygrad[p][j*nx:(j+1)*nx] + (self.kprec-1)/4 * ygrad[p][nx*(j+1):(j+2)*nx]
-                    Rdata[p][fshift+ j   *nx:fshift+(j+1)*nx] = data[p][j*nx:(j+1)*nx] + (1+self.kprec)/4 * ygrad[p][nx*(j+1):(j+2)*nx] + (self.kprec-1)/4 * ygrad[p][j*nx:(j+1)*nx]
+                for j in range(ny): # loop of cell rows
+                    Ldata[p][fshift+(j+1)*nx:fshift+(j+2)*nx] = data[p][j*nx:(j+1)*nx] + kp * ygrad[p][j*nx:(j+1)*nx] + km * ygrad[p][nx*(j+1):(j+2)*nx]
+                    Rdata[p][fshift+ j   *nx:fshift+(j+1)*nx] = data[p][j*nx:(j+1)*nx] - kp * ygrad[p][nx*(j+1):(j+2)*nx] - km * ygrad[p][j*nx:(j+1)*nx]
         
         return Ldata, Rdata
 

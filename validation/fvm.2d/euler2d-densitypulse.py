@@ -16,8 +16,8 @@ import flowdyn.modelphy.euler as euler
 import flowdyn.modeldisc      as modeldisc
 #import flowdyn.solution.euler_riemann as sol
 
-nx = 100
-ny = 100
+nx = 50
+ny = 50
 
 meshsim  = mesh2d.unimesh(nx, ny)
 
@@ -29,9 +29,11 @@ bcper = { 'type': 'per' }
 bcsym = { 'type': 'sym' }
 
 rhs = modeldisc.fvm2d(model, meshsim, 
-		num=extrapol2dk(1./3.), numflux='hlle', 
-#		bclist={'left': bcper, 'right': bcper, 'top': bcper, 'bottom': bcper} )
+		num=extrapol2dk(1./3.),
+#		num=extrapol2d1(),
+		numflux='hlle', 
 		bclist={'left': bcper, 'right': bcper, 'top': bcper, 'bottom': bcper} )
+#		bclist={'left': bcsym, 'right': bcsym, 'top': bcsym, 'bottom': bcsym} )
 solver = integ.rk3ssp(meshsim, rhs)
 # computation
 #

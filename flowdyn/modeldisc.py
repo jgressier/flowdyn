@@ -159,6 +159,23 @@ class fvm(fvm1d): # alias fvm->fvm1d for backward compatibility
 # -----------------------------------------------------------------------------------
 class fvm2dcart(base):
     """
+    2D finite volume discretized operator for cartesian mesh
+
+    internal variables:
+        model: physical model
+        num: cell to face extrapolation operator
+        numflux: numerical flux function
+        _bclist: dict of tagged BC and associated type and parameters
+        pdata[p]: list of primitive data at cells
+        xgrad[p]: list of x difference of primitive data at i-faces only
+        ygrad[p]: list of y difference of primitive data at j-faces only
+
+    connectivity:
+        cell data are ordered "row wise", same as mesh2d description
+            j row: j*nx to (j+1)*nx-1 or (j*nx:(j+1)*nx) python slice
+        face data are also ordered "row wise", starting with i faces (nx+1)*ny then j faces nx*(ny+1)
+            j row of i-face: j*(nx+1) to (j+1)*(nx+1)-1 or j*(nx+1):(j+1)*(nx+1)-1 python slice
+            j row of j-face: j*(nx+1) to (j+1)*(nx+1)-1 or j*(nx+1):(j+1)*(nx+1)-1 python slice (shifted by ny*(nx+1))
     """
     def __init__(self, model, mesh, num, bclist, numflux=None):
         base.__init__(self, model, mesh, num, numflux)
@@ -181,45 +198,20 @@ class fvm2dcart(base):
         for p in range(self.neq):
             if self.pdata[p].ndim == 2:
                 for j in range(ny):
-                    self.xgrad[p][:,j*(nx+1)+1:j*(nx+1)+nx]= self.pdata[p][:,j*nx+1:(j+1)*nx]-self.pdata[p][:,nx*j:(j+1)*nx-1]
-                    self.ygrad[p][:,nx+j:(nx*nx)+j:nx] = self.pdata[p][:,nx+j:(nx-1)*nx+(j+1):nx]-self.pdata[p][:,j:(nx-1)*nx+j:nx]
+                    self.xgrad[p][:,j*(nx+1)+1:j*(nx+1)+nx]= self.pdata[p][:,j*nx+1:(j+1)*nx]-self.pdata[p][:,j*nx:(j+1)*nx-1]
+                for j in range(1,ny):
+                    self.ygrad[p][:,j*nx:(j+1)*nx] = self.pdata[p][:,j*nx:(j+1)*nx]-self.pdata[p][:,(j-1)*nx:j*nx]
             else:
                 for j in range(ny):
                     self.xgrad[p][j*(nx+1)+1:j*(nx+1)+nx]= self.pdata[p][j*nx+1:(j+1)*nx]-self.pdata[p][nx*j:(j+1)*nx-1]
-                    self.ygrad[p][nx+j:(nx*nx)+j:nx] = self.pdata[p][nx+j:(nx-1)*nx+(j+1):nx]-self.pdata[p][j:(nx-1)*nx+j:nx]
+                for j in range(1,ny):
+                    self.ygrad[p][j*nx:(j+1)*nx] = self.pdata[p][j*nx:(j+1)*nx]-self.pdata[p][(j-1)*nx:j*nx]
     
     def interp_face(self):
         """
         Computes left and right interpolation to a face, using self (cell) primitive data and (face) gradients
-        """
-        
+        """ 
         self.pL, self.pR = self.num.interp_face(self.mesh, self.pdata,self.field,self.neq, self.xgrad, self.ygrad)    
-       
-        #self.pL = self.field.zero_datalist(newdim=self.mesh.nbfaces())
-        #self.pR = self.field.zero_datalist(newdim=self.mesh.nbfaces())
-        ## reorder data for 1st order extrapolation, except for boundary conditions
-        #nx = self.mesh.nx
-        #ny = self.mesh.ny
-        #fshift = ny*(nx+1)
-        #for p in range(self.neq):
-        #    if self.pdata[p].ndim == 2:
-            ## distribute cell states (by j rows) to i faces
-        #        for j in range(ny):
-        #            self.pL[p][:,j*(nx+1)+1:(j+1)*(nx+1)] = self.pdata[p][:,j*nx:(j+1)*nx]
-        #            self.pR[p][:,j*(nx+1):(j+1)*(nx+1)-1] = self.pdata[p][:,j*nx:(j+1)*nx]
-        #        # distribute cell states  (by j rows) to j faces (starting at index ny*(nx+1))
-        #        for j in range(ny):
-        #            self.pL[p][:,fshift+(j+1)*nx:fshift+(j+2)*nx] = self.pdata[p][:,j*nx:(j+1)*nx]
-        #            self.pR[p][:,fshift+ j   *nx:fshift+(j+1)*nx] = self.pdata[p][:,j*nx:(j+1)*nx]
-        #    else:
-        #        # distribute cell states (by j rows) to i faces
-        #        for j in range(ny):
-        #            self.pL[p][j*(nx+1)+1:(j+1)*(nx+1)] = self.pdata[p][j*nx:(j+1)*nx]
-        #            self.pR[p][j*(nx+1):(j+1)*(nx+1)-1] = self.pdata[p][j*nx:(j+1)*nx]
-        #        # distribute cell states  (by j rows) to j faces (starting at index ny*(nx+1))
-        #        for j in range(ny):
-        #            self.pL[p][fshift+(j+1)*nx:fshift+(j+2)*nx] = self.pdata[p][j*nx:(j+1)*nx]
-        #            self.pR[p][fshift+ j   *nx:fshift+(j+1)*nx] = self.pdata[p][j*nx:(j+1)*nx]
     
     def calc_bc(self):
         """
@@ -270,21 +262,21 @@ class fvm2dcart(base):
             for p in range(self.neq):
                 if self.pdata[p].ndim == 2:
                     for j in range(ny):
-                        self.xgrad[p][:,(nx+1)*j:(nx+1)*(j+1):nx] = 0
+                        self.xgrad[p][:,(nx+1)*j:(nx+1)*(j+1):nx] = 0.
                 else:
                     for j in range(ny):
-                        self.xgrad[p][(nx+1)*j:(nx+1)*(j+1):nx] = 0
+                        self.xgrad[p][(nx+1)*j:(nx+1)*(j+1):nx] = 0.
 
         if bclist['top'] == bcper and bclist['bottom'] == bcper:
             for p in range(self.neq):
                 if self.pdata[p].ndim == 2:
                     for j in range(nx):
-                        self.ygrad[p][:,j] = 0
-                        self.ygrad[p][:,ny*ny+j] = 0
+                        self.ygrad[p][:,j] = 0.
+                        self.ygrad[p][:,ny*ny+j] = 0.
                 else:
                     for j in range(nx):
-                        self.ygrad[p][j] = 0
-                        self.ygrad[p][ny*ny+j] = 0
+                        self.ygrad[p][j] = 0.
+                        self.ygrad[p][ny*ny+j] = 0.
 
         return
 
