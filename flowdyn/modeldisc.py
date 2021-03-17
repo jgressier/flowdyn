@@ -271,12 +271,10 @@ class fvm2dcart(base):
             for p in range(self.neq):
                 if self.pdata[p].ndim == 2:
                     for j in range(nx):
-                        self.ygrad[p][:,j] = 0.
-                        self.ygrad[p][:,ny*ny+j] = 0.
+                        self.ygrad[p][:,j:nx*nx+(j+1):nx*nx] = 0.
                 else:
                     for j in range(nx):
-                        self.ygrad[p][j] = 0.
-                        self.ygrad[p][ny*ny+j] = 0.
+                        self.ygrad[p][j:nx*nx+(j+1):nx*nx] = 0.
 
         return
 
