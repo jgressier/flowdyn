@@ -242,15 +242,15 @@ class fvm2dcart(base):
                 bcdata_in = [None]*len(data_in)
                 iofaces   = self.mesh.index_of_bc(bctag)
                 for i,p in enumerate(data_in):
-                    if p.ndim == 1:
+                    if self.model.shape[i] == 1:
                         bcdata_in[i] = p[iofaces]
-                    elif p.ndim == 2:
+                    elif self.model.shape[i] == 2:
                         bcdata_in[i] = p[:,iofaces]
                 bcdata_bc = self.model.namedBC(bcvalue['type'], dir, bcdata_in, bcvalue)
                 for i,p in enumerate(bcdata_bc):
-                        if p.ndim == 1:
+                        if self.model.shape[i] == 1:
                             data_bc[i][iofaces] = p
-                        elif p.ndim == 2:
+                        elif self.model.shape[i] == 2:
                             data_bc[i][:,iofaces] = p
     
     def calc_bc_grad(self):

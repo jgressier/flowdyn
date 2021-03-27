@@ -408,11 +408,11 @@ class euler2d(base):
         self.shape       = [1, 2, 1]
         self._vardict.update({ 'velocity_x': self.velocity_x, 'velocity_y': self.velocity_y,
                          })
-        self._bcdict.update({ 'sym': self.bc_sym #,
-                        #  'insub': self.bc_insub,
-                        #  'insup': self.bc_insup,
-                        #  'outsub': self.bc_outsub,
-                        #  'outsup': self.bc_outsup 
+        self._bcdict.update({ 'sym': self.bc_sym ,
+                         'insub': self.bc_insub,
+                         'insup': self.bc_insup,
+                         'outsub': self.bc_outsub,
+                         'outsup': self.bc_outsup 
                         })
         self._numfluxdict = { 'hlle': self.numflux_hlle, #'hllc': self.numflux_hllc, 
                         'centered': self.numflux_centeredflux  }
