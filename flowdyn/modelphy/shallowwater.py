@@ -45,7 +45,7 @@ class model(mbase.model):
         self._vardict = { 'height': self.height, 'velocity': self.velocity, 'massflow': self.massflow}
         self._bcdict.update({'sym': self.bc_sym, 'infinite':self.bc_inf })
         self._numfluxdict = {'centered': self.numflux_centeredflux, 
-                             'rusanov': self.numflux_Rusanov, 'HLL': self.numflux_HLL }
+                             'rusanov': self.numflux_rusanov, 'hll': self.numflux_hll }
         
     def cons2prim(self, qdata): # qdata[ieq][cell] :
         """
@@ -88,11 +88,11 @@ class model(mbase.model):
 
         # final flux
         Fh = .5*( hL*uL + hR*uR )
-        Fu = .5*( (hL*uL**2 + 0.5*g*hL**2) + (hR*uR**2 + 0.5*g*hR**2))
+        Fq = .5*( (hL*uL**2 + 0.5*g*hL**2) + (hR*uR**2 + 0.5*g*hR**2))
 
-        return [Fu, Fh]
+        return [Fh, Fq]
 
-    def numflux_Rusanov(self, pdataL, pdataR, dir=None): # Rusanov flux ; pL[ieq][face]
+    def numflux_rusanov(self, pdataL, pdataR, dir=None): # Rusanov flux ; pL[ieq][face]
         g  = self.g
         #
         hL = pdataL[0]
@@ -109,7 +109,7 @@ class model(mbase.model):
 
         return [Fh, Fq]
 
-    def numflux_HLL(self, pdataL, pdataR, dir=None): # HLL flux ; pL[ieq][face]
+    def numflux_hll(self, pdataL, pdataR, dir=None): # HLL flux ; pL[ieq][face]
         g  = self.g
   
         hL = pdataL[0]
@@ -142,8 +142,8 @@ class model(mbase.model):
         Fu = np.zeros(len(hL))
         
         for i in range(len(hL)):
-            c1[i] = max(lambda1L[i],lambda2L[i],lambda1R[i],lambda2R[i])
-            c2[i] = min(lambda1L[i],lambda2L[i],lambda1R[i],lambda2R[i])
+            c1[i] = min(lambda1L[i],lambda2L[i],lambda1R[i],lambda2R[i])
+            c2[i] = max(lambda1L[i],lambda2L[i],lambda1R[i],lambda2R[i])
     
             if c1[i]>=0:
                 Fh[i] = hL[i]*uL[i]
@@ -151,7 +151,7 @@ class model(mbase.model):
             
             elif c1[i]<0 and c2[i]>0:
                 Fh_L = hL[i]*uL[i]
-                Fh_R = hR*[i]*uR[i]
+                Fh_R = hR[i]*uR[i]
                 
                 Fu_L = hL[i]*uL[i]**2 + 0.5*g*hL[i]**2
                 Fu_R = hR[i]*uR[i]**2 + 0.5*g*hR[i]**2
