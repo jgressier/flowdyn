@@ -104,8 +104,10 @@ class model(mbase.model):
         # Eigen values definition
         cmax = np.maximum(abs(uL)+cL,abs(uR)+cR)
         # final Rusanov flux
-        Fh = .5*( hL*uL + hR*uR ) - 0.5*cmax*(hR - hL)
-        Fq = .5*( (hL*uL**2 + 0.5*g*hL**2) + (hR*uR**2 + 0.5*g*hR**2)) - 0.5*cmax*(hR*uR - hL*uL)
+        qL = hL*uL
+        qR = hR*uR
+        Fh = .5*( qL + qR ) - 0.5*cmax*(hR - hL)
+        Fq = .5*( (qL*uL + 0.5*g*hL**2) + (qR*uR**2 + 0.5*g*hR**2)) - 0.5*cmax*(qR-qL)
 
         return [Fh, Fq]
 
@@ -117,52 +119,16 @@ class model(mbase.model):
         hR = pdataR[0]
         uR = pdataR[1]
         
-        # Eigen values definition        
-        if (hL[:]>=0).all():
-            lambda1L = uL + np.sqrt(g*hL)
-            lambda2L = uL - np.sqrt(g*hL)
-        else:
-            print('WARNING : negative height value encountered !')
-            lambda1L = uL + np.sqrt(g*abs(hL))
-            lambda2L = uL - np.sqrt(g*abs(hL))
-                                    
-        if (hR[:]>=0).all():
-            lambda1R = uR + np.sqrt(g*hR)
-            lambda2R = uR - np.sqrt(g*hR)
-        
-        else:
-            print('WARNING : negative height value encountered !')
-            lambda1R = uR + np.sqrt(abs(g*hR))
-            lambda2R = uR - np.sqrt(abs(g*hR))
-        
-        c1=np.zeros(len(hL))
-        c2=np.zeros(len(hL))
-        
-        Fh = np.zeros(len(hL))
-        Fu = np.zeros(len(hL))
-        
-        for i in range(len(hL)):
-            c1[i] = min(lambda1L[i],lambda2L[i],lambda1R[i],lambda2R[i])
-            c2[i] = max(lambda1L[i],lambda2L[i],lambda1R[i],lambda2R[i])
-    
-            if c1[i]>=0:
-                Fh[i] = hL[i]*uL[i]
-                Fu[i] = hL[i]*uL[i]**2 + 0.5*g*hL[i]**2
-            
-            elif c1[i]<0 and c2[i]>0:
-                Fh_L = hL[i]*uL[i]
-                Fh_R = hR[i]*uR[i]
-                
-                Fu_L = hL[i]*uL[i]**2 + 0.5*g*hL[i]**2
-                Fu_R = hR[i]*uR[i]**2 + 0.5*g*hR[i]**2
-                
-                Fh[i] = (c2[i]*Fh_L-c1[i]*Fh_R)/(c2[i]-c1[i]) + (c1[i]*c2[i]/(c2[i]-c1[i]))*(hR[i]-hL[i])
-                Fu[i] = (c2[i]*Fu_L-c1[i]*Fu_R)/(c2[i]-c1[i]) + (c1[i]*c2[i]/(c2[i]-c1[i]))*(hR[i]*uR[i]-hL[i]*uL[i])
-                
-            elif c2[i]<=0:
-                Fh[i] = hR[i]*uR[i]
-                Fu[i] = hR[i]*uR[i]**2 + 0.5*g*hR[i]**2
-
+        cL = np.sqrt(g*hL)
+        cR = np.sqrt(g*hR)
+        sL = np.minimum(0., np.minimum(uL-cL, uR-cR))
+        sR = np.maximum(0., np.maximum(uL+cL, uR+cR))
+        kL = sR/(sR-sL)
+        kR = -sL/(sR-sL)
+        qL = hL*uL
+        qR = hR*uR
+        Fh = kL*qL + kR*qR - kR*sR*(hR-hL)
+        Fu = kL*(qL*uL+.5*g*hL**2) + kR*(qR*uR+.5*g*hR**2) - kR*sR*(qR-qL)
         return [Fh, Fu]
     
     def timestep(self, data, dx, condition):

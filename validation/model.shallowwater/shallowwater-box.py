@@ -29,15 +29,15 @@ tmeth, tmethstr = rk3ssp, 'rk3ssp'
 
 # Numerical Flux : 'centered', 'rusanov', or 'HLL' are availaible. 
 # Centered flux is easily shown to be unconditionnaly unstable
-numflux = 'rusanov'
+numflux = 'hll'
 
 # Boundaries conditions : 'infinite' and 'sym' are available, unfortunaltely symmetric BC don't seem to work
 bcL =  {'type':'infinite'}
 bcR =  {'type':'infinite'}
 
 # Initial conditions
-def init_gouttedeau(mesh, max_heigth):
-    return max_heigth*(-np.exp(-((mesh.centers()-1)/0.1)**2)) +.1   
+def init_gouttedeau(mesh, max_height):
+    return max_height*(-np.exp(-((mesh.centers()-1)/0.1)**2)) +.1   
 
 h0_vect = init_gouttedeau(mesh,-0.01)
 
