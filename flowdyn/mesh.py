@@ -54,93 +54,93 @@ class mesh1d(meshbase.virtualmesh):
 class unimesh(mesh1d):
     pass
 
-class nonunimesh(mesh1d):
-    " class defining a domain and a non-uniform mesh"
-    #non-uniform symmetric mesh
+# class nonunimesh(mesh1d):
+#     " class defining a domain and a non-uniform mesh"
+#     #non-uniform symmetric mesh
         
-    def __init__(self, length, nclass, ncell0, periods):
+#     def __init__(self, length, nclass, ncell0, periods):
 
-        self.periods = periods        
-        self.length = length*periods
-        self.nclass = nclass
-        self.ncell0 = ncell0
+#         self.periods = periods        
+#         self.length = length*periods
+#         self.nclass = nclass
+#         self.ncell0 = ncell0
                 
-        regions = 2*nclass
-        rlength = length/regions
+#         regions = 2*nclass
+#         rlength = length/regions
         
-        rcells = np.zeros(nclass)
-        for r in range(nclass):
-            rcells[r]=ncell0*2**r
+#         rcells = np.zeros(nclass)
+#         for r in range(nclass):
+#             rcells[r]=ncell0*2**r
       
-        for i in range(periods):
-            if i == 0:
-                self.xf = np.linspace(0.,int(rlength), int(rcells[nclass-1]+1)) #creates linspace array of rcell cells
-            else:
-                idel = len(self.xf)
-                self.xf = np.hstack((self.xf,np.linspace(i*length,int(rlength+i*length),int(rcells[nclass-1]+1)))) #stacks another linspace array
-                self.xf = np.delete(self.xf,idel) #deleting item in index ncell1 due to duplication  
+#         for i in range(periods):
+#             if i == 0:
+#                 self.xf = np.linspace(0.,int(rlength), int(rcells[nclass-1]+1)) #creates linspace array of rcell cells
+#             else:
+#                 idel = len(self.xf)
+#                 self.xf = np.hstack((self.xf,np.linspace(i*length,int(rlength+i*length),int(rcells[nclass-1]+1)))) #stacks another linspace array
+#                 self.xf = np.delete(self.xf,idel) #deleting item in index ncell1 due to duplication  
 
-            for r in range(nclass-2,-1,-1):  #creates from left to right till the middle
-                idel = len(self.xf)
-                self.xf = np.hstack((self.xf,np.linspace(int((nclass-r-1)*rlength+i*length),int((nclass-r)*rlength+i*length),int(rcells[r]+1)))) #stacks another linspace array
-                self.xf = np.delete(self.xf,idel) #deleting item in index ncell1 due to duplication   
+#             for r in range(nclass-2,-1,-1):  #creates from left to right till the middle
+#                 idel = len(self.xf)
+#                 self.xf = np.hstack((self.xf,np.linspace(int((nclass-r-1)*rlength+i*length),int((nclass-r)*rlength+i*length),int(rcells[r]+1)))) #stacks another linspace array
+#                 self.xf = np.delete(self.xf,idel) #deleting item in index ncell1 due to duplication   
             
-            for r in range(nclass):        #creates from left to right from the middle
-                idel = len(self.xf)
-                self.xf = np.hstack((self.xf,np.linspace(int((nclass+r)*rlength+i*length),int((nclass+r+1)*rlength+i*length),int(rcells[r]+1)))) #stacks another linspace array
-                self.xf = np.delete(self.xf,idel) #deleting item in index ncell1 due to duplication               
+#             for r in range(nclass):        #creates from left to right from the middle
+#                 idel = len(self.xf)
+#                 self.xf = np.hstack((self.xf,np.linspace(int((nclass+r)*rlength+i*length),int((nclass+r+1)*rlength+i*length),int(rcells[r]+1)))) #stacks another linspace array
+#                 self.xf = np.delete(self.xf,idel) #deleting item in index ncell1 due to duplication               
         
-        self.ncell = len(self.xf)-1
-        self.xc = self.centers()
+#         self.ncell = len(self.xf)-1
+#         self.xc = self.centers()
         
-class meshramzi(nonunimesh):
+# class meshramzi(nonunimesh):
     
-    def __init__(self, size, nclass, length):
-        self.size   = size
-        self.nclass = nclass
+#     def __init__(self, size, nclass, length):
+#         self.size   = size
+#         self.nclass = nclass
         
-        Nclass = int(self.nclass)
+#         Nclass = int(self.nclass)
     
-        size1    = np.zeros(Nclass)
-        size2    = int(0)
+#         size1    = np.zeros(Nclass)
+#         size2    = int(0)
         
-        size1[0] = int(size)
-        size2    = size2 + size1[0]
+#         size1[0] = int(size)
+#         size2    = size2 + size1[0]
 
-        for i in range(1,Nclass):
-            size1[i] = size1[i-1]*2
-            size2    = size2 + size1[i]
-        size2 = int(2*size2 + 1)
+#         for i in range(1,Nclass):
+#             size1[i] = size1[i-1]*2
+#             size2    = size2 + size1[i]
+#         size2 = int(2*size2 + 1)
 
-        dxx  = np.zeros(Nclass)
-        for i in range(Nclass):
-            dxx[i]=0.5/size1[i]/Nclass
+#         dxx  = np.zeros(Nclass)
+#         for i in range(Nclass):
+#             dxx[i]=0.5/size1[i]/Nclass
         
-        self.xf  = np.zeros(size2)
-        i     = int(0) 
-        self.xf[i] = float(0)
-        for j in range(Nclass):
-            indx  = int(Nclass-j-1)
-            indx2 = int(size1[indx])
-            for k in range(indx2):
-                i    = i + 1 
-                self.xf[i]= self.xf[i-1]+dxx[indx] 
-        for j in range(Nclass):
-            indx  = int(j)
-            indx2 = int(size1[indx])
-            for k in range(indx2):
-                i    = i + 1 
-                self.xf[i]= self.xf[i-1]+dxx[indx] 
+#         self.xf  = np.zeros(size2)
+#         i     = int(0) 
+#         self.xf[i] = float(0)
+#         for j in range(Nclass):
+#             indx  = int(Nclass-j-1)
+#             indx2 = int(size1[indx])
+#             for k in range(indx2):
+#                 i    = i + 1 
+#                 self.xf[i]= self.xf[i-1]+dxx[indx] 
+#         for j in range(Nclass):
+#             indx  = int(j)
+#             indx2 = int(size1[indx])
+#             for k in range(indx2):
+#                 i    = i + 1 
+#                 self.xf[i]= self.xf[i-1]+dxx[indx] 
         
-        self.ncell = len(self.xf)-1
-        self.xc = self.centers()
+#         self.ncell = len(self.xf)-1
+#         self.xc = self.centers()
 
-        self.xc *= length
-        self.xf *= length
+#         self.xc *= length
+#         self.xf *= length
         
-        self.length = 0.
-        for i in range(len(self.xf)-1):
-            self.length += self.xf[i+1]-self.xf[i]
+#         self.length = 0.
+#         for i in range(len(self.xf)-1):
+#             self.length += self.xf[i+1]-self.xf[i]
 
 
 class refinedmesh(mesh1d):

@@ -64,5 +64,5 @@ for name in ['density']:
     fsol1[0].plot(name, 'b-')
     fsol2[0].plot(name, 'r-')
     legend(['initial', flux1, flux2], loc='upper left',prop={'size':10})  
-    fig.savefig(name+'.png', bbox_inches='tight')
+    #fig.savefig(name+'.png', bbox_inches='tight')
 show()

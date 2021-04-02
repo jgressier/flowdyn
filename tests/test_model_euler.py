@@ -1,6 +1,6 @@
 import pytest
 #
-# import numpy as np
+import numpy as np
 import flowdyn.mesh  as mesh
 import flowdyn.modelphy.euler as euler
 import flowdyn.modeldisc as modeldisc

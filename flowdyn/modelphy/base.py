@@ -18,10 +18,6 @@
     Provides ...
  """
 
-import numpy as np
-import math
-#import flowdyn.modelphy.base as base
-
 # ===============================================================
 # implementation of MODEL class
 
@@ -58,17 +54,17 @@ class model():
     def list_var(self):
         return self._vardict.keys()
 
-    def cons2prim(self):  # NEEDS definition by derived model
+    def cons2prim(self, qdata):  # NEEDS definition by derived model
         raise NameError("must be implemented in derived class")
 
     
-    def prim2cons(self):  # NEEDS definition by derived model
+    def prim2cons(self, pdata):  # NEEDS definition by derived model
         raise NameError("must be implemented in derived class")
     
     def initdisc(self, mesh):
         return
     
-    def numflux(self): # NEEDS definition by derived model
+    def numflux(self, name, pL, pR): # NEEDS definition by derived model
         raise NameError("must be implemented in derived class")
     
     def timestep(self, data, dx, condition):  # NEEDS definition by derived model

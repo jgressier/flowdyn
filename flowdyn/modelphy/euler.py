@@ -20,7 +20,6 @@
  """
 
 import numpy as np
-import math
 import flowdyn.modelphy.base as mbase
 
 # ===============================================================
@@ -118,7 +117,7 @@ class base(mbase.model):
         return ((qdata[2]-ec)*self.gamma + ec)/qdata[0]
 
     def numflux(self, name, pdataL, pdataR, dir=None):
-        if name==None: name='hllc'
+        if name is None: name='hllc'
         return (self._numfluxdict[name])(pdataL, pdataR, dir)
 
     def numflux_centeredflux(self, pdataL, pdataR, dir=None): # centered flux ; pL[ieq][face]
@@ -350,9 +349,10 @@ class euler1d(base):
         # expected parameters are 'ptot', 'rttot' and 'p'
         g   = self.gamma
         gmu = g-1.
+        p  = param['p']
         m2 = np.maximum(0., ((param['ptot']/param['p'])**(gmu/g)-1.)*2./gmu)
         rh = param['ptot']/param['rttot']/(1.+.5*gmu*m2)**(1./gmu)
-        return param
+        return [ rh, -dir*np.sqrt(g*m2*p/rh), p ] 
 
     def bc_outsub(self, dir, data, param):
         return [ data[0], data[1], param['p'] ] 
@@ -444,12 +444,8 @@ class euler2d(base):
         return rhoUmag/np.sqrt(self.gamma*((self.gamma-1.0)*(qdata[0]*qdata[2]-0.5*rhoUmag**2)))
 
     def numflux_centeredflux(self, pdataL, pdataR, dir): # centered flux ; pL[ieq][face]
-        gam  = self.gamma
-        gam1 = gam-1.
-
         rhoL, unL, VL, pL, HL, cL2 = self._derived_fromprim(pdataL, dir)
-        rhoR, unR, VR, pR, HR, cR2 = self._derived_fromprim(pdataR, dir)
-    
+        rhoR, unR, VR, pR, HR, cR2 = self._derived_fromprim(pdataR, dir)  
         # final flux
         Frho  = .5*( rhoL*unL + rhoR*unR )
         Frhou = .5*( (rhoL*unL)*VL + pL*dir + (rhoR*unR)*VR + pR*dir)
