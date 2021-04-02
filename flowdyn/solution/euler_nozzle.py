@@ -5,8 +5,6 @@ test integration methods
 
 import numpy as np
 import flowdyn.field           as field
-import flowdyn.modelphy.euler  as euler
-import flowdyn.modeldisc       as modeldisc
 import aerokit.aero.Isentropic as Is
 import aerokit.aero.ShockWave  as sw
 import aerokit.aero.MassFlow   as mf

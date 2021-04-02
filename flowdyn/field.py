@@ -4,6 +4,8 @@ Created on Fri May 10 16:58:31 2013
 
 @author: j.gressier
 """
+__all__ = ['fdata']
+
 import numpy as np
 try:
     import matplotlib.pyplot as plt
@@ -42,7 +44,7 @@ class fdata():
             #self.data = [ np.array(d).T*np.ones(self.nelem) for d in data ] # old version only working for scalars
         else:
             raise NotImplementedError("no more possible to get data signature")
-            self.data = [ np.zeros(self.nelem) ] * self.neq
+            # self.data = [ np.zeros(self.nelem) ] * self.neq
             # for i in range(self.neq):
             #     self.data.append(np.zeros(nelem))
                     

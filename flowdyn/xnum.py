@@ -6,6 +6,8 @@ xnum: package for spatial numerical methods
   extrapol3()
   extrapolk()
 """
+__all__ = ['extrapol1', 'extrapol2', 'extrapol3', 'extrapolk', 
+        'muscl', 'minmod', 'vanalbada', 'vanleer', 'superbee']
 
 import numpy as np
 #import mesh
@@ -19,6 +21,9 @@ class virtualmeth():
     
 class extrapol1(virtualmeth):
     "first order method"
+    def __init__(self):
+        virtualmeth.__init__(self)
+
     def interp_face(self, mesh, data, grad='none'):
         "returns 2x (L/R) neq list of (ncell+1) nparray"
         nc = data[0].size
@@ -36,6 +41,7 @@ class extrapol1(virtualmeth):
 class extrapol2(virtualmeth):
     "second order method without limitation, equivalent to extrapolk with k=-1"
     def __init__(self):
+        virtualmeth.__init__(self)
         self.gradmeth = 'face'
         
     def interp_face(self, mesh, data, grad):
@@ -54,6 +60,7 @@ class extrapol2(virtualmeth):
 class extrapolk(virtualmeth):
     "second order method without limitation and k coefficient"
     def __init__(self, k):
+        virtualmeth.__init__(self)
         self.gradmeth = 'face'
         self.kprec    = k
         
@@ -118,6 +125,7 @@ def superbee(a,b):
 class muscl(virtualmeth):
     "second order MUSCL method"
     def __init__(self, limiter=minmod):
+        virtualmeth.__init__(self)
         self.gradmeth = 'face'
         self.limiter  = limiter
 #        print limiter

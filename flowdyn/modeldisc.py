@@ -22,7 +22,7 @@
 
 
 import numpy               as np
-import flowdyn.modelphy.base as model
+#import flowdyn.modelphy.base as model
 #import flowdyn.mesh          as mesh
 import flowdyn.field         as field
 
