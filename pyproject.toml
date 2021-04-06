@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "flowdyn"
-version = "1.1.0"
+version = "1.1.1"
 description = "Model of discretization of hyperbolic model, base is Finite Volume method"
 authors = ["j.gressier <jeremie.gressier@isae-supaero.fr>"]
 license = "MIT"

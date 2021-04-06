@@ -16,6 +16,12 @@ pip show flowdyn
 
 ## Versions
 
+### [1.1.1](https://pypi.org/project/flowdyn/) (2021-04-06)
+
+#### fixed
+
+- bug fix in 1d euler supersonic inlet condition
+
 ### [1.1.0](https://pypi.org/project/flowdyn/) (2021-03-10)
 
 #### new features
