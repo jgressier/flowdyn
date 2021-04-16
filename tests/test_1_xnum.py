@@ -17,16 +17,29 @@ def init_sinperk(mesh, k):
     return np.sin(2*k*np.pi/mesh.length*mesh.centers())
 
 
-@pytest.mark.parametrize("tnum", List_Explicit_Integrators + List_Implicit_Integrators)
-def test_integrators_conv(tnum):
+@pytest.mark.parametrize("limiter", [minmod, vanalbada, vanleer, superbee])
+def test_limiters_tvd(limiter):
+    slope = limiter(-2., 1.)  # tvd: 0 if opposite signs
+    assert slope == 0.
+    slope = limiter(3., 3.)   # consistency
+    assert slope == 3.
+    slope = limiter(1., 10.)  # tvd: max is double of smallest
+    assert slope <= 2.
+
+@pytest.mark.parametrize("limiter", [minmod, vanalbada, vanleer, superbee])
+def test_muscl_limiters(limiter):
     curmesh = mesh50
     endtime = 5
     cfl     = .8
     # extrapol1(), extrapol2()=extrapolk(1), centered=extrapolk(-1), extrapol3=extrapolk(1./3.)
-    xnum = extrapol3()
+    xnum = muscl(limiter)
     finit = field.fdata(mymodel, curmesh, [ init_sinperk(curmesh, k=4) ] )
     rhs = modeldisc.fvm(mymodel, curmesh, xnum)
-    solver = tnum(curmesh, rhs)
+    solver = rk3ssp(curmesh, rhs)
     fsol = solver.solve(finit, cfl, [endtime])
     assert not fsol[-1].isnan()
+    avg, var = fsol[-1].stats('q')
+    #varref = { }
+    assert avg == pytest.approx(0., abs=1.e-12)
+    #assert var == pytest.approx(.0042, rel=1.e-2)
 

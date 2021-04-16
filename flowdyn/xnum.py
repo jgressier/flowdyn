@@ -112,7 +112,8 @@ def vanalbada(a,b):
 def vanleer(a,b):
     p = a*b
     s = np.abs(a+b)+1.e-20
-    return np.where(p <= 1e-40, 0., 2*np.abs(p)/s )
+    return np.where(p <= 1e-40, 0., 2*p/s*np.sign(a) )
+    #return np.where(p <= 0., 0, 2*p/(a+b) )
 
 def superbee(a,b):
     p = a*b

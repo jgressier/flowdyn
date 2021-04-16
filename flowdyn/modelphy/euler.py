@@ -55,7 +55,7 @@ class base(mbase.model):
         self.gamma       = gamma
         self.source      = source
         self._vardict = { 'pressure': self.pressure, 'density': self.density,
-                          'velocity': self.velocity, 'mach': self.mach, 'enthalpy': self.enthalpy,
+                          'velocity': self.velocity, 'asound': self.asound, 'mach': self.mach, 'enthalpy': self.enthalpy,
                           'entropy': self.entropy, 'ptot': self.ptot, 'rttot': self.rttot, 'htot': self.htot }
         
     def cons2prim(self, qdata): # qdata[ieq][cell] :
@@ -94,6 +94,9 @@ class base(mbase.model):
     def kinetic_energy(self, qdata):  
         """volumic kinetic energy"""
         return .5*qdata[1]**2/qdata[0] if qdata[1].ndim==1 else .5*_vecsqrmag(qdata[1])/qdata[0]
+
+    def asound(self, qdata):
+        return np.sqrt(self.gamma*self.pressure(qdata)/qdata[0])
 
     def mach(self, qdata):
         return qdata[1]/np.sqrt(self.gamma*((self.gamma-1.0)*(qdata[0]*qdata[2]-0.5*qdata[1]**2)))
@@ -165,7 +168,6 @@ class base(mbase.model):
         FrhoE = .5*Frho*( HL + HR)
 
         return [Frho, Frhou, FrhoE]
-
 
     def numflux_hlle(self, pdataL, pdataR, dir=None): # HLLE Riemann solver ; pL[ieq][face]
 
