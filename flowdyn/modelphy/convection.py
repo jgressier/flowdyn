@@ -39,6 +39,7 @@ class model(base.model):
         self.convcoef = convcoef
         self.islinear = 1
         self.shape    = [1]
+        self._vardict = { 'q': self.q }
 
         
     def cons2prim(self, qdata):
@@ -54,7 +55,9 @@ class model(base.model):
         "computation of timestep: data is not used, dx is an array of cell sizes, condition is the CFL number"
         return condition*dx/abs(self.convcoef)
 
- 
+    def q(self, qdata):
+        return qdata[0].copy()
+
 # ===============================================================
 # automatic testing
 

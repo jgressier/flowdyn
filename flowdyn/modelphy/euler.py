@@ -55,7 +55,7 @@ class base(mbase.model):
         self.gamma       = gamma
         self.source      = source
         self._vardict = { 'pressure': self.pressure, 'density': self.density,
-                          'velocity': self.velocity, 'mach': self.mach, 'enthalpy': self.enthalpy,
+                          'velocity': self.velocity, 'asound': self.asound, 'mach': self.mach, 'enthalpy': self.enthalpy,
                           'entropy': self.entropy, 'ptot': self.ptot, 'rttot': self.rttot, 'htot': self.htot }
         
     def cons2prim(self, qdata): # qdata[ieq][cell] :
@@ -94,6 +94,9 @@ class base(mbase.model):
     def kinetic_energy(self, qdata):  
         """volumic kinetic energy"""
         return .5*qdata[1]**2/qdata[0] if qdata[1].ndim==1 else .5*_vecsqrmag(qdata[1])/qdata[0]
+
+    def asound(self, qdata):
+        return np.sqrt(self.gamma*self.pressure(qdata)/qdata[0])
 
     def mach(self, qdata):
         return qdata[1]/np.sqrt(self.gamma*((self.gamma-1.0)*(qdata[0]*qdata[2]-0.5*qdata[1]**2)))
@@ -165,7 +168,6 @@ class base(mbase.model):
         FrhoE = .5*Frho*( HL + HR)
 
         return [Frho, Frhou, FrhoE]
-
 
     def numflux_hlle(self, pdataL, pdataR, dir=None): # HLLE Riemann solver ; pL[ieq][face]
 
@@ -309,15 +311,17 @@ class euler1d(base):
     """
     Class model for 2D euler equations
     """
+    #bcdict = mbase.methoddict()
+
     def __init__(self, gamma=1.4, source=None):
         base.__init__(self, gamma=gamma, source=source)
         self.shape       = [1, 1, 1]
         self._vardict.update({ 'massflow': self.massflow })
-        self._bcdict.update({'sym': self.bc_sym,
-                         'insub': self.bc_insub,
-                         'insup': self.bc_insup,
-                         'outsub': self.bc_outsub,
-                         'outsup': self.bc_outsup })
+        # self._bcdict.update({'sym': self.bc_sym,
+        #                  'insub': self.bc_insub,
+        #                  'insup': self.bc_insup,
+        #                  'outsub': self.bc_outsub,
+        #                  'outsup': self.bc_outsup })
         self._numfluxdict = { 'hllc': self.numflux_hllc, 'hlle': self.numflux_hlle, 
                         'centered': self.numflux_centeredflux, 'centeredmassflow': self.numflux_centeredmassflow }
 
@@ -333,10 +337,12 @@ class euler1d(base):
     def massflow(self,qdata): # for 1D model only
         return qdata[1].copy()
 
+    @base._bcdict.register('sym')
     def bc_sym(self, dir, data, param):
         "symmetry boundary condition, for inviscid equations, it is equivalent to a wall, do not need user parameters"
         return [ data[0], -data[1], data[2] ]
 
+    @base._bcdict.register('insub')
     def bc_insub(self, dir, data, param):
         g   = self.gamma
         gmu = g-1.
@@ -345,6 +351,7 @@ class euler1d(base):
         rh = param['ptot']/param['rttot']/(1.+.5*gmu*m2)**(1./gmu)
         return [ rh, -dir*np.sqrt(g*m2*p/rh), p ] 
 
+    @base._bcdict.register('insup')
     def bc_insup(self, dir, data, param):
         # expected parameters are 'ptot', 'rttot' and 'p'
         g   = self.gamma
@@ -354,9 +361,11 @@ class euler1d(base):
         rh = param['ptot']/param['rttot']/(1.+.5*gmu*m2)**(1./gmu)
         return [ rh, -dir*np.sqrt(g*m2*p/rh), p ] 
 
+    @base._bcdict.register('outsub')
     def bc_outsub(self, dir, data, param):
         return [ data[0], data[1], param['p'] ] 
 
+    @base._bcdict.register('outsup')
     def bc_outsup(self, dir, data, param):
         return data
 
@@ -414,12 +423,12 @@ class euler2d(base):
         self.shape       = [1, 2, 1]
         self._vardict.update({ 'velocity_x': self.velocity_x, 'velocity_y': self.velocity_y,
                          })
-        self._bcdict.update({ #'sym': self.bc_sym,
+        #self._bcdict.update({ #'sym': self.bc_sym,
                         #  'insub': self.bc_insub,
                         #  'insup': self.bc_insup,
                         #  'outsub': self.bc_outsub,
                         #  'outsup': self.bc_outsup 
-                        })
+        #                })
         self._numfluxdict = { #'hllc': self.numflux_hllc, 'hlle': self.numflux_hlle, 
                         'centered': self.numflux_centeredflux  }
 
