@@ -3,9 +3,8 @@
 test integration methods
 """
 
-import time
 import cProfile
-from matplotlib.pyplot import *
+from matplotlib.pyplot import figure, ylabel, grid, show
 import numpy as np 
 
 from flowdyn.mesh  import *

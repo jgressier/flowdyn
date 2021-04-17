@@ -3,15 +3,14 @@
 test integration methods
 """
 
-import time
-import cProfile
-from pylab import *
+#import cProfile
+import matplotlib.pyplot as plt
 import numpy as np 
 
 from flowdyn.mesh  import *
 from flowdyn.field import *
 from flowdyn.xnum  import *
-from flowdyn.integration import *
+from flowdyn.integration import rk3ssp
 import flowdyn.modelphy.euler as euler
 import flowdyn.modeldisc      as modeldisc
 
@@ -56,13 +55,13 @@ solver2.show_perf()
 # Figure / Plot
 
 for name in ['density']:
-    fig = figure(figsize=(10,8))
-    ylabel(name)
-    grid(linestyle='--', color='0.5')
+    fig = plt.figure(figsize=(10,8))
+    plt.ylabel(name)
+    plt.grid(linestyle='--', color='0.5')
     #finit.plot(name, 'k-.')
     finit.plot(name, 'k-')
     fsol1[0].plot(name, 'b-')
     fsol2[0].plot(name, 'r-')
-    legend(['initial', flux1, flux2], loc='upper left',prop={'size':10})  
+    plt.legend(['initial', flux1, flux2], loc='upper left',prop={'size':10})  
     #fig.savefig(name+'.png', bbox_inches='tight')
-show()
+plt.show()
