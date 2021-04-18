@@ -16,6 +16,16 @@ pip show flowdyn
 
 ## Versions
 
+### [1.1.2](https://pypi.org/project/flowdyn/) (2021-04-17)
+
+#### changed
+
+- add `asound` variable to `euler` model
+
+#### fixed
+
+- fix MUSCL vanleer limiter (defective since 1.1.0)
+
 ### [1.1.1](https://pypi.org/project/flowdyn/) (2021-04-06)
 
 #### fixed
