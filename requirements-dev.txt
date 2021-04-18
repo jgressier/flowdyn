@@ -1,0 +1,10 @@
+aerokit >= 1.1
+matplotlib >= 3.3
+pytest >= 6.0
+pytest-cov >= 2.11.1
+mkdocs >= 1.1
+mkdocs-material >= 6.2.5
+mkdocs-jupyter >= 0.15
+mkdocs-include-markdown-plugin
+mkdocs-exclude
+mkdocstrings 
