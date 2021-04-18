@@ -16,7 +16,7 @@ class virtualmeth():
     def __init__(self):
         self.gradmeth = 'none'
     
-    def interp_face(self, mesh, data):
+    def interp_face(self, mesh, data, grad):
         pass
     
 class extrapol1(virtualmeth):

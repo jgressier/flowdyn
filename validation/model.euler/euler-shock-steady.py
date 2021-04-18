@@ -3,16 +3,15 @@
 test integration methods
 """
 
-import time
-import cProfile
-from pylab import *
-import numpy as np 
+#import cProfile
+import matplotlib.pyplot as plt
+#import numpy as np 
 import aerokit.aero.unsteady1D as uq
 
-from flowdyn.mesh  import *
+from flowdyn.mesh  import unimesh
 from flowdyn.field import *
 from flowdyn.xnum  import *
-from flowdyn.integration import *
+from flowdyn.integration import rk3ssp
 import flowdyn.modelphy.euler as euler
 import flowdyn.modeldisc      as modeldisc
 import flowdyn.solution.euler_riemann as sol
@@ -59,10 +58,10 @@ solver2.show_perf()
 # Figure / Plot
 
 for name in ['density', 'pressure', 'mach']:
-    fig = figure(figsize=(10,8))
-    ylabel(name)
-    grid(linestyle='--', color='0.5')
+    fig = plt.figure(figsize=(10,8))
+    plt.ylabel(name)
+    plt.grid(linestyle='--', color='0.5')
     fsol1[0].plot(name, 'b-')
     fsol2[0].plot(name, 'r-')
     fig.savefig(name+'.png', bbox_inches='tight')
-show()
+plt.show()

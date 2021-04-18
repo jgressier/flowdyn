@@ -5,8 +5,6 @@ Created on Fri May 10 15:42:29 2013
 @author: j.gressier
 """
 
-import sys
-import math
 import numpy as np
 import flowdyn.meshbase as meshbase
 
@@ -148,7 +146,7 @@ class refinedmesh(mesh1d):
     def __init__(self, ncell=100, length=1., ratio=2., nratioa=1, nratiob=1):
         mesh1d.__init__(self, ncell, length)
         dx1 = (nratioa+nratiob) * length / ((nratioa+ratio*nratiob)*ncell)
-        dx2 = ratio*dx1
+        #dx2 = ratio*dx1
         nc1 = int((ncell*nratioa)/(nratioa+nratiob))
         nc2 = ncell-nc1
         self.xf = np.append(
