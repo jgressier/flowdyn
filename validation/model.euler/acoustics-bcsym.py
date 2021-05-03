@@ -47,10 +47,10 @@ togmu= 2./(gam-1.)
 def fu(x):
     return a0*(M0+Mmag*np.exp(-(isigx*(x-xsig))**2))#*np.sin(2*np.pi*k*x))
 def fp(x): # gamma = 1.4
-    return (1. + (fu(x)/a0-M0)/togmu)**(gam*togmu)  # satisfies C- invariant to make only C+ wave
+    return p0*(1. + (fu(x)/a0-M0)/togmu)**(gam*togmu)  # satisfies C- invariant to make only C+ wave
 def frho(x):
     rhoratio = 10.
-    return gam * p0/a0 * ( fp(x)**(1./gam) )
+    return gam * p0/a0**2 * ( fp(x)**(1./gam) )
 
 xc    = meshsim.centers()
 finit = rhs.fdata_fromprim([ frho(xc), fu(xc), fp(xc) ]) # rho, u, p

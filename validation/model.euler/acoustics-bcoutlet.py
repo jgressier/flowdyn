@@ -27,7 +27,7 @@ ctr4 = { 'num': xnum.extrapol3(), 'numflux':'centered' }
 # computation
 #
 gam = 1.4
-M0 = 0.1
+M0 = 0.5
 a0 = 1.
 p0 = 1.
 xsig = .5
@@ -36,7 +36,7 @@ endtime = (1./(1+M0)+1./(1-M0))/a0*(1.-xsig)
 cfl     = .5
 
 bcL  = { 'type': 'outsup' } 
-bcR  = { 'type': 'outsub_qtot', 'p': p0 } 
+bcR  = { 'type': 'outsub_nrcbc', 'p': p0 } 
 rhs = modeldisc.fvm(model, meshsim, **musclhllc, bcL=bcL, bcR=bcR)
 solver = tnum.lsrk25bb(meshsim, rhs)
 
@@ -46,10 +46,9 @@ togmu= 2./(gam-1.)
 def fu(x):
     return a0*(M0+Mmag*np.exp(-(isigx*(x-xsig))**2))#*np.sin(2*np.pi*k*x))
 def fp(x): # gamma = 1.4
-    return (1. + (fu(x)/a0-M0)/togmu)**(gam*togmu)  # satisfies C- invariant to make only C+ wave
+    return p0*(1. + (fu(x)/a0-M0)/togmu)**(gam*togmu)  # satisfies C- invariant to make only C+ wave
 def frho(x):
-    rhoratio = 10.
-    return gam * p0/a0 * ( fp(x)**(1./gam) )
+    return gam * p0/a0**2 * ( fp(x)**(1./gam) )
 
 xc    = meshsim.centers()
 finit = rhs.fdata_fromprim([ frho(xc), fu(xc), fp(xc) ]) # rho, u, p

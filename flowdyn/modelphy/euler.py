@@ -380,7 +380,19 @@ class euler1d(base):
         rho = ptot/rttot/(1.+.5*gmu*m2)**(1./gmu)
         return [ rho, dir*np.sqrt(g*m2*p/rho), p ] 
 
-
+    @base._bcdict.register('outsub_nrcbc')
+    def bc_outsub_qtot(self, dir, data, param):
+        g   = self.gamma
+        gmu = g-1.
+        # 0 and 1 stand for internal/external
+        p1 = param['p']
+        # isentropic invariant p/rho**gam = cst
+        rho1 = data[0]*(p1/data[2])**(1./g)
+        # C- invariant (or C+ according to dir)
+        a0 = np.sqrt(g*data[2]/data[0]) 
+        a1 = np.sqrt(g*p1/rho1) 
+        u1 = data[1] + dir*2/gmu*(a1-a0)
+        return [ rho1, u1, p1 ] 
 
     @base._bcdict.register('outsup')
     def bc_outsup(self, dir, data, param):
