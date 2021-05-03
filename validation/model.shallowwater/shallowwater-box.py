@@ -7,7 +7,6 @@ import flowdyn.modeldisc           as modeldisc
 #import flowdyn.field               as field
 import flowdyn.xnum     as xnum
 import flowdyn.integration as tnum
-import flowdyn.modelphy.euler as euler
 plt.rcParams["animation.html"] = "jshtml"  # for matplotlib 2.1 and above, uses JavaScript
 
 ncell = 300 # Définition de la mesh

@@ -18,7 +18,6 @@ def waterdrop(x, hmax, umean=0.): # return h and h*u
     h = .1+hmax*(-np.exp(-((x-.2)/0.1)**2))
     return [ h, h*umean]
 
-
 @pytest.mark.parametrize("flux", ["rusanov", "centered", "hll"])
 def test_sym_flux(flux):
     endtime = 1.

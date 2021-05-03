@@ -45,7 +45,6 @@ class shallowwater1d(base):
         self.g           = g # gravity attraction
         self.source      = source   
         self._bcdict.merge(shallowwater1d._bcdict) 
-        print(self._bcdict.dict) 
         self._vardict = { 'height': self.height, 'velocity': self.velocity, 'massflow': self.massflow}
         self._numfluxdict = {'centered': self.numflux_centeredflux, 
                              'rusanov': self.numflux_rusanov, 'hll': self.numflux_hll }
