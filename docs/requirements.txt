@@ -2,7 +2,7 @@ mkdocs-material
 mkdocs-include-markdown-plugin
 mkdocs-exclude
 aerokit >= 1.1
-flowdyn >= 1.0
+flowdyn >= 1.1.0
 ipykernel
 mkdocs-jupyter
 mkdocstrings

@@ -3,7 +3,6 @@
 test integration methods
 """
 
-import time
 import cProfile
 import matplotlib.pyplot as plt
 import numpy as np 

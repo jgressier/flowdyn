@@ -38,7 +38,7 @@ class riemann():
         :param t: time 
 
         """
-        if t==None:
+        if t is None:
             xot = np.where(mesh.centers()<0., -1e6, 1e6)
         else:
             xot = mesh.centers()/t

@@ -19,7 +19,6 @@
  """
 
 import numpy as np
-import math
 import flowdyn.modelphy.base as base
 
 # ===============================================================
