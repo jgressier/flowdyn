@@ -84,5 +84,5 @@ for sp, sty in [ (sp0, 'k.'), (sp1, 'b.')]:
     ax[1,0].plot(np.abs(sp[0:n2]), sty)
     ax[1,1].plot(np.angle(sp[0:n2]), sty)
 ax[1,0].set_yscale('log')
-ax[1,0].set_ylim(1e-12, 2*Mmag)
+ax[1,0].set_ylim(1e-14, 2*Mmag)
 plt.show()

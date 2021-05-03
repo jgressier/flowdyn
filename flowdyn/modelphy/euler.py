@@ -381,7 +381,7 @@ class euler1d(base):
         return [ rho, dir*np.sqrt(g*m2*p/rho), p ] 
 
     @base._bcdict.register('outsub_nrcbc')
-    def bc_outsub_qtot(self, dir, data, param):
+    def bc_outsub_nrcbc(self, dir, data, param):
         g   = self.gamma
         gmu = g-1.
         # 0 and 1 stand for internal/external
