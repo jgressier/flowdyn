@@ -24,7 +24,7 @@ def frho(x):
     return 1.4 * fp(x)**(1./1.4)
 
 @pytest.mark.parametrize("flux", ["hlle", "hllc", "centered", "centeredmassflow"])
-def test_acousticpacket_sym(flux):
+def test_acousticpacket_flux(flux):
     endtime = 2.
     cfl     = 0.6
     xnum    = muscl(minmod) 
@@ -39,14 +39,32 @@ def test_acousticpacket_sym(flux):
     fsol = solver.solve(finit, cfl, [endtime])
     assert not fsol[-1].isnan()
 
-def test_ductflow_sub():
+@pytest.mark.parametrize("bcout", ["sym", "outsub", "outsub_nrcbc"])
+def test_acousticpacket_bcout(bcout):
+    endtime = 2.
+    cfl     = 0.6
+    xnum    = muscl(minmod) 
+    tnum    = integ.rk3ssp
+    meshsim = mesh100
+    xc      = meshsim.centers()
+    bcL = { 'type': 'sym'}
+    bcR = { 'type': bcout, 'p': 1.} # 'p' will be ignored if unused
+    rhs = modeldisc.fvm(model, meshsim, xnum, numflux='hllc',  bcL=bcL, bcR=bcR)
+    finit   = rhs.fdata(model.prim2cons([ frho(xc), fu(xc), fp(xc) ])) # rho, u, p
+    solver = tnum(meshsim, rhs)
+    fsol = solver.solve(finit, cfl, [endtime])
+    assert not fsol[-1].isnan()
+
+#avoid outsub_nrcbc because of bad convergence
+@pytest.mark.parametrize("bcout", ["outsub", "outsub_prim", "outsub_qtot"]) 
+def test_ductflow_sub(bcout):
     endtime = 100.
     cfl     = 1.2
     xnum    = muscl(minmod) 
     tnum    = integ.rk4
     meshsim = mesh20
     bcL = { 'type': 'insub',  'ptot': 1.4, 'rttot': 1. }
-    bcR = { 'type': 'outsub', 'p': 1. }
+    bcR = { 'type': bcout, 'p': 1. }
     rhs = modeldisc.fvm(model, meshsim, xnum, bcL=bcL, bcR=bcR)
     finit = rhs.fdata_fromprim([ 1., 0., 1. ]) # rho, u, p
     solver = tnum(meshsim, rhs)
