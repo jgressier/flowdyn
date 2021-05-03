@@ -362,8 +362,25 @@ class euler1d(base):
         return [ rh, -dir*np.sqrt(g*m2*p/rh), p ] 
 
     @base._bcdict.register('outsub')
-    def bc_outsub(self, dir, data, param):
+    @base._bcdict.register('outsub_prim')
+    def bc_outsub_prim(self, dir, data, param):
         return [ data[0], data[1], param['p'] ] 
+
+    @base._bcdict.register('outsub_qtot')
+    def bc_outsub_qtot(self, dir, data, param):
+        g   = self.gamma
+        gmu = g-1.
+        m2  = data[1]**2/(g*data[2]/data[0])
+        fm2 = 1.+.5*gmu*m2
+        rttot = data[2]/data[0]*fm2
+        ptot  = data[2]*fm2**(g/gmu)
+        # right state
+        p  = param['p']
+        m2 = np.maximum(0., ((ptot/p)**(gmu/g)-1.)*2./gmu)
+        rho = ptot/rttot/(1.+.5*gmu*m2)**(1./gmu)
+        return [ rho, dir*np.sqrt(g*m2*p/rho), p ] 
+
+
 
     @base._bcdict.register('outsup')
     def bc_outsup(self, dir, data, param):
