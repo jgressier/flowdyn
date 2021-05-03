@@ -11,7 +11,7 @@
     Availaible BC : inifite, symmetrical (not working). 
  
     :Example:
-        model = shallowwater.model()
+        model = shallowwater.shallowwater1d()
         w_init = [h0_vect, h0_vect*u0_vect]
         field0  = field.fdata(model, mesh, w_init)
  
@@ -21,29 +21,32 @@
  """
 
 import numpy as np
-import math
-import flowdyn.modelphy.base as mbase
+from flowdyn.modelphy.base import model, methoddict
 
 
 # ===============================================================
 # implementation of MODEL class
 
-class model(mbase.model):
+class base(model):
+    pass
+class shallowwater1d(base):
     """
     Class model for shallow water equations
 
     attributes:
 
     """
+    _bcdict = methoddict()   # dict and associated decorator method to register BC
+
     def __init__(self, g=9.81, source=None):
-        mbase.model.__init__(self, name='shallowwater', neq=2)
+        model.__init__(self, name='shallowwater', neq=2)
         self.islinear    = 0
         self.shape       = [1, 1]
         self.g           = g # gravity attraction
-        self.source      = source
-        
+        self.source      = source   
+        self._bcdict.merge(shallowwater1d._bcdict) 
+        print(self._bcdict.dict) 
         self._vardict = { 'height': self.height, 'velocity': self.velocity, 'massflow': self.massflow}
-        self._bcdict.update({'sym': self.bc_sym, 'infinite':self.bc_inf })
         self._numfluxdict = {'centered': self.numflux_centeredflux, 
                              'rusanov': self.numflux_rusanov, 'hll': self.numflux_hll }
         
@@ -75,7 +78,7 @@ class model(mbase.model):
         return qdata[1]/qdata[0]
 
     def numflux(self, name, pdataL, pdataR, dir=None):
-        if name==None: name='rusanov'
+        if name is None: name='rusanov'
         return (self._numfluxdict[name])(pdataL, pdataR, dir)
 
     def numflux_centeredflux(self, pdataL, pdataR, dir=None): # centered flux ; pL[ieq][face] : in primitive variables (h,u) !
@@ -139,10 +142,12 @@ class model(mbase.model):
         dt = condition*dx / c 
         return dt
 
+    @_bcdict.register('sym')
     def bc_sym(self, dir, data, param): # In primitive values here
         "symmetry boundary condition, for inviscid equations, it is equivalent to a wall, do not need user parameters"
-        return [ data[0], -data[1]]
+        return [ data[0], -data[1] ]
 
+    @_bcdict.register('infinite')
     def bc_inf(self, dir, data, param): # Simulate infinite plane : not sure...
         #zeros_h = np.zeros( np.shape(data[0]))
         #zeros_u = np.zeros( np.shape(data[1]))

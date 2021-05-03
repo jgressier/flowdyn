@@ -1,3 +1,4 @@
+import numpy as np
 import pytest
 #
 # import numpy as np
@@ -11,9 +12,6 @@ import flowdyn.integration as integ
 mesh100 = mesh.unimesh(ncell=100, length=1.)
 mesh50  = mesh.unimesh(ncell=50, length=1.)
 mesh20  = mesh.unimesh(ncell=20, length=1.)
-
-model  = shw.model()
-model10 = shw.model(g=10.)
 
 # initial functions
 def waterdrop(x, hmax, umean=0.): # return h and h*u
@@ -31,6 +29,8 @@ def test_sym_flux(flux):
     xc      = meshsim.centers()
     bcL = { 'type': 'sym'}
     bcR = { 'type': 'sym'}
+    model  = shw.shallowwater1d()
+    model10 = shw.shallowwater1d(g=10.)
     rhs = modeldisc.fvm(model, meshsim, xnum, numflux=flux,  bcL=bcL, bcR=bcR)
     finit   = rhs.fdata(model.prim2cons(waterdrop(xc, .01))) # rho, u, p
     solver = tnum(meshsim, rhs)

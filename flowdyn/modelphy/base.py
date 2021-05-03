@@ -29,7 +29,12 @@ class methoddict():
             self.dict[name] = classmeth
             return classmeth
         return decorator
-        
+    
+    def merge(self, mdict):
+        self.dict.update(mdict.dict)
+
+    def update(self, ddict: dict):
+        self.dict.update(ndict)
 
 # ===============================================================
 # implementation of MODEL class
@@ -57,7 +62,7 @@ class model():
         self.has_secondorder_terms = 0
         self.has_source_terms      = 0
         self._vardict = { }
-        #self._bcdict  = { 'dirichlet': self.bc_dirichlet }
+        self._bcdict  = model._bcdict
 
     def __repr__(self):
         print("model: ", self.equation)

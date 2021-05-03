@@ -1,13 +1,13 @@
 import numpy as np
 import matplotlib.pyplot as plt
-import time
 #
 import flowdyn.mesh                as mesh
-import flowdyn.modelphy.shallowwater as shallowwater
+import flowdyn.modelphy.shallowwater as shw
 import flowdyn.modeldisc           as modeldisc
 #import flowdyn.field               as field
-from flowdyn.xnum        import *
-from flowdyn.integration import *
+import flowdyn.xnum     as xnum
+import flowdyn.integration as tnum
+import flowdyn.modelphy.euler as euler
 plt.rcParams["animation.html"] = "jshtml"  # for matplotlib 2.1 and above, uses JavaScript
 
 ncell = 300 # Définition de la mesh
@@ -16,16 +16,16 @@ endtime = 1.
 tsave   = np.linspace(0, endtime, num=ntime+1)
 length = 3.
 mesh = mesh.unimesh(ncell, length)
-model = shallowwater.model(g=10.)
+model = shw.shallowwater1d(g=10.)
 
 cfl = 1
 
 # schéma linéaire: extrapol1(), extrapol2()=extrapolk(1), centered=extrapolk(-1), extrapol3=extrapol(1./3.) 
 # schéma avec limitation non linéaire: muscl(LIMITER) avec LIMITER = minmod, vanalbada, vanleer, superbee
-xmeth, xmethstr  = extrapol3(),'extrapol3'
+xmeth, xmethstr  = xnum.extrapol3(),'extrapol3'
 
 # explicit, rk2, rk3ssp, rk4, implicit, trapezoidal=cranknicolson
-tmeth, tmethstr = rk3ssp, 'rk3ssp'
+tmeth, tmethstr = tnum.rk3ssp, 'rk3ssp'
 
 # Numerical Flux : 'centered', 'rusanov', or 'HLL' are availaible. 
 # Centered flux is easily shown to be unconditionnaly unstable
@@ -52,10 +52,10 @@ def init_rupturebarrage(mesh):
 
 u0_vect = .5 + np.zeros((ncell))
 w_init = [h0_vect, u0_vect*h0_vect]
-field0  = field.fdata(model, mesh, w_init)
 
 # Define RHS
 rhs = modeldisc.fvm(model, mesh, xmeth, numflux =numflux, bcL=bcL, bcR=bcR)
+field0  = rhs.fdata_fromprim(w_init)
 # Define the solver 
 solver = tmeth(mesh,rhs)
 # Solution
