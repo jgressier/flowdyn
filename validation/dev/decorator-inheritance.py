@@ -1,57 +1,43 @@
-class methoddict():
-    """decorator to register decorated method as specific and tagged in the class model
-    """
-    def __init__(self):
-        self.dict = {}
-
-    def register(self, name):
-        def decorator(classmeth):
-            self.dict[name] = classmeth
-            return classmeth
-        return decorator
-
+from flowdyn.modelphy.base import methoddict
 class a():
     _dico = methoddict()
     prop = 0
     def __init__(self):
-        self.aa = ''
+        self._dico = a._dico.copy()
     @_dico.register('ma')
     def ma(self):
         return
 
 class b(a):
+    _dico = methoddict()
     def __init__(self):
-        self.bb = ''
-    @a._dico.register('mb') # this function will be registered in class a too
+        a.__init__(self)
+        self._dico.merge(b._dico)
+    @_dico.register('mb') 
     def mb(self):
+        return
+    @_dico.register('m') 
+    def m(self):
+        return
+
+class c(a):
+    _dico = methoddict()
+    def __init__(self):
+        a.__init__(self)
+        self._dico.merge(c._dico)
+    @_dico.register('mc') 
+    def mc(self):
+        return
+    @_dico.register('m') 
+    def m(self):
         return
 
 xa = a()
 xb = b()
-print(a.prop)
-xa.prop = 1
-print(a.prop, xa.prop)
-a.prop = 2
-print(a.prop, xa.prop)
-print(b.prop, xb.prop)
-
-class c():
-    def __init__(self):
-        self.cc = ''
-        self._dico = methoddict()
-    #@self._dico.register('mc')
-    def mc(self):
-        return
-
-class d(c):
-    def __init__(self):
-        a.__init__(self)
-        self.dd = ''
-    #@self._dico.register('md')
-    def md(self):
-        return
-
 xc = c()
-xd = d()
+for m in a, b, c, xa, xb, xc:
+    print(m._dico.dict)
+for m in xa, xb, xc:
+    print(m._dico.dict)
 
 print("end")

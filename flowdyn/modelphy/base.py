@@ -21,8 +21,8 @@
 class methoddict():
     """decorator to register decorated method as specific and tagged in the class model
     """
-    def __init__(self):
-        self.dict = {}
+    def __init__(self, items={}):
+        self.dict = dict(items)
 
     def register(self, name):
         def decorator(classmeth):
@@ -35,6 +35,9 @@ class methoddict():
 
     def update(self, ddict: dict):
         self.dict.update(ndict)
+    
+    def copy(self):
+        return methoddict(self.dict)
 
 # ===============================================================
 # implementation of MODEL class
@@ -62,7 +65,7 @@ class model():
         self.has_secondorder_terms = 0
         self.has_source_terms      = 0
         self._vardict = { }
-        self._bcdict  = model._bcdict
+        self._bcdict  = model._bcdict.copy()
 
     def __repr__(self):
         print("model: ", self.equation)

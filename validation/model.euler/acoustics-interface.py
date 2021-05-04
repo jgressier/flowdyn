@@ -13,7 +13,6 @@ from flowdyn.field import *
 from flowdyn.xnum  import *
 from flowdyn.integration import *
 import flowdyn.modelphy.euler as euler
-import flowdyn.modelphy.shallowwater as shw
 import flowdyn.modeldisc      as modeldisc
 
 meshsim  = unimesh(ncell=200,  length=1.)
