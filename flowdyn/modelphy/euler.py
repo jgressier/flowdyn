@@ -201,7 +201,7 @@ class base(mbase.model):
         tmp    = 1.0/(1.0+Rrho);
         velRoe = tmp*(uL + uR*Rrho)
         uRoe   = tmp*(uL + uR*Rrho)
-        hRoe   = tmp*(HL + HR*Rrho)
+        #hRoe   = tmp*(HL + HR*Rrho)
 
         gamPdivRho = tmp*( (cL2+0.5*gam1*uL*uL) + (cR2+0.5*gam1*uR*uR)*Rrho )
         cRoe  = np.sqrt(gamPdivRho - gam1*0.5*velRoe**2)
@@ -248,7 +248,7 @@ class base(mbase.model):
         tmp    = 1.0/(1.0+Rrho);
         velRoe = tmp*(uL + uR*Rrho)
         uRoe   = tmp*(uL + uR*Rrho)
-        hRoe   = tmp*(HL + HR*Rrho)
+        #hRoe   = tmp*(HL + HR*Rrho)
 
         gamPdivRho = tmp*( (cL2+0.5*gam1*uL*uL) + (cR2+0.5*gam1*uR*uR)*Rrho )
         cRoe  = np.sqrt(gamPdivRho - gam1*0.5*velRoe**2)

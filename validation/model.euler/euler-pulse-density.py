@@ -7,8 +7,8 @@ test integration methods
 import matplotlib.pyplot as plt
 import numpy as np 
 
-from flowdyn.mesh  import *
-from flowdyn.field import *
+from flowdyn.mesh  import unimesh
+#from flowdyn.field import *
 from flowdyn.xnum  import *
 from flowdyn.integration import rk3ssp
 import flowdyn.modelphy.euler as euler

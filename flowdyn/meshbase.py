@@ -5,9 +5,9 @@ Created on Fri May 10 15:42:29 2013
 @author: j.gressier
 """
 
-import sys
-import math
-import numpy as np
+#import sys
+#import math
+#import numpy as np
 
 class virtualmesh():
     """
