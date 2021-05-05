@@ -9,10 +9,6 @@ import flowdyn.field as field
 from flowdyn.xnum  import *
 import flowdyn.integration as integ
 
-mesh100 = mesh.unimesh(ncell=100, length=1.)
-mesh50  = mesh.unimesh(ncell=50, length=1.)
-mesh20  = mesh.unimesh(ncell=20, length=1.)
-
 # initial functions
 def waterdrop(x, hmax, umean=0.): # return h and h*u
     h = .1+hmax*(-np.exp(-((x-.2)/0.1)**2))
@@ -24,7 +20,7 @@ def test_sym_flux(flux):
     cfl     = 0.6
     xnum    = muscl(minmod) 
     tnum    = integ.rk3ssp
-    meshsim = mesh100
+    meshsim = mesh.unimesh(ncell=100, length=1.)
     xc      = meshsim.centers()
     bcL = { 'type': 'sym'}
     bcR = { 'type': 'sym'}
