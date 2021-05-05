@@ -48,12 +48,15 @@ class base(mbase.model):
     attributes:
 
     """
+    _bcdict = mbase.methoddict()   # dict and associated decorator method to register BC
+
     def __init__(self, gamma=1.4, source=None):
         mbase.model.__init__(self, name='euler', neq=3)
         self.islinear    = 0
         self.shape       = [1, 1, 1]
         self.gamma       = gamma
         self.source      = source
+        self._bcdict.merge(base._bcdict)
         self._vardict = { 'pressure': self.pressure, 'density': self.density,
                           'velocity': self.velocity, 'asound': self.asound, 'mach': self.mach, 'enthalpy': self.enthalpy,
                           'entropy': self.entropy, 'ptot': self.ptot, 'rttot': self.rttot, 'htot': self.htot }
@@ -295,7 +298,7 @@ class base(mbase.model):
         return [Frho, Frhou, FrhoE]
 
     def timestep(self, data, dx, condition):
-        "computation of timestep: data(=pdata) is not used, dx is an array of cell sizes, condition is the CFL number"
+        "computation of timestep with conservative data"
         #        dt = CFL * dx / ( |u| + c )
         # dt = np.zeros(len(dx)) #test use zeros instead
         #dt = condition*dx/ (data[1] + np.sqrt(self.gamma*data[2]/data[0]) )
@@ -311,11 +314,12 @@ class euler1d(base):
     """
     Class model for 2D euler equations
     """
-    #bcdict = mbase.methoddict()
+    _bcdict = mbase.methoddict()
 
     def __init__(self, gamma=1.4, source=None):
         base.__init__(self, gamma=gamma, source=source)
         self.shape       = [1, 1, 1]
+        self._bcdict.merge(euler1d._bcdict)
         self._vardict.update({ 'massflow': self.massflow })
         # self._bcdict.update({'sym': self.bc_sym,
         #                  'insub': self.bc_insub,
@@ -337,12 +341,12 @@ class euler1d(base):
     def massflow(self,qdata): # for 1D model only
         return qdata[1].copy()
 
-    @base._bcdict.register('sym')
+    @_bcdict.register('sym')
     def bc_sym(self, dir, data, param):
         "symmetry boundary condition, for inviscid equations, it is equivalent to a wall, do not need user parameters"
         return [ data[0], -data[1], data[2] ]
 
-    @base._bcdict.register('insub')
+    @_bcdict.register('insub')
     def bc_insub(self, dir, data, param):
         g   = self.gamma
         gmu = g-1.
@@ -351,7 +355,7 @@ class euler1d(base):
         rh = param['ptot']/param['rttot']/(1.+.5*gmu*m2)**(1./gmu)
         return [ rh, -dir*np.sqrt(g*m2*p/rh), p ] 
 
-    @base._bcdict.register('insup')
+    @_bcdict.register('insup')
     def bc_insup(self, dir, data, param):
         # expected parameters are 'ptot', 'rttot' and 'p'
         g   = self.gamma
@@ -361,11 +365,11 @@ class euler1d(base):
         rh = param['ptot']/param['rttot']/(1.+.5*gmu*m2)**(1./gmu)
         return [ rh, -dir*np.sqrt(g*m2*p/rh), p ] 
 
-    @base._bcdict.register('outsub')
+    @_bcdict.register('outsub')
     def bc_outsub(self, dir, data, param):
         return [ data[0], data[1], param['p'] ] 
 
-    @base._bcdict.register('outsup')
+    @_bcdict.register('outsup')
     def bc_outsup(self, dir, data, param):
         return data
 
@@ -418,9 +422,12 @@ class euler2d(base):
     """
     Class model for 2D euler equations
     """
+    _bcdict = mbase.methoddict()
+
     def __init__(self, gamma=1.4, source=None):
         base.__init__(self, gamma=gamma, source=source)
         self.shape       = [1, 2, 1]
+        self._bcdict.merge(euler2d._bcdict)
         self._vardict.update({ 'velocity_x': self.velocity_x, 'velocity_y': self.velocity_y,
                          })
         #self._bcdict.update({ #'sym': self.bc_sym,

@@ -16,6 +16,12 @@ pip show flowdyn
 
 ## Versions
 
+### [1.2.0](https://pypi.org/project/flowdyn/) (2021-05-xx)
+
+#### new features
+
+- shallow water model `modelphy.shallowwater`
+
 ### [1.1.2](https://pypi.org/project/flowdyn/) (2021-04-17)
 
 #### changed
