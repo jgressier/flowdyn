@@ -12,7 +12,7 @@ mesh100 = mesh.unimesh(ncell=100, length=1.)
 mesh50  = mesh.unimesh(ncell=50, length=1.)
 mesh20  = mesh.unimesh(ncell=20, length=1.)
 
-model = euler.model()
+model = euler.euler1d()
 
 # initial functions
 def fu(x):

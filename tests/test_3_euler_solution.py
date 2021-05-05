@@ -10,12 +10,13 @@ import flowdyn.field as field
 from flowdyn.xnum  import *
 import flowdyn.integration as integ
 
-meshsim = mesh.unimesh(ncell=200, length=10., x0=-4.)
-meshref = mesh.unimesh(ncell=1000, length=10., x0=-4.)
+#meshsim = mesh.unimesh(ncell=200, length=10., x0=-4.)
+#meshref = mesh.unimesh(ncell=1000, length=10., x0=-4.)
 
 @pytest.mark.parametrize("case, endtime", [(solR.Sod_subsonic, 2.8), (solR.Sod_supersonic, 2.)])
 def test_shocktube(case, endtime):
-    model = euler.model()
+    meshsim = mesh.unimesh(ncell=200, length=10., x0=-4.)
+    model = euler.euler1d()
     sod   = case(model) # sol.Sod_supersonic(model) # 
     bcL  = { 'type': 'dirichlet',  'prim':  sod.bcL() }
     bcR  = { 'type': 'dirichlet',  'prim':  sod.bcR() }
@@ -36,7 +37,8 @@ def test_shocktube(case, endtime):
 @pytest.mark.no_cover
 @pytest.mark.parametrize("flux", ["hlle", "hllc"])
 def test_shocktube_sodsub_th(flux):
-    model = euler.model()
+    meshref = mesh.unimesh(ncell=1000, length=10., x0=-4.)
+    model = euler.euler1d()
     sod   = solR.Sod_subsonic(model) # sol.Sod_supersonic(model) # 
     bcL  = { 'type': 'dirichlet',  'prim':  sod.bcL() }
     bcR  = { 'type': 'dirichlet',  'prim':  sod.bcR() }
@@ -58,6 +60,7 @@ def test_shocktube_sodsub_th(flux):
 @pytest.mark.no_cover
 @pytest.mark.parametrize("flux", ["hlle", "hllc"])
 def test_shocktube_sodsup_th(flux):
+    meshref = mesh.unimesh(ncell=1000, length=10., x0=-4.)
     model = euler.model()
     sod   = solR.Sod_supersonic(model) # sol.Sod_supersonic(model) # 
     bcL  = { 'type': 'dirichlet',  'prim':  sod.bcL() }
