@@ -201,7 +201,7 @@ class base(mbase.model):
         tmp    = 1.0/(1.0+Rrho);
         velRoe = tmp*(uL + uR*Rrho)
         uRoe   = tmp*(uL + uR*Rrho)
-        hRoe   = tmp*(HL + HR*Rrho)
+        #hRoe   = tmp*(HL + HR*Rrho)
 
         gamPdivRho = tmp*( (cL2+0.5*gam1*uL*uL) + (cR2+0.5*gam1*uR*uR)*Rrho )
         cRoe  = np.sqrt(gamPdivRho - gam1*0.5*velRoe**2)
@@ -248,7 +248,7 @@ class base(mbase.model):
         tmp    = 1.0/(1.0+Rrho);
         velRoe = tmp*(uL + uR*Rrho)
         uRoe   = tmp*(uL + uR*Rrho)
-        hRoe   = tmp*(HL + HR*Rrho)
+        #hRoe   = tmp*(HL + HR*Rrho)
 
         gamPdivRho = tmp*( (cL2+0.5*gam1*uL*uL) + (cR2+0.5*gam1*uR*uR)*Rrho )
         cRoe  = np.sqrt(gamPdivRho - gam1*0.5*velRoe**2)
@@ -366,8 +366,37 @@ class euler1d(base):
         return [ rh, -dir*np.sqrt(g*m2*p/rh), p ] 
 
     @_bcdict.register('outsub')
-    def bc_outsub(self, dir, data, param):
+    @_bcdict.register('outsub_prim')
+    def bc_outsub_prim(self, dir, data, param):
         return [ data[0], data[1], param['p'] ] 
+
+    @_bcdict.register('outsub_qtot')
+    def bc_outsub_qtot(self, dir, data, param):
+        g   = self.gamma
+        gmu = g-1.
+        m2  = data[1]**2/(g*data[2]/data[0])
+        fm2 = 1.+.5*gmu*m2
+        rttot = data[2]/data[0]*fm2
+        ptot  = data[2]*fm2**(g/gmu)
+        # right state
+        p  = param['p']
+        m2 = np.maximum(0., ((ptot/p)**(gmu/g)-1.)*2./gmu)
+        rho = ptot/rttot/(1.+.5*gmu*m2)**(1./gmu)
+        return [ rho, dir*np.sqrt(g*m2*p/rho), p ] 
+
+    @_bcdict.register('outsub_nrcbc')
+    def bc_outsub_nrcbc(self, dir, data, param):
+        g   = self.gamma
+        gmu = g-1.
+        # 0 and 1 stand for internal/external
+        p1 = param['p']
+        # isentropic invariant p/rho**gam = cst
+        rho1 = data[0]*(p1/data[2])**(1./g)
+        # C- invariant (or C+ according to dir)
+        a0 = np.sqrt(g*data[2]/data[0]) 
+        a1 = np.sqrt(g*p1/rho1) 
+        u1 = data[1] + dir*2/gmu*(a1-a0)
+        return [ rho1, u1, p1 ] 
 
     @_bcdict.register('outsup')
     def bc_outsup(self, dir, data, param):

@@ -21,6 +21,10 @@ pip show flowdyn
 #### new features
 
 - shallow water model `modelphy.shallowwater`
+- new subsonic outlet boundary condition for `euler1d` model
+    - `outsub_prim` as a legacy primitive variables set, same as `outsub`
+    - `outsub_qtot` computed with `p` parameter and `ptot` and `rttot` extrapolation
+    - `outsub_nrcbc` for non-reflective characteristics conditions
 
 ### [1.1.2](https://pypi.org/project/flowdyn/) (2021-04-17)
 

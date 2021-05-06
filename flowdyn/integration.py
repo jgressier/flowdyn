@@ -92,7 +92,7 @@ class timemodel:
         """
         self.residual = self.modeldisc.rhs(field)
 
-    def step(self, f, dt):
+    def step(self, f, dtloc):
         """virtual method for one step integration
 
         Args:
@@ -188,7 +188,7 @@ class timemodel:
         self.modeldisc = fakedisc(z)
         # make virtual field
         f = field.fdata(fakemodel(), fakemesh(), [0 * z + 1.0])
-        self.step(f, dt=1.0) # one step with normalized time step
+        self.step(f, dtloc=1.0) # one step with normalized time step
         # get back actual modeldisc
         self.modeldisc = saved_model
         return f.data[0]
