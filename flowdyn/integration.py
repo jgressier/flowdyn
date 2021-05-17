@@ -26,7 +26,6 @@ if float(sys.version[:3]) >= 3.3:  # or 3.8
     myclock = time.process_time
 else:
     myclock = time.clock
-start = myclock()
 
 # --------------------------------------------------------------------
 
@@ -136,6 +135,7 @@ class timemodel:
         if flush:
             alldata = [d for d in itfield.data]
         results = []
+        start = myclock()
         for t in np.arange(len(tsave)):
             endcycle = 0
             while endcycle == 0:

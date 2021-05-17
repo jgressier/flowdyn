@@ -26,6 +26,9 @@ pip show flowdyn
     - `outsub_qtot` computed with `p` parameter and `ptot` and `rttot` extrapolation
     - `outsub_nrcbc` for non-reflective characteristics conditions
 
+#### fixed
+
+- bad initialization of cpu time computation in `show_perf()` for successive integration
 ### [1.1.2](https://pypi.org/project/flowdyn/) (2021-04-17)
 
 #### changed
