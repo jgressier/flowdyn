@@ -10,9 +10,11 @@ implicit or backwardeuler
 trapezoidal or cranknicolson
 """
 import math
-import numpy as np
 import sys
 import time
+
+import numpy as np
+from scipy.optimize import newton
 
 # from scipy.sparse import csc_matrix
 # import scipy.sparse.linalg as splinalg
@@ -29,7 +31,7 @@ else:
 
 # --------------------------------------------------------------------
 
-# --------------------------------------------------------------------
+
 class fakemodel:
     """ """
 
@@ -71,9 +73,10 @@ class fakedisc:
 class timemodel:
     """ """
 
-    def __init__(self, mesh, modeldisc):
+    def __init__(self, mesh, modeldisc, monitors=None):
         self.mesh = mesh
         self.modeldisc = modeldisc
+        self.monitors = {} if monitors is None else monitors
         self.reset()
 
     def reset(self):
@@ -100,7 +103,7 @@ class timemodel:
 
         Returns:
         """
-        raise NameError("not implemented for virtual class")
+        pass #raise NameError("not implemented for virtual class")
 
     def add_res(self, f, dt, subtimecoef=1.0):
         """
@@ -117,20 +120,31 @@ class timemodel:
         for i in range(f.neq):
             f.data[i] += dt * self.residual[i]  # time can be scalar or np.array
 
-    def solve(self, f, condition, tsave, flush=None):
+    def _check_end(self, stop):
         """
+        """
+        check_end = {}
+        for key, value in stop.items():
+            if key=='tottime':
+                check_end[key] = self._time >= value
+        return any(check_end.values())
+
+    def solve_legacy(self, f, condition, tsave, 
+            stop=None, flush=None):
+        """Solve dQ/dt=RHS(Q,t)
 
         Args:
-          f:
-          condition:
-          tsave:
+          f: initial field
+          condition: CFL number
+          tsave: array/list of time to save
           flush:  (Default value = None)
 
         Returns:
-
+          list of solution fields (size of tsave)
         """
-        self._nit = 0
+        self.reset() # reset cputime and nit
         self.condition = condition
+        # initialization before loop
         itfield = f.copy()
         if flush:
             alldata = [d for d in itfield.data]
@@ -156,6 +170,56 @@ class timemodel:
             np.save(flush, alldata)
         return results
 
+    def solve(self, f, condition, tsave, 
+            stop=None, flush=None):
+        """Solve dQ/dt=RHS(Q,t)
+
+        Args:
+          f: initial field
+          condition: CFL number
+          tsave: array/list of time to save
+          flush:  (Default value = None)
+
+        Returns:
+          list of solution fields (size of tsave)
+        """
+        self.reset() # reset cputime and nit
+        self.condition = condition
+        stop = { 'tottime': tsave[-1] } 
+        # initialization before loop
+        Qn = f.copy()
+        self._time = Qn.time
+        if flush:
+            alldata = [d for d in Qn.data]
+        results = []
+        start = myclock()
+        isave, nsave = 0, len(tsave)
+        # loop testing all ending criteria
+        while not self._check_end(stop):
+            dtloc = self.modeldisc.calc_timestep(Qn, condition)
+            mindtloc = min(dtloc)
+            Qnn = Qn.copy()
+            if isave < nsave:
+                if Qn.time+mindtloc >= tsave[isave]:
+                    # compute smaller step with same integrator
+                    self.step(Qnn, tsave[isave]-Qn.time)
+                    results.append(Qnn)
+                    #results.append(Qn.interpol(Qnn, tsave[isave]))
+                    isave += 1
+                    # step back to Qn
+                    Qnn = Qn.copy()
+            self.step(Qnn, mindtloc)
+            Qn = Qnn
+            self._nit += 1
+            self._time = Qn.time
+            if flush:
+                for i, q in zip(range(len(alldata)), Qn.data):
+                    alldata[i] = np.vstack((alldata[i], q))
+        self._cputime = myclock() - start
+        if flush:
+            np.save(flush, alldata)
+        return results
+
     def nit(self):
         """returns number of computed iterations"""
         return self._nit
@@ -164,13 +228,17 @@ class timemodel:
         """returns cputime"""
         return self._cputime
 
+    def perf_micros(self):
+        """returns perf in µs"""
+        return self._cputime * 1.0e6 / self._nit / self.modeldisc.nelem
+
     def show_perf(self):
         """print performance"""
         print(
             "cpu time computation ({0:d} it) : {1:.3f}s\n  {2:.2f} µs/cell/it".format(
                 self._nit,
                 self._cputime,
-                self._cputime * 1.0e6 / self._nit / self.modeldisc.nelem,
+                self.perf_micros(),
             )
         )
 
@@ -193,6 +261,12 @@ class timemodel:
         self.modeldisc = saved_model
         return f.data[0]
 
+    def cflmax(self):
+        """estimation of maximum cfl
+        """
+        def _gain_imag(sigma):
+            return abs(self.propagator(1j*sigma))-1.
+        return newton(_gain_imag, 10.)
 
 # --------------------------------------------------------------------
 
@@ -581,7 +655,6 @@ class gear(trapezoidal):
 #                 [0.0, -5.0 / 12.0, 3.0 / 4.0],
 #             ]
 #         )
-
 
 # --------------------------------------------------------------------
 # for tests

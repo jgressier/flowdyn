@@ -50,7 +50,8 @@ pr.disable()
 solver.show_perf()
 
 s = io.StringIO()
-sortby = 'cumulative' # SortKey.CUMULATIVE # only python >=3.7
+#sortby = 'cumulative' # SortKey.CUMULATIVE # only python >=3.7
+sortby = 'time' # 
 ps = pstats.Stats(pr, stream=s).sort_stats(sortby)
 ps.print_stats(25)
 print(s.getvalue())
