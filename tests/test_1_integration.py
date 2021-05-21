@@ -21,14 +21,45 @@ class integration_data():
     def init_sinperk(self, mesh, k):
         return np.sin(2*k*np.pi/mesh.length*mesh.centers())
 
-class Test_integration(integration_data):
+class Test_solve(integration_data):
+
+    xsch = xnum.extrapol3()
+
+    def test_checkend_tottime(self):
+        endtime = 5.
+        cfl     = .5
+        stop_directive = { 'tottime': endtime }
+        finit = field.fdata(self.convmodel, self.curmesh, [ self.init_sinperk(self.curmesh, k=4) ] )
+        rhs = modeldisc.fvm(self.convmodel, self.curmesh, self.xsch)
+        solver = tnum.rk4(self.curmesh, rhs)
+        nsol = 11
+        tsave = np.linspace(0, 2*endtime, nsol, endpoint=True)
+        fsol = solver.solve(finit, cfl, tsave, stop=stop_directive)
+        assert len(fsol) < nsol # end before expected by tsave
+        assert not fsol[-1].isnan()
+        assert fsol[-1].time < 2*endtime
+
+    def test_checkend_maxit(self):
+        endtime = 5.
+        cfl     = .5
+        maxit   = 100
+        stop_directive = { 'maxit': maxit }
+        finit = field.fdata(self.convmodel, self.curmesh, [ self.init_sinperk(self.curmesh, k=4) ] )
+        rhs = modeldisc.fvm(self.convmodel, self.curmesh, self.xsch)
+        solver = tnum.rk4(self.curmesh, rhs)
+        nsol = 11
+        tsave = np.linspace(0, endtime, nsol, endpoint=True)
+        fsol = solver.solve(finit, cfl, tsave, stop=stop_directive)
+        assert len(fsol) < nsol # end before expected by tsave
+        assert not fsol[-1].isnan()
+        assert fsol[-1].time < endtime
+        assert solver.nit() == 100
 
     def test_interpolation_regression(self):
         endtime = 5
         cfl     = .5
-        xsch = xnum.extrapol3()
         finit = field.fdata(self.convmodel, self.curmesh, [ self.init_sinperk(self.curmesh, k=4) ] )
-        rhs = modeldisc.fvm(self.convmodel, self.curmesh, xsch)
+        rhs = modeldisc.fvm(self.convmodel, self.curmesh, self.xsch)
         solver = tnum.rk4(self.curmesh, rhs)
         nsol = 5
         tsave = np.linspace(0, endtime, nsol, endpoint=True)

@@ -127,6 +127,8 @@ class timemodel:
         for key, value in stop.items():
             if key=='tottime':
                 check_end[key] = self._time >= value
+            if key=='maxit':
+                check_end[key] = self._nit >= value
         return any(check_end.values())
 
     def solve_legacy(self, f, condition, tsave, 
@@ -185,7 +187,9 @@ class timemodel:
         """
         self.reset() # reset cputime and nit
         self.condition = condition
-        stop = { 'tottime': tsave[-1] } 
+        stopcrit = { 'tottime': tsave[-1] }
+        if stop is not None:
+            stopcrit.update(stop)
         # initialization before loop
         Qn = f.copy()
         self._time = Qn.time
@@ -195,7 +199,7 @@ class timemodel:
         start = myclock()
         isave, nsave = 0, len(tsave)
         # loop testing all ending criteria
-        while not self._check_end(stop):
+        while not self._check_end(stopcrit):
             dtloc = self.modeldisc.calc_timestep(Qn, condition)
             mindtloc = min(dtloc)
             Qnn = Qn.copy()
