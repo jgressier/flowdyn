@@ -5,13 +5,13 @@ test integration methods
 
 import cProfile, pstats, io
 
-from matplotlib.pyplot import *
+import matplotlib.pyplot as plt
 import numpy as np 
 
 import flowdyn.mesh as mesh
 from flowdyn.field import *
 from flowdyn.xnum  import *
-from flowdyn.integration import *
+import flowdyn.integration as tnum
 import flowdyn.modelphy.euler as euler
 import flowdyn.modeldisc      as modeldisc
 import flowdyn.solution.euler_nozzle as sol
@@ -34,7 +34,8 @@ bcR = { 'type': 'outsub', 'p': 1. }
 
 rhs = modeldisc.fvm(model, meshsim, muscl(vanleer), bcL=bcL, bcR=bcR)
 
-solver = rk3ssp(meshsim, rhs)
+monitors = {'residual':{ 'name':'pipo' }}
+solver = tnum.rk3ssp(meshsim, rhs, monitors=monitors)
 
 # computation
 #
@@ -57,13 +58,17 @@ ps.print_stats(25)
 print(s.getvalue())
 
 # Figure / Plot
-for name in ['mach']:
-	fig = figure(figsize=(10,8))
-	ylabel(name)
-	grid(linestyle='--', color='0.5')
-	#finit.plot(name, 'k-.')
-	fsol[0].plot(name, 'bo')
-	fref.plot(name, 'k-')
-	#fig.savefig(name+'.png', bbox_inches='tight')
-	show()
+name = 'mach'
+fig, ax = plt.subplots(1, 2, figsize=(16,8))
+monres = monitors['residual']['output']
+#ax[O].ylabel(monres.name)
+ax[0].grid(linestyle='--', color='0.5')
+ax[0].semilogy(monres._it, monres._value)
+ax[1].set_ylabel(name)
+ax[1].grid(linestyle='--', color='0.5')
+#finit.plot(name, 'k-.')
+fsol[0].plot(name, 'bo', ax[1])
+fref.plot(name, 'k-', ax[1])
+#fig.savefig(name+'.png', bbox_inches='tight')
+plt.show()
 

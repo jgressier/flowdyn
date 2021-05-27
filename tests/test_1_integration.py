@@ -55,6 +55,23 @@ class Test_solve(integration_data):
         assert fsol[-1].time < endtime
         assert solver.nit() == 100
 
+    def test_interpol_t(self):
+        endtime = 1./self.curmesh.ncell
+        cfl     = 5. # unstable but no risk with 1 it
+        maxit   = 1
+        stop_directive = { 'maxit': maxit }
+        finit = field.fdata(self.convmodel, self.curmesh, [ self.init_sinperk(self.curmesh, k=4) ] )
+        rhs = modeldisc.fvm(self.convmodel, self.curmesh, self.xsch)
+        solver = tnum.explicit(self.curmesh, rhs)
+        fsol2 = solver.solve(finit, cfl, [2*endtime], stop=stop_directive)
+        fsol1 = solver.solve(finit, cfl, [endtime], stop=stop_directive)
+        assert not fsol2[-1].isnan()
+        assert 2*fsol1[-1].time == pytest.approx(fsol2[-1].time, abs=1.e-12)
+        fi = finit.interpol_t(fsol2[-1], endtime)
+        diff = fi.diff(fsol1[-1])
+        for d in diff.data:
+            assert np.average(np.abs(d)) == pytest.approx(0., abs=1.e-6)
+
     def test_interpolation_regression(self):
         endtime = 5
         cfl     = .5

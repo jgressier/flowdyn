@@ -64,20 +64,38 @@ class fakedisc:
         """
         return [f.data[0] * self.z]
 
+# --------------------------------------------------------------------
+# class monitor
+
+class monitor():
+    def __init__(self, name):
+        self._name = name
+        self._it = []
+        self._time = []
+        self._value = []
+    
+    def name(self):
+        return self._name
+
+    def append(self, it, time, value):
+        self._it.append(it)
+        self._time.append(time)
+        self._value.append(value)
 
 # --------------------------------------------------------------------
 # generic model
 # --------------------------------------------------------------------
 
-
 class timemodel:
     """ """
 
-    def __init__(self, mesh, modeldisc, monitors=None):
+    def __init__(self, mesh, modeldisc, monitors={}):
         self.mesh = mesh
         self.modeldisc = modeldisc
-        self.monitors = {} if monitors is None else monitors
+        self.monitors = monitors
         self.reset()
+        # define function for monitoring
+        self._monitordict = { 'residual': self.mon_residual }
 
     def reset(self):
         """ """
@@ -98,10 +116,11 @@ class timemodel:
         """virtual method for one step integration
 
         Args:
-          f:
-          dt:
+          f: field to compute 
+          dt: time array or scalar
 
         Returns:
+            returns dQ/dt 
         """
         pass #raise NameError("not implemented for virtual class")
 
@@ -131,8 +150,16 @@ class timemodel:
                 check_end[key] = self._nit >= value
         return any(check_end.values())
 
+    def _parse_monitors(self, monitors):
+        for monkey, monval in monitors.items():
+            if monkey in self._monitordict.keys():
+                self._monitordict[monkey](monval)
+            else:
+                raise NameError("unknown monitor key: "+monkey)
+
+
     def solve_legacy(self, f, condition, tsave, 
-            stop=None, flush=None):
+            stop=None, flush=None, monitors={}):
         """Solve dQ/dt=RHS(Q,t)
 
         Args:
@@ -173,7 +200,7 @@ class timemodel:
         return results
 
     def solve(self, f, condition, tsave, 
-            stop=None, flush=None):
+            stop=None, flush=None, monitors={}):
         """Solve dQ/dt=RHS(Q,t)
 
         Args:
@@ -190,35 +217,42 @@ class timemodel:
         stopcrit = { 'tottime': tsave[-1] }
         if stop is not None:
             stopcrit.update(stop)
+        monitors = { **self.monitors, **monitors }
         # initialization before loop
-        Qn = f.copy()
-        self._time = Qn.time
+        self.Qn = f.copy()
+        self._time = self.Qn.time
         if flush:
-            alldata = [d for d in Qn.data]
+            alldata = [d for d in self.Qn.data]
         results = []
         start = myclock()
         isave, nsave = 0, len(tsave)
         # loop testing all ending criteria
-        while not self._check_end(stopcrit):
-            dtloc = self.modeldisc.calc_timestep(Qn, condition)
+        checkend = self._check_end(stopcrit)
+        self._parse_monitors(monitors)
+        while not checkend:
+            dtloc = self.modeldisc.calc_timestep(self.Qn, condition)
             mindtloc = min(dtloc)
-            Qnn = Qn.copy()
+            Qnn = self.Qn.copy()
             if isave < nsave:
-                if Qn.time+mindtloc >= tsave[isave]:
+                if self.Qn.time+mindtloc >= tsave[isave]:
                     # compute smaller step with same integrator
-                    self.step(Qnn, tsave[isave]-Qn.time)
+                    self.step(Qnn, tsave[isave]-self.Qn.time)
                     results.append(Qnn)
-                    #results.append(Qn.interpol(Qnn, tsave[isave]))
+                    #results.append(self.Qn.interpol(Qnn, tsave[isave]))
                     isave += 1
-                    # step back to Qn
-                    Qnn = Qn.copy()
+                    # step back to self.Qn
+                    Qnn = self.Qn.copy()
             self.step(Qnn, mindtloc)
-            Qn = Qnn
+            self.Qn = Qnn
             self._nit += 1
-            self._time = Qn.time
+            self._time = self.Qn.time
+            self._parse_monitors(monitors)
             if flush:
-                for i, q in zip(range(len(alldata)), Qn.data):
+                for i, q in zip(range(len(alldata)), self.Qn.data):
                     alldata[i] = np.vstack((alldata[i], q))
+            checkend = self._check_end(stopcrit)
+            if checkend and len(results)==0:
+                results.append(self.Qn)
         self._cputime = myclock() - start
         if flush:
             np.save(flush, alldata)
@@ -246,6 +280,20 @@ class timemodel:
             )
         )
 
+    def mon_residual(self, params: dict):
+        """compute residual average and monitor it
+
+        Args:
+            params (dict): [description]
+        """
+        if self._nit % params.get('frequency', 10) == 0:
+            if 'output' not in params:
+                params['output'] = monitor('residual')
+            mon = params['output']
+            self.calcrhs(self.Qn)
+            value = self.modeldisc.all_L2average(self.residual)
+            mon.append(it=self._nit, time=self._time, value=value)
+
     def propagator(self, z):
         """computes scalar complex propagator of one time step
 
@@ -266,7 +314,7 @@ class timemodel:
         return f.data[0]
 
     def cflmax(self):
-        """estimation of maximum cfl
+        """estimation of maximum cfl, may not converge
         """
         def _gain_imag(sigma):
             return abs(self.propagator(1j*sigma))-1.
@@ -312,8 +360,8 @@ class rkmodel(timemodel):
     Returns:
 
     """
-    def __init__(self, mesh, modeldisc):
-        timemodel.__init__(self, mesh, modeldisc)
+    def __init__(self, mesh, modeldisc, monitors={}):
+        timemodel.__init__(self, mesh, modeldisc, monitors)
         self.check()
 
     def check(self):
@@ -421,8 +469,8 @@ class LSrkmodelHH(timemodel):
     Returns:
 
     """
-    def __init__(self, mesh, modeldisc):
-        timemodel.__init__(self, mesh, modeldisc)
+    def __init__(self, mesh, modeldisc, monitors={}):
+        timemodel.__init__(self, mesh, modeldisc, monitors)
         self.check()
 
     def check(self):

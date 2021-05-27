@@ -72,7 +72,7 @@ class fdata:
         self.__init__(f.model, f.mesh, f.data)
         self.time = f.time
 
-    def interpol(self, f, t):
+    def interpol_t(self, f, t):
         """create a new field time-interpolated between self and f
 
         Args:
@@ -159,8 +159,8 @@ class fdata:
         Returns:
 
         """
-        avg = np.average(self.phydata(name), weights=self.mesh.dx())
-        var = np.average((self.phydata(name) - avg) ** 2, weights=self.mesh.dx())
+        avg = self.mesh.average(self.phydata(name))
+        var = self.mesh.average((self.phydata(name) - avg) ** 2)
         return avg, var
 
     def contour(self, name, style={}, axes=plt):
