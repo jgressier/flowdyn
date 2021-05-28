@@ -6,8 +6,8 @@ Created on Fri May 10 15:42:29 2013
 """
 
 #import sys
-#import math
-#import numpy as np
+import math
+import numpy as np
 
 class virtualmesh():
     """
@@ -27,7 +27,19 @@ class virtualmesh():
 
     def vol(self):
         "compute cell sizes in a mesh"
+        raise NotImplementedError()
+
+    def average(self, data):
+        "volume weighted average of data"
+        return np.average(data, weights=self.vol())
+
+    def L1average(self, data):
+        "volume weighted average of data"
+        return np.average(np.abs(data), weights=self.vol())
+
+    def L2average(self, data):
+        "volume weighted average of data"
+        return math.sqrt(np.average(data**2, weights=self.vol()))
 
     def __repr__(self):
         raise NotImplementedError()
-

@@ -10,9 +10,11 @@ implicit or backwardeuler
 trapezoidal or cranknicolson
 """
 import math
-import numpy as np
 import sys
 import time
+
+import numpy as np
+from scipy.optimize import newton
 
 # from scipy.sparse import csc_matrix
 # import scipy.sparse.linalg as splinalg
@@ -29,7 +31,7 @@ else:
 
 # --------------------------------------------------------------------
 
-# --------------------------------------------------------------------
+
 class fakemodel:
     """ """
 
@@ -62,19 +64,38 @@ class fakedisc:
         """
         return [f.data[0] * self.z]
 
+# --------------------------------------------------------------------
+# class monitor
+
+class monitor():
+    def __init__(self, name):
+        self._name = name
+        self._it = []
+        self._time = []
+        self._value = []
+    
+    def name(self):
+        return self._name
+
+    def append(self, it, time, value):
+        self._it.append(it)
+        self._time.append(time)
+        self._value.append(value)
 
 # --------------------------------------------------------------------
 # generic model
 # --------------------------------------------------------------------
 
-
 class timemodel:
     """ """
 
-    def __init__(self, mesh, modeldisc):
+    def __init__(self, mesh, modeldisc, monitors={}):
         self.mesh = mesh
         self.modeldisc = modeldisc
+        self.monitors = monitors
         self.reset()
+        # define function for monitoring
+        self._monitordict = { 'residual': self.mon_residual }
 
     def reset(self):
         """ """
@@ -95,12 +116,13 @@ class timemodel:
         """virtual method for one step integration
 
         Args:
-          f:
-          dt:
+          f: field to compute 
+          dt: time array or scalar
 
         Returns:
+            returns dQ/dt 
         """
-        raise NameError("not implemented for virtual class")
+        pass #raise NameError("not implemented for virtual class")
 
     def add_res(self, f, dt, subtimecoef=1.0):
         """
@@ -117,20 +139,41 @@ class timemodel:
         for i in range(f.neq):
             f.data[i] += dt * self.residual[i]  # time can be scalar or np.array
 
-    def solve(self, f, condition, tsave, flush=None):
+    def _check_end(self, stop):
         """
+        """
+        check_end = {}
+        for key, value in stop.items():
+            if key=='tottime':
+                check_end[key] = self._time >= value
+            if key=='maxit':
+                check_end[key] = self._nit >= value
+        return any(check_end.values())
+
+    def _parse_monitors(self, monitors):
+        for monkey, monval in monitors.items():
+            if monkey in self._monitordict.keys():
+                self._monitordict[monkey](monval)
+            else:
+                raise NameError("unknown monitor key: "+monkey)
+
+
+    def solve_legacy(self, f, condition, tsave, 
+            stop=None, flush=None, monitors={}):
+        """Solve dQ/dt=RHS(Q,t)
 
         Args:
-          f:
-          condition:
-          tsave:
+          f: initial field
+          condition: CFL number
+          tsave: array/list of time to save
           flush:  (Default value = None)
 
         Returns:
-
+          list of solution fields (size of tsave)
         """
-        self._nit = 0
+        self.reset() # reset cputime and nit
         self.condition = condition
+        # initialization before loop
         itfield = f.copy()
         if flush:
             alldata = [d for d in itfield.data]
@@ -156,6 +199,65 @@ class timemodel:
             np.save(flush, alldata)
         return results
 
+    def solve(self, f, condition, tsave, 
+            stop=None, flush=None, monitors={}):
+        """Solve dQ/dt=RHS(Q,t)
+
+        Args:
+          f: initial field
+          condition: CFL number
+          tsave: array/list of time to save
+          flush:  (Default value = None)
+
+        Returns:
+          list of solution fields (size of tsave)
+        """
+        self.reset() # reset cputime and nit
+        self.condition = condition
+        stopcrit = { 'tottime': tsave[-1] }
+        if stop is not None:
+            stopcrit.update(stop)
+        monitors = { **self.monitors, **monitors }
+        # initialization before loop
+        self.Qn = f.copy()
+        self._time = self.Qn.time
+        if flush:
+            alldata = [d for d in self.Qn.data]
+        results = []
+        start = myclock()
+        isave, nsave = 0, len(tsave)
+        # loop testing all ending criteria
+        checkend = self._check_end(stopcrit)
+        self._parse_monitors(monitors)
+        while not checkend:
+            dtloc = self.modeldisc.calc_timestep(self.Qn, condition)
+            mindtloc = min(dtloc)
+            Qnn = self.Qn.copy()
+            if isave < nsave:
+                if self.Qn.time+mindtloc >= tsave[isave]:
+                    # compute smaller step with same integrator
+                    self.step(Qnn, tsave[isave]-self.Qn.time)
+                    results.append(Qnn)
+                    #results.append(self.Qn.interpol(Qnn, tsave[isave]))
+                    isave += 1
+                    # step back to self.Qn
+                    Qnn = self.Qn.copy()
+            self.step(Qnn, mindtloc)
+            self.Qn = Qnn
+            self._nit += 1
+            self._time = self.Qn.time
+            self._parse_monitors(monitors)
+            if flush:
+                for i, q in zip(range(len(alldata)), self.Qn.data):
+                    alldata[i] = np.vstack((alldata[i], q))
+            checkend = self._check_end(stopcrit)
+            if checkend and len(results)==0:
+                results.append(self.Qn)
+        self._cputime = myclock() - start
+        if flush:
+            np.save(flush, alldata)
+        return results
+
     def nit(self):
         """returns number of computed iterations"""
         return self._nit
@@ -164,15 +266,33 @@ class timemodel:
         """returns cputime"""
         return self._cputime
 
+    def perf_micros(self):
+        """returns perf in µs"""
+        return self._cputime * 1.0e6 / self._nit / self.modeldisc.nelem
+
     def show_perf(self):
         """print performance"""
         print(
             "cpu time computation ({0:d} it) : {1:.3f}s\n  {2:.2f} µs/cell/it".format(
                 self._nit,
                 self._cputime,
-                self._cputime * 1.0e6 / self._nit / self.modeldisc.nelem,
+                self.perf_micros(),
             )
         )
+
+    def mon_residual(self, params: dict):
+        """compute residual average and monitor it
+
+        Args:
+            params (dict): [description]
+        """
+        if self._nit % params.get('frequency', 10) == 0:
+            if 'output' not in params:
+                params['output'] = monitor('residual')
+            mon = params['output']
+            self.calcrhs(self.Qn)
+            value = self.modeldisc.all_L2average(self.residual)
+            mon.append(it=self._nit, time=self._time, value=value)
 
     def propagator(self, z):
         """computes scalar complex propagator of one time step
@@ -193,6 +313,12 @@ class timemodel:
         self.modeldisc = saved_model
         return f.data[0]
 
+    def cflmax(self):
+        """estimation of maximum cfl, may not converge
+        """
+        def _gain_imag(sigma):
+            return abs(self.propagator(1j*sigma))-1.
+        return newton(_gain_imag, 10.)
 
 # --------------------------------------------------------------------
 
@@ -234,8 +360,8 @@ class rkmodel(timemodel):
     Returns:
 
     """
-    def __init__(self, mesh, modeldisc):
-        timemodel.__init__(self, mesh, modeldisc)
+    def __init__(self, mesh, modeldisc, monitors={}):
+        timemodel.__init__(self, mesh, modeldisc, monitors)
         self.check()
 
     def check(self):
@@ -343,8 +469,8 @@ class LSrkmodelHH(timemodel):
     Returns:
 
     """
-    def __init__(self, mesh, modeldisc):
-        timemodel.__init__(self, mesh, modeldisc)
+    def __init__(self, mesh, modeldisc, monitors={}):
+        timemodel.__init__(self, mesh, modeldisc, monitors)
         self.check()
 
     def check(self):
@@ -581,7 +707,6 @@ class gear(trapezoidal):
 #                 [0.0, -5.0 / 12.0, 3.0 / 4.0],
 #             ]
 #         )
-
 
 # --------------------------------------------------------------------
 # for tests

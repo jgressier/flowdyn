@@ -13,7 +13,7 @@ The numerical methods in `integration` and `modeldisc` need a definition of a ph
 ## variables
 
 * primitive (user) variables must be defined by the `prim2cons` and `cons2prim` methods
-* a set of variables can be defined through a dictionnary `model._vardict` with a name and associated fonction, computed from conservative data. For example :
+* a set of variables can be defined through a dictionary `model._vardict` with a name and associated fonction, computed from conservative data. For example :
 ```python
 def __init__(self, ...):
     ...
@@ -28,11 +28,8 @@ def velocity(self, qdata): # returns (rho u)/rho
 
 ## boundary conditions
 
-Available boundary conditions are also listed in a dictionnary which is updated with
-```python
-self._bcdict.update({'sym': self.bc_sym, 'insub': self.bc_insub, ...)
-```
-and then defined with the above defined name
+Available boundary conditions are also listed in a dictionary which is updated python `decorator` of `_bcdict` attribute (registry class) of the class model.
+Then the method can be defined:
 ```python
 def bc_outsub(self, dir, data, param):
         return [ data[0], data[1], param['p'] ] 
@@ -40,6 +37,6 @@ def bc_outsub(self, dir, data, param):
 where
 * `dir` is a variable used to specify either the direction or side of the boundary condition
 * `data` is the local _interior_ *primitive* data
-* `param` is a dictionnary which has been defined by the user and is associated to this boundary condition
+* `param` is a dictionary which has been defined by the user and is associated to this boundary condition
 
 Note that `per` for periodic and `dirichlet` conditions are already defined in `modelphy.base`.

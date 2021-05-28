@@ -25,6 +25,7 @@ pip show flowdyn
     - `outsub_prim` as a legacy primitive variables set, same as `outsub`
     - `outsub_qtot` computed with `p` parameter and `ptot` and `rttot` extrapolation
     - `outsub_nrcbc` for non-reflective characteristics conditions
+- new option to `timemodel.solve`: stop parameter with dictionary `tottime` or `maxit`
 
 #### fixed
 
