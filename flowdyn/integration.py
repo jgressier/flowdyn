@@ -183,7 +183,7 @@ class timemodel:
             np.save(flush, alldata)
         return results
 
-    def solve(self, f, condition, tsave, 
+    def solve(self, f, condition, tsave=[], 
             stop=None, flush=None, monitors={}):
         """Solve dQ/dt=RHS(Q,t)
 
@@ -198,9 +198,10 @@ class timemodel:
         """
         self.reset() # reset cputime and nit
         self.condition = condition
-        stopcrit = { 'tottime': tsave[-1] }
-        if stop is not None:
-            stopcrit.update(stop)
+        stopcrit = { 'tottime': tsave[-1] } if len(tsave)>0 else {}
+        if stop is not None: stopcrit.update(stop)
+        if not stopcrit:
+            raise ValueError("missing stopping criteria")
         monitors = { **self.monitors, **monitors }
         # initialization before loop
         self.Qn = f.copy()

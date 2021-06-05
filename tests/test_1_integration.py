@@ -55,6 +55,19 @@ class Test_solve(integration_data):
         assert fsol[-1].time < endtime
         assert solver.nit() == 100
 
+    def test_checkend_maxit_noendtime(self):
+        endtime = 5.
+        cfl     = .5
+        maxit   = 100
+        stop_directive = { 'maxit': maxit }
+        finit = field.fdata(self.convmodel, self.curmesh, [ self.init_sinperk(self.curmesh, k=4) ] )
+        rhs = modeldisc.fvm(self.convmodel, self.curmesh, self.xsch)
+        solver = tnum.rk4(self.curmesh, rhs)
+        fsol = solver.solve(finit, cfl, stop=stop_directive)
+        assert len(fsol) == 1 # end before expected by tsave
+        assert not fsol[-1].isnan()
+        assert solver.nit() == 100
+
     def test_interpol_t(self):
         endtime = 1./self.curmesh.ncell
         cfl     = 5. # unstable but no risk with 1 it
