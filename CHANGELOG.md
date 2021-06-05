@@ -16,7 +16,7 @@ pip show flowdyn
 
 ## Versions
 
-### [1.2.0](https://pypi.org/project/flowdyn/) (2021-05-xx)
+### [1.2.0](https://pypi.org/project/flowdyn/) (2021-06-xx)
 
 #### new features
 
@@ -31,6 +31,8 @@ pip show flowdyn
 #### fixed
 
 - bad initialization of cpu time computation in `show_perf()` for successive integration
+- fix `solution.nozzle` for fully supersonic cases
+
 ### [1.1.2](https://pypi.org/project/flowdyn/) (2021-04-17)
 
 #### changed

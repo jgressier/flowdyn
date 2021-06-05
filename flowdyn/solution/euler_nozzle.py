@@ -49,7 +49,7 @@ class nozzle():
             _M  = mf.MachSub_Sigma(self.section*mf.Sigma_Mach(_Ms)/self.section[-1])
             _Pt = 0.*_M + NPR
             _Ps = _Pt/Is.PiPs_Mach(_M)
-        elif NPR < self.NPRsw: # throat is choked, there may be a shock
+        else:
             # compute Mach, assumed to be subsonic before throat, supersonic after
             _Minit = 0.*self.section +.5
             _Minit[self.ithroat:] = 2.
@@ -60,10 +60,12 @@ class nozzle():
             Ms     = nz.Ms_from_AsAc_NPR(self.AsoAc, NPR)
             Ptloss = Is.PiPs_Mach(Ms)/NPR
             Msh    = sw.Mn_Pi_ratio(Ptloss)
-            # redefine curves starting from 'ish' index (closest value of Msh in supersonic flow)
-            ish       = np.abs(_M-Msh).argmin()
-            _M[ish:]  = mf.MachSub_Sigma(self.section[ish:]*mf.Sigma_Mach(Ms)/self.section[-1])
-            _Pt[ish:] = Ptloss*NPR
+            #
+            if NPR < self.NPRsw: # throat is choked, there may be a shock
+                # redefine curves starting from 'ish' index (closest value of Msh in supersonic flow)
+                ish       = np.abs(_M-Msh).argmin()
+                _M[ish:]  = mf.MachSub_Sigma(self.section[ish:]*mf.Sigma_Mach(Ms)/self.section[-1])
+                _Pt[ish:] = Ptloss*NPR
             _Ps = _Pt/Is.PiPs_Mach(_M)
         #
         self._M  = _M
