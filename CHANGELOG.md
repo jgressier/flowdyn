@@ -16,6 +16,23 @@ pip show flowdyn
 
 ## Versions
 
+### [1.2.0](https://pypi.org/project/flowdyn/) (2021-06-05)
+
+#### new features
+
+- shallow water model `modelphy.shallowwater`
+- new subsonic outlet boundary condition for `euler1d` model
+    - `outsub_prim` as a legacy primitive variables set, same as `outsub`
+    - `outsub_qtot` computed with `p` parameter and `ptot` and `rttot` extrapolation
+    - `outsub_nrcbc` for non-reflective characteristics conditions
+- new option to `timemodel.solve`: stop parameter with dictionary `tottime` or `maxit`
+- new monitoring feature to `timemodel.solve`
+
+#### fixed
+
+- bad initialization of cpu time computation in `show_perf()` for successive integration
+- fix `solution.nozzle` for fully supersonic cases
+
 ### [1.1.2](https://pypi.org/project/flowdyn/) (2021-04-17)
 
 #### changed

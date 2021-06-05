@@ -14,7 +14,7 @@ from flowdyn.xnum  import *
 from flowdyn.integration import rk3ssp
 import flowdyn.modelphy.euler as euler
 import flowdyn.modeldisc      as modeldisc
-import flowdyn.solution.euler_riemann as sol
+#import flowdyn.solution.euler_riemann as sol
 
 meshsim  = unimesh(ncell=200,  length=10., x0=-4.)
 meshref  = unimesh(ncell=1000, length=10., x0=-4.)

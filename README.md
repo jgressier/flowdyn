@@ -3,6 +3,7 @@ flowdyn
 
 [![PyPi Version](https://img.shields.io/pypi/v/flowdyn.svg?style=flat)](https://pypi.org/project/flowdyn)
 [![PyPI pyversions](https://img.shields.io/pypi/pyversions/flowdyn.svg?style=flat)](https://pypi.org/pypi/flowdyn/)
+[![Build Status](https://travis-ci.com/jgressier/flowdyn.svg?branch=master)](https://travis-ci.com/jgressier/flowdyn)
 [![Doc](https://readthedocs.org/projects/flowdyn/badge/?version=latest)](https://readthedocs.org/projects/flowdyn/)
 [![Slack](https://img.shields.io/static/v1?logo=slack&label=slack&message=contact&style=flat)](https://join.slack.com/t/isae-opendev/shared_invite/zt-obqywf6r-UUuHR4_hc5iTzyL5bFCwpw
 )
