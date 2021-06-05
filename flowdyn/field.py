@@ -1,8 +1,6 @@
 # -*- coding: utf-8 -*-
-"""
-Created on Fri May 10 16:58:31 2013
+"""module field
 
-@author: j.gressier
 """
 __all__ = ["fdata"]
 
@@ -15,7 +13,6 @@ except ImportError:
 
 # import model
 # import mesh
-
 
 class fdata:
     """define field: neq x nelem data

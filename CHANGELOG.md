@@ -26,6 +26,7 @@ pip show flowdyn
     - `outsub_qtot` computed with `p` parameter and `ptot` and `rttot` extrapolation
     - `outsub_nrcbc` for non-reflective characteristics conditions
 - new option to `timemodel.solve`: stop parameter with dictionary `tottime` or `maxit`
+- new monitoring feature to `timemodel.solve`
 
 #### fixed
 

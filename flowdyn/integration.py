@@ -20,6 +20,7 @@ from scipy.optimize import newton
 # import scipy.sparse.linalg as splinalg
 # from numpy.linalg import inv
 import flowdyn.field as field
+from flowdyn.monitors import monitor
 
 # --------------------------------------------------------------------
 # portage
@@ -64,23 +65,6 @@ class fakedisc:
         """
         return [f.data[0] * self.z]
 
-# --------------------------------------------------------------------
-# class monitor
-
-class monitor():
-    def __init__(self, name):
-        self._name = name
-        self._it = []
-        self._time = []
-        self._value = []
-    
-    def name(self):
-        return self._name
-
-    def append(self, it, time, value):
-        self._it.append(it)
-        self._time.append(time)
-        self._value.append(value)
 
 # --------------------------------------------------------------------
 # generic model
