@@ -147,6 +147,19 @@ class fdata:
         """
         return axes.plot(self.mesh.centers(), self.phydata(name), style)
 
+    def semilogy(self, name, style="o", axes=plt):
+        """plot named physical date along x axis of internal mesh
+
+        Args:
+          name: name of physical data, available in model.list_var()
+          style:  (Default value = 'o')
+          axes: specify optional axes system (Default value = plt)
+
+        Returns:
+
+        """
+        return axes.semilogy(self.mesh.centers(), self.phydata(name), style)
+
     def stats(self, name):
         """Computes average and variance of named data
 
