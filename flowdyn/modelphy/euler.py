@@ -59,7 +59,8 @@ class base(mbase.model):
         self._bcdict.merge(base._bcdict)
         self._vardict = { 'pressure': self.pressure, 'density': self.density,
                           'velocity': self.velocity, 'asound': self.asound, 'mach': self.mach, 'enthalpy': self.enthalpy,
-                          'entropy': self.entropy, 'ptot': self.ptot, 'rttot': self.rttot, 'htot': self.htot }
+                          'entropy': self.entropy, 'ptot': self.ptot, 'rttot': self.rttot, 'htot': self.htot,
+                          'kinetic-energy': self.kinetic_energy }
         
     def cons2prim(self, qdata): # qdata[ieq][cell] :
         """
@@ -355,6 +356,20 @@ class euler1d(base):
         rh = param['ptot']/param['rttot']/(1.+.5*gmu*m2)**(1./gmu)
         return [ rh, -dir*np.sqrt(g*m2*p/rh), p ] 
 
+    @_bcdict.register('insub_cbc')
+    def bc_insub_cbc(self, dir, data, param):
+        g   = self.gamma
+        gmu = g-1.
+        p  = data[2]
+        invcm = data[1]+dir*2*np.sqrt(g*p/data[0])/gmu
+        adiscri = g*(g+1)/gmu*param['rttot']-.5*gmu*invcm**2
+        a1 = (dir*invcm+np.sqrt(adiscri))*gmu/(g+1.)
+        u1 = invcm-dir*2*a1/gmu
+        f_m1sqr= 1.+.5*gmu*(u1/a1)**2
+        rh1 = param['ptot']/param['rttot']/f_m1sqr**(1./gmu)
+        p1 = param['ptot']/f_m1sqr**(g/gmu)
+        return [ rh1, u1, p1 ] 
+
     @_bcdict.register('insup')
     def bc_insup(self, dir, data, param):
         # expected parameters are 'ptot', 'rttot' and 'p'
@@ -378,11 +393,29 @@ class euler1d(base):
         fm2 = 1.+.5*gmu*m2
         rttot = data[2]/data[0]*fm2
         ptot  = data[2]*fm2**(g/gmu)
-        # right state
+        # right (external) state
         p  = param['p']
         m2 = np.maximum(0., ((ptot/p)**(gmu/g)-1.)*2./gmu)
         rho = ptot/rttot/(1.+.5*gmu*m2)**(1./gmu)
         return [ rho, dir*np.sqrt(g*m2*p/rho), p ] 
+
+    @_bcdict.register('outsub_rh')
+    def bc_outsub_rh(self, dir, data, param):
+        g   = self.gamma
+        gmu = g-1.
+        # pratio > Ms > Ws/a0
+        p0 = data[2]
+        pratio = param['p']/p0
+        u0 = data[1]
+        # relative shock Mach number Ms=(u0-Ws)/a0
+        Ms2 = 1.+(pratio-1.)*(g+1.)/(2.*g)
+        rhoratio = ((g+1.)*Ms2)/(2.+gmu*Ms2)
+        Ws = u0 - dir*np.sqrt(g*p0/data[0]*Ms2)
+        # right (external) state
+        p1  = param['p']
+        u1 = Ws + (u0-Ws)/rhoratio
+        rho1 = data[0]*rhoratio
+        return [ rho1, u1, p1 ] 
 
     @_bcdict.register('outsub_nrcbc')
     def bc_outsub_nrcbc(self, dir, data, param):

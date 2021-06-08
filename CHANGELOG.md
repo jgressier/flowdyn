@@ -16,6 +16,15 @@ pip show flowdyn
 
 ## Versions
 
+### [1.2.x](https://pypi.org/project/flowdyn/) (2021-xx-xx)
+
+#### new features
+
+- new subsonic inlet/oulet boundary condition for `euler1d` model
+    - `insub_cbc` with stagnation parameters but more stable
+    - `outsub_rh` able to trigger shock wave even in supersonic flow
+- `field.semilogy('name')` for semi-logarithmic plots
+
 ### [1.2.0](https://pypi.org/project/flowdyn/) (2021-06-05)
 
 #### new features
