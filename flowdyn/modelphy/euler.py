@@ -2,20 +2,20 @@
 """
     The ``base`` module of modelphy library
     =========================
- 
+
     Provides ...
- 
+
     :Example:
- 
+
     >>> import aerokit.aero.Isentropic as Is
     >>> Is.TiTs_Mach(1.)
     1.2
     >>> Is.TiTs_Mach(2., gamma=1.6)
     2.2
- 
+
     Available functions
     -------------------
- 
+
     Provides ...
  """
 
@@ -33,7 +33,7 @@ def _sca_mult_vec(r, v):
     return r*v # direct multiplication thanks to shape (:)*(2,:)
 
 def _vec_dot_vec(v1, v2):
-    return np.einsum('ij,ij->j', v1, v2) 
+    return np.einsum('ij,ij->j', v1, v2)
 
 def datavector(ux, uy, uz=None):
     return np.vstack([ux, uy]) if not uz else np.vstack([ux, uy, uz])
@@ -61,7 +61,7 @@ class base(mbase.model):
                           'velocity': self.velocity, 'asound': self.asound, 'mach': self.mach, 'enthalpy': self.enthalpy,
                           'entropy': self.entropy, 'ptot': self.ptot, 'rttot': self.rttot, 'htot': self.htot,
                           'kinetic-energy': self.kinetic_energy }
-        
+
     def cons2prim(self, qdata): # qdata[ieq][cell] :
         """
         Primitives variables are rho, u, p
@@ -71,8 +71,8 @@ class base(mbase.model):
         rho = qdata[0]
         u   = qdata[1]/qdata[0]
         p   = self.pressure(qdata)
-        pdata = [ rho, u ,p ] 
-        return pdata 
+        pdata = [ rho, u ,p ]
+        return pdata
 
     def prim2cons(self, pdata): # qdata[ieq][cell] :
         """
@@ -95,7 +95,7 @@ class base(mbase.model):
     def velocitymag(self, qdata):  # returns mag(rho u)/rho, depending if scalar or vector
         return np.abs(qdata[1])/qdata[0] if qdata[1].ndim==1 else _vecmag(qdata[1])/qdata[0]
 
-    def kinetic_energy(self, qdata):  
+    def kinetic_energy(self, qdata):
         """volumic kinetic energy"""
         return .5*qdata[1]**2/qdata[0] if qdata[1].ndim==1 else .5*_vecsqrmag(qdata[1])/qdata[0]
 
@@ -108,7 +108,7 @@ class base(mbase.model):
     def entropy(self, qdata): # S/r
         return np.log(self.pressure(qdata)/qdata[0]**self.gamma)/(self.gamma-1.)
 
-    def enthalpy(self, qdata): 
+    def enthalpy(self, qdata):
         return (qdata[2]-0.5*qdata[1]**2/qdata[0])*self.gamma/qdata[0]
 
     def ptot(self, qdata):
@@ -191,7 +191,7 @@ class base(mbase.model):
         HR  = cR2/gam1 + 0.5*uR**2
 
         # The HLLE Riemann solver
-                
+
         # sorry for using little "e" here - is is not just internal energy
         eL   = HL-pL/rhoL
         eR   = HR-pR/rhoR
@@ -238,7 +238,7 @@ class base(mbase.model):
         HR = cR2/gam1 + 0.5*uR**2
 
         # The HLLC Riemann solver
-                
+
         # sorry for using little "e" here - is is not just internal energy
         eL   = HL-pL/rhoL
         eR   = HR-pR/rhoR
@@ -307,7 +307,6 @@ class base(mbase.model):
         dt = condition*dx / ( Vmag  + np.sqrt(self.gamma*(self.gamma-1.0)*(data[2]/data[0]-0.5*Vmag**2) ))
         return dt
 
-
 # ===============================================================
 # implementation of euler 1D class
 
@@ -327,7 +326,7 @@ class euler1d(base):
         #                  'insup': self.bc_insup,
         #                  'outsub': self.bc_outsub,
         #                  'outsup': self.bc_outsup })
-        self._numfluxdict = { 'hllc': self.numflux_hllc, 'hlle': self.numflux_hlle, 
+        self._numfluxdict = { 'hllc': self.numflux_hllc, 'hlle': self.numflux_hlle,
                         'centered': self.numflux_centeredflux, 'centeredmassflow': self.numflux_centeredmassflow }
 
     def _derived_fromprim(self, pdata, dir):
@@ -354,7 +353,7 @@ class euler1d(base):
         p  = data[2]
         m2 = np.maximum(0., ((param['ptot']/p)**(gmu/g)-1.)*2./gmu)
         rh = param['ptot']/param['rttot']/(1.+.5*gmu*m2)**(1./gmu)
-        return [ rh, -dir*np.sqrt(g*m2*p/rh), p ] 
+        return [ rh, -dir*np.sqrt(g*m2*p/rh), p ]
 
     @_bcdict.register('insub_cbc')
     def bc_insub_cbc(self, dir, data, param):
@@ -368,7 +367,7 @@ class euler1d(base):
         f_m1sqr= 1.+.5*gmu*(u1/a1)**2
         rh1 = param['ptot']/param['rttot']/f_m1sqr**(1./gmu)
         p1 = param['ptot']/f_m1sqr**(g/gmu)
-        return [ rh1, u1, p1 ] 
+        return [ rh1, u1, p1 ]
 
     @_bcdict.register('insup')
     def bc_insup(self, dir, data, param):
@@ -378,12 +377,12 @@ class euler1d(base):
         p  = param['p']
         m2 = np.maximum(0., ((param['ptot']/param['p'])**(gmu/g)-1.)*2./gmu)
         rh = param['ptot']/param['rttot']/(1.+.5*gmu*m2)**(1./gmu)
-        return [ rh, -dir*np.sqrt(g*m2*p/rh), p ] 
+        return [ rh, -dir*np.sqrt(g*m2*p/rh), p ]
 
     @_bcdict.register('outsub')
     @_bcdict.register('outsub_prim')
     def bc_outsub_prim(self, dir, data, param):
-        return [ data[0], data[1], param['p'] ] 
+        return [ data[0], data[1], param['p'] ]
 
     @_bcdict.register('outsub_qtot')
     def bc_outsub_qtot(self, dir, data, param):
@@ -397,7 +396,7 @@ class euler1d(base):
         p  = param['p']
         m2 = np.maximum(0., ((ptot/p)**(gmu/g)-1.)*2./gmu)
         rho = ptot/rttot/(1.+.5*gmu*m2)**(1./gmu)
-        return [ rho, dir*np.sqrt(g*m2*p/rho), p ] 
+        return [ rho, dir*np.sqrt(g*m2*p/rho), p ]
 
     @_bcdict.register('outsub_rh')
     def bc_outsub_rh(self, dir, data, param):
@@ -415,7 +414,7 @@ class euler1d(base):
         p1  = param['p']
         u1 = Ws + (u0-Ws)/rhoratio
         rho1 = data[0]*rhoratio
-        return [ rho1, u1, p1 ] 
+        return [ rho1, u1, p1 ]
 
     @_bcdict.register('outsub_nrcbc')
     def bc_outsub_nrcbc(self, dir, data, param):
@@ -426,10 +425,10 @@ class euler1d(base):
         # isentropic invariant p/rho**gam = cst
         rho1 = data[0]*(p1/data[2])**(1./g)
         # C- invariant (or C+ according to dir)
-        a0 = np.sqrt(g*data[2]/data[0]) 
-        a1 = np.sqrt(g*p1/rho1) 
+        a0 = np.sqrt(g*data[2]/data[0])
+        a1 = np.sqrt(g*p1/rho1)
         u1 = data[1] + dir*2/gmu*(a1-a0)
-        return [ rho1, u1, p1 ] 
+        return [ rho1, u1, p1 ]
 
     @_bcdict.register('outsup')
     def bc_outsup(self, dir, data, param):
@@ -457,12 +456,12 @@ class nozzle(euler1d):
                     allsrc[i] = lambda x,q: isrc(x,q)+nozsrc[i](x,q)
         euler1d.__init__(self, gamma=gamma, source=allsrc)
         self.sectionlaw = sectionlaw
- 
+
     def initdisc(self, mesh):
         self.geomterm = 1./self.sectionlaw(mesh.centers())* \
                     (self.sectionlaw(mesh.xf[1:mesh.ncell+1])-self.sectionlaw(mesh.xf[0:mesh.ncell])) / \
                     (mesh.xf[1:mesh.ncell+1]-mesh.xf[0:mesh.ncell])
-        return 
+        return
 
     def massflow(self,qdata):
         return qdata[1]*self.sectionlaw(mesh.centers())
@@ -496,9 +495,9 @@ class euler2d(base):
                         #  'insub': self.bc_insub,
                         #  'insup': self.bc_insup,
                         #  'outsub': self.bc_outsub,
-                        #  'outsup': self.bc_outsup 
+                        #  'outsup': self.bc_outsup
         #                })
-        self._numfluxdict = { #'hllc': self.numflux_hllc, 'hlle': self.numflux_hlle, 
+        self._numfluxdict = { #'hllc': self.numflux_hllc, 'hlle': self.numflux_hlle,
                         'centered': self.numflux_centeredflux  }
 
     def _derived_fromprim(self, pdata, dir):
@@ -507,7 +506,7 @@ class euler2d(base):
         'dir' is ignored
         """
         c2 = self.gamma * pdata[2] / pdata[0]
-        un = _vec_dot_vec(pdata[1], dir) 
+        un = _vec_dot_vec(pdata[1], dir)
         H  = c2/(self.gamma-1.) + .5*_vecmag(pdata[1])
         return pdata[0], un, pdata[1], pdata[2], H, c2
 
@@ -523,7 +522,7 @@ class euler2d(base):
 
     def numflux_centeredflux(self, pdataL, pdataR, dir): # centered flux ; pL[ieq][face]
         rhoL, unL, VL, pL, HL, cL2 = self._derived_fromprim(pdataL, dir)
-        rhoR, unR, VR, pR, HR, cR2 = self._derived_fromprim(pdataR, dir)  
+        rhoR, unR, VR, pR, HR, cR2 = self._derived_fromprim(pdataR, dir)
         # final flux
         Frho  = .5*( rhoL*unL + rhoR*unR )
         Frhou = .5*( (rhoL*unL)*VL + pL*dir + (rhoR*unR)*VR + pR*dir)

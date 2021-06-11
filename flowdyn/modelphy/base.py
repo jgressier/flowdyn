@@ -2,19 +2,19 @@
 """
     The ``base`` module of modelphy library
     =========================
- 
+
     Provides virtual class for all other model
- 
+
     :Example:
- 
+
     >>> import flowdyn.modelphy.base as modelbase
     >>> model = modelbase.model(name='test', neq=1)
     >>> print(model.neq, model.equation)
     1 test
- 
+
     Available functions
     -------------------
- 
+
     Provides ...
  """
 
@@ -29,13 +29,13 @@ class methoddict():
             self.dict[name] = classmeth
             return classmeth
         return decorator
-    
+
     def merge(self, mdict):
         self.dict.update(mdict.dict)
 
     def update(self, ddict: dict):
         self.dict.update(ndict)
-    
+
     def copy(self):
         return methoddict(self.dict)
 
@@ -48,10 +48,10 @@ class model():
 
     attributes:
         neq
-        islinear            
-        has_firstorder_terms 
+        islinear
+        has_firstorder_terms
         has_secondorder_terms
-        has_source_terms     
+        has_source_terms
 
     """
     _bcdict = methoddict()   # dict and associated decorator method to register BC
@@ -80,16 +80,15 @@ class model():
     def cons2prim(self, qdata):  # NEEDS definition by derived model
         raise NameError("must be implemented in derived class")
 
-    
     def prim2cons(self, pdata):  # NEEDS definition by derived model
         raise NameError("must be implemented in derived class")
-    
+
     def initdisc(self, mesh):
         return
-    
+
     def numflux(self, name, pL, pR): # NEEDS definition by derived model
         raise NameError("must be implemented in derived class")
-    
+
     def timestep(self, data, dx, condition):  # NEEDS definition by derived model
         raise NameError("must be implemented in derived class")
 
@@ -101,7 +100,7 @@ class model():
 
     #------------------------------------
     # definition of boundary conditions with name bc_*
-    
+
     @_bcdict.register('dirichlet')
     def bc_dirichlet(self, dir, data, param):
         return param['prim']
@@ -112,3 +111,4 @@ class model():
 if __name__ == "__main__":
     import doctest
     doctest.testmod()
+
