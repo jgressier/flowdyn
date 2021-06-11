@@ -1,9 +1,9 @@
 # -*- coding: utf-8 -*-
 """
-    The ``base`` module of modelphy library
+    The ``euler`` module of modelphy library
     =========================
 
-    Provides ...
+    Provides Euler model
 
     :Example:
 
@@ -16,11 +16,10 @@
     Available functions
     -------------------
 
-    Provides ...
  """
 
 import numpy as np
-import flowdyn.modelphy.base as mbase
+import flowdyn.modelphy.base as base
 
 # ===============================================================
 def _vecmag(qdata):
@@ -41,24 +40,26 @@ def datavector(ux, uy, uz=None):
 # ===============================================================
 # implementation of MODEL class
 
-class base(mbase.model):
+class euler(base.model):
     """
     Class model for euler equations
 
     attributes:
 
     """
-    _bcdict = mbase.methoddict('bc_')   # dict and associated decorator method to register BC
-    _vardict = mbase.methoddict()
+    _bcdict = base.methoddict('bc_')   # dict and associated decorator method to register BC
+    _vardict = base.methoddict()
+    _numfluxdict = base.methoddict('numflux_')
 
     def __init__(self, gamma=1.4, source=None):
-        mbase.model.__init__(self, name='euler', neq=3)
+        base.model.__init__(self, name='euler', neq=3)
         self.islinear    = 0
         self.shape       = [1, 1, 1]
         self.gamma       = gamma
         self.source      = source
-        self._bcdict.merge(base._bcdict)
-        self._vardict.merge(base._vardict)
+        self._bcdict.merge(euler._bcdict)
+        self._vardict.merge(euler._vardict)
+        self._numfluxdict.merge(euler._numfluxdict)
 
     def cons2prim(self, qdata): # qdata[ieq][cell] :
         """
@@ -135,8 +136,10 @@ class base(mbase.model):
 
     def numflux(self, name, pdataL, pdataR, dir=None):
         if name is None: name='hllc'
-        return (self._numfluxdict[name])(pdataL, pdataR, dir)
+        return (self._numfluxdict.dict[name])(self, pdataL, pdataR, dir)
 
+    @_numfluxdict.register(name='centered')
+    @_numfluxdict.register()
     def numflux_centeredflux(self, pdataL, pdataR, dir=None): # centered flux ; pL[ieq][face]
         gam  = self.gamma
         gam1 = gam-1.
@@ -160,6 +163,7 @@ class base(mbase.model):
 
         return [Frho, Frhou, FrhoE]
 
+    @_numfluxdict.register()
     def numflux_centeredmassflow(self, pdataL, pdataR, dir=None): # centered flux ; pL[ieq][face]
         gam  = self.gamma
         gam1 = gam-1.
@@ -183,6 +187,7 @@ class base(mbase.model):
 
         return [Frho, Frhou, FrhoE]
 
+    @_numfluxdict.register()
     def numflux_hlle(self, pdataL, pdataR, dir=None): # HLLE Riemann solver ; pL[ieq][face]
 
         gam  = self.gamma
@@ -228,6 +233,7 @@ class base(mbase.model):
 
         return [Frho, Frhou, FrhoE]
 
+    @_numfluxdict.register()
     def numflux_hllc(self, pdataL, pdataR, dir=None): # HLLC Riemann solver ; pL[ieq][face]
 
         gam  = self.gamma
@@ -320,20 +326,20 @@ class base(mbase.model):
 # ===============================================================
 # implementation of euler 1D class
 
-class euler1d(base):
+class euler1d(euler):
     """
     Class model for 2D euler equations
     """
-    _bcdict = mbase.methoddict('bc_')
-    _vardict = mbase.methoddict()
+    _bcdict = base.methoddict('bc_')
+    _vardict = base.methoddict()
+    _numfluxdict = base.methoddict('numflux_')
 
     def __init__(self, gamma=1.4, source=None):
-        base.__init__(self, gamma=gamma, source=source)
+        euler.__init__(self, gamma=gamma, source=source)
         self.shape       = [1, 1, 1]
         self._bcdict.merge(euler1d._bcdict)
         self._vardict.merge(euler1d._vardict)
-        self._numfluxdict = { 'hllc': self.numflux_hllc, 'hlle': self.numflux_hlle,
-                        'centered': self.numflux_centeredflux, 'centeredmassflow': self.numflux_centeredmassflow }
+        self._numfluxdict.merge(euler1d._numfluxdict)
 
     def _derived_fromprim(self, pdata, dir):
         """
@@ -486,20 +492,20 @@ class nozzle(euler1d):
 # ===============================================================
 # implementation of euler 2D class
 
-class euler2d(base):
+class euler2d(euler):
     """
     Class model for 2D euler equations
     """
-    _bcdict = mbase.methoddict('bc_')
-    _vardict = mbase.methoddict()
+    _bcdict = base.methoddict('bc_')
+    _vardict = base.methoddict()
+    _numfluxdict = base.methoddict('numflux_')
 
     def __init__(self, gamma=1.4, source=None):
-        base.__init__(self, gamma=gamma, source=source)
+        euler.__init__(self, gamma=gamma, source=source)
         self.shape       = [1, 2, 1]
         self._bcdict.merge(euler2d._bcdict)
         self._vardict.merge(euler2d._vardict)
-        self._numfluxdict = { #'hllc': self.numflux_hllc, 'hlle': self.numflux_hlle,
-                        'centered': self.numflux_centeredflux  }
+        self._numfluxdict.merge(euler2d._numfluxdict)
 
     def _derived_fromprim(self, pdata, dir):
         """
@@ -524,6 +530,8 @@ class euler2d(base):
         rhoUmag = _vecmag(qdata[1])
         return rhoUmag/np.sqrt(self.gamma*((self.gamma-1.0)*(qdata[0]*qdata[2]-0.5*rhoUmag**2)))
 
+    @_numfluxdict.register(name='centered')
+    @_numfluxdict.register()
     def numflux_centeredflux(self, pdataL, pdataR, dir): # centered flux ; pL[ieq][face]
         rhoL, unL, VL, pL, HL, cL2 = self._derived_fromprim(pdataL, dir)
         rhoR, unR, VR, pR, HR, cR2 = self._derived_fromprim(pdataR, dir)

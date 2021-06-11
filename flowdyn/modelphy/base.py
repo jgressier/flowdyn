@@ -15,7 +15,6 @@
     Available functions
     -------------------
 
-    Provides ...
  """
 
 class methoddict():
@@ -68,6 +67,7 @@ class model():
     """
     _bcdict = methoddict('bc_')   # dict and associated decorator method to register BC
     _vardict = methoddict()
+    _numfluxdict = methoddict('numflux_')
 
     def __init__(self, name='not defined', neq=0):
         self.equation = name
@@ -79,6 +79,7 @@ class model():
         self.has_source_terms      = 0
         self._bcdict  = model._bcdict.copy()
         self._vardict  = model._vardict.copy()
+        self._numfluxdict  = model._numfluxdict.copy()
 
     def __repr__(self):
         print("model: ", self.equation)

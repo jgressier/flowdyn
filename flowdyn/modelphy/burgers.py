@@ -1,11 +1,11 @@
 # -*- coding: utf-8 -*-
 """
-    The ``base`` module of modelphy library
+    The ``burgers`` module of modelphy library
     =========================
 
-    Provides ...
+    Provides Burgers model
 
-   :Example:
+    :Example:
 
     >>> import flowdyn.modelphy.burgers as burg
     >>> model = burg.model()
@@ -15,7 +15,6 @@
     Available functions
     -------------------
 
-    Provides ...
  """
 
 import numpy as np

@@ -1,13 +1,14 @@
 # -*- coding: utf-8 -*-
 """
-    The ``base`` module of modelphy library
+    The ``shallowwater`` module of modelphy library
     =========================
 
-    Provides the Shallow water equations physical model.
+    Provides the shallow water equations physical model
+
     Initial conditions need to be pass in primitive variables,
     i.e in [h_0, h_0*u_0].
 
-    Avalable numerical flux : centered, rusanov, HLL.
+    Available numerical flux : centered, rusanov, HLL.
     Availaible BC : inifite, symmetrical (not working).
 
     :Example:
@@ -38,6 +39,7 @@ class shallowwater1d(base.model):
     """
     _bcdict = base.methoddict('bc_')   # dict and associated decorator method to register BC
     _vardict = base.methoddict()
+    _numfluxdict = base.methoddict('numflux_')
 
     def __init__(self, g=9.81, source=None):
         base.model.__init__(self, name='shallowwater', neq=2)
@@ -47,8 +49,7 @@ class shallowwater1d(base.model):
         self.source      = source
         self._bcdict.merge(shallowwater1d._bcdict)
         self._vardict.merge(shallowwater1d._vardict)
-        self._numfluxdict = {'centered': self.numflux_centeredflux,
-                             'rusanov': self.numflux_rusanov, 'hll': self.numflux_hll }
+        self._numfluxdict.merge(shallowwater1d._numfluxdict)
 
     def cons2prim(self, qdata): # qdata[ieq][cell] :
         """
@@ -82,8 +83,10 @@ class shallowwater1d(base.model):
 
     def numflux(self, name, pdataL, pdataR, dir=None):
         if name is None: name='rusanov'
-        return (self._numfluxdict[name])(pdataL, pdataR, dir)
+        return (self._numfluxdict.dict[name])(self, pdataL, pdataR, dir)
 
+    @_numfluxdict.register(name='centered')
+    @_numfluxdict.register()
     def numflux_centeredflux(self, pdataL, pdataR, dir=None): # centered flux ; pL[ieq][face] : in primitive variables (h,u) !
         g  = self.g
 
@@ -98,6 +101,7 @@ class shallowwater1d(base.model):
 
         return [Fh, Fq]
 
+    @_numfluxdict.register()
     def numflux_rusanov(self, pdataL, pdataR, dir=None): # Rusanov flux ; pL[ieq][face]
         g  = self.g
         #
@@ -117,6 +121,7 @@ class shallowwater1d(base.model):
 
         return [Fh, Fq]
 
+    @_numfluxdict.register()
     def numflux_hll(self, pdataL, pdataR, dir=None): # HLL flux ; pL[ieq][face]
         g  = self.g
 

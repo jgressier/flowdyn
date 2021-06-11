@@ -13,7 +13,6 @@
     Available functions
     -------------------
 
-    Provides ...
  """
 
 import flowdyn.modelphy.base as base
