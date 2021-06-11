@@ -49,6 +49,7 @@ class base(mbase.model):
 
     """
     _bcdict = mbase.methoddict('bc_')   # dict and associated decorator method to register BC
+    _vardict = mbase.methoddict()
 
     def __init__(self, gamma=1.4, source=None):
         mbase.model.__init__(self, name='euler', neq=3)
@@ -57,10 +58,7 @@ class base(mbase.model):
         self.gamma       = gamma
         self.source      = source
         self._bcdict.merge(base._bcdict)
-        self._vardict = { 'pressure': self.pressure, 'density': self.density,
-                          'velocity': self.velocity, 'asound': self.asound, 'mach': self.mach, 'enthalpy': self.enthalpy,
-                          'entropy': self.entropy, 'ptot': self.ptot, 'rttot': self.rttot, 'htot': self.htot,
-                          'kinetic-energy': self.kinetic_energy }
+        self._vardict.merge(base._vardict)
 
     def cons2prim(self, qdata): # qdata[ieq][cell] :
         """
@@ -83,42 +81,54 @@ class base(mbase.model):
         rhoe = pdata[2]/(self.gamma-1.) + .5*pdata[0]*V2
         return [ pdata[0], _sca_mult_vec(pdata[0], pdata[1]), rhoe ]
 
+    @_vardict.register()
     def density(self, qdata):
         return qdata[0].copy()
 
+    @_vardict.register()
     def pressure(self, qdata): # returns (gam-1)*( rho.et) - .5 * (rho.u)**2 / rho )
         return (self.gamma-1.0)*(qdata[2]-self.kinetic_energy(qdata))
 
+    @_vardict.register()
     def velocity(self, qdata):  # returns (rho u)/rho, works for both scalar and vector
         return qdata[1]/qdata[0]
 
     def velocitymag(self, qdata):  # returns mag(rho u)/rho, depending if scalar or vector
         return np.abs(qdata[1])/qdata[0] if qdata[1].ndim==1 else _vecmag(qdata[1])/qdata[0]
 
+    @_vardict.register(name="kinetic-energy")
+    @_vardict.register()
     def kinetic_energy(self, qdata):
         """volumic kinetic energy"""
         return .5*qdata[1]**2/qdata[0] if qdata[1].ndim==1 else .5*_vecsqrmag(qdata[1])/qdata[0]
 
+    @_vardict.register()
     def asound(self, qdata):
         return np.sqrt(self.gamma*self.pressure(qdata)/qdata[0])
 
+    @_vardict.register()
     def mach(self, qdata):
         return qdata[1]/np.sqrt(self.gamma*((self.gamma-1.0)*(qdata[0]*qdata[2]-0.5*qdata[1]**2)))
 
+    @_vardict.register()
     def entropy(self, qdata): # S/r
         return np.log(self.pressure(qdata)/qdata[0]**self.gamma)/(self.gamma-1.)
 
+    @_vardict.register()
     def enthalpy(self, qdata):
         return (qdata[2]-0.5*qdata[1]**2/qdata[0])*self.gamma/qdata[0]
 
+    @_vardict.register()
     def ptot(self, qdata):
         gm1 = self.gamma-1.
         return self.pressure(qdata)*(1.+.5*gm1*self.mach(qdata)**2)**(self.gamma/gm1)
 
+    @_vardict.register()
     def rttot(self, qdata):
         ec = 0.5*qdata[1]**2/qdata[0]
         return ((qdata[2]-ec)*self.gamma + ec)/qdata[0]/self.gamma*(self.gamma-1.)
 
+    @_vardict.register()
     def htot(self, qdata):
         ec = 0.5*qdata[1]**2/qdata[0]
         return ((qdata[2]-ec)*self.gamma + ec)/qdata[0]
@@ -315,12 +325,13 @@ class euler1d(base):
     Class model for 2D euler equations
     """
     _bcdict = mbase.methoddict('bc_')
+    _vardict = mbase.methoddict()
 
     def __init__(self, gamma=1.4, source=None):
         base.__init__(self, gamma=gamma, source=source)
         self.shape       = [1, 1, 1]
         self._bcdict.merge(euler1d._bcdict)
-        self._vardict.update({ 'massflow': self.massflow })
+        self._vardict.merge(euler1d._vardict)
         self._numfluxdict = { 'hllc': self.numflux_hllc, 'hlle': self.numflux_hlle,
                         'centered': self.numflux_centeredflux, 'centeredmassflow': self.numflux_centeredmassflow }
 
@@ -333,6 +344,7 @@ class euler1d(base):
         H  = c2/(self.gamma-1.) + .5*pdata[1]**2
         return pdata[0], pdata[1], pdata[1], c2, H
 
+    @_vardict.register()
     def massflow(self,qdata): # for 1D model only
         return qdata[1].copy()
 
@@ -479,13 +491,13 @@ class euler2d(base):
     Class model for 2D euler equations
     """
     _bcdict = mbase.methoddict('bc_')
+    _vardict = mbase.methoddict()
 
     def __init__(self, gamma=1.4, source=None):
         base.__init__(self, gamma=gamma, source=source)
         self.shape       = [1, 2, 1]
         self._bcdict.merge(euler2d._bcdict)
-        self._vardict.update({ 'velocity_x': self.velocity_x, 'velocity_y': self.velocity_y,
-                         })
+        self._vardict.merge(euler2d._vardict)
         self._numfluxdict = { #'hllc': self.numflux_hllc, 'hlle': self.numflux_hlle,
                         'centered': self.numflux_centeredflux  }
 
@@ -499,12 +511,15 @@ class euler2d(base):
         H  = c2/(self.gamma-1.) + .5*_vecmag(pdata[1])
         return pdata[0], un, pdata[1], pdata[2], H, c2
 
+    @_vardict.register()
     def velocity_x(self, qdata):  # returns (rho ux)/rho
         return qdata[1][0,:]/qdata[0]
 
+    @_vardict.register()
     def velocity_y(self, qdata):  # returns (rho uy)/rho
         return qdata[1][1,:]/qdata[0]
 
+    @_vardict.register()
     def mach(self, qdata):
         rhoUmag = _vecmag(qdata[1])
         return rhoUmag/np.sqrt(self.gamma*((self.gamma-1.0)*(qdata[0]*qdata[2]-0.5*rhoUmag**2)))

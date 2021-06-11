@@ -28,13 +28,15 @@ class model(base.model):
     attributes:
 
     """
+    _vardict = base.methoddict()
+
     def __init__(self, convcoef):
         base.model.__init__(self, name='convection', neq=1)
         self.has_firstorder_terms = 1
         self.convcoef = convcoef
         self.islinear = 1
         self.shape    = [1]
-        self._vardict = { 'q': self.q }
+        self._vardict.merge(model._vardict)
 
     def cons2prim(self, qdata):
         return [ 1*d for d in qdata ]
@@ -55,6 +57,7 @@ class model(base.model):
         "computation of timestep: data is not used, dx is an array of cell sizes, condition is the CFL number"
         return condition*dx/abs(self.convcoef)
 
+    @_vardict.register()
     def q(self, qdata):
         return qdata[0].copy()
 

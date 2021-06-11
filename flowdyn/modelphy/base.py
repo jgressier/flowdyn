@@ -67,6 +67,7 @@ class model():
 
     """
     _bcdict = methoddict('bc_')   # dict and associated decorator method to register BC
+    _vardict = methoddict()
 
     def __init__(self, name='not defined', neq=0):
         self.equation = name
@@ -77,7 +78,7 @@ class model():
         self.has_secondorder_terms = 0
         self.has_source_terms      = 0
         self._bcdict  = model._bcdict.copy()
-        self._vardict = { }
+        self._vardict  = model._vardict.copy()
 
     def __repr__(self):
         print("model: ", self.equation)
@@ -87,7 +88,7 @@ class model():
         return ['per']+list(self._bcdict.dict.keys())
 
     def list_var(self):
-        return self._vardict.keys()
+        return self._vardict.dict.keys()
 
     def cons2prim(self, qdata):  # NEEDS definition by derived model
         raise NameError("must be implemented in derived class")
@@ -105,7 +106,7 @@ class model():
         raise NameError("must be implemented in derived class")
 
     def nameddata(self, name, data):
-        return (self._vardict[name])(data)
+        return (self._vardict.dict[name])(self, data)
 
     def namedBC(self, name, dir, data, param):
         return (self._bcdict.dict[name])(self, dir, data, param)

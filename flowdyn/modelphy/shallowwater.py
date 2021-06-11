@@ -37,6 +37,7 @@ class shallowwater1d(base.model):
 
     """
     _bcdict = base.methoddict('bc_')   # dict and associated decorator method to register BC
+    _vardict = base.methoddict()
 
     def __init__(self, g=9.81, source=None):
         base.model.__init__(self, name='shallowwater', neq=2)
@@ -45,7 +46,7 @@ class shallowwater1d(base.model):
         self.g           = g # gravity attraction
         self.source      = source
         self._bcdict.merge(shallowwater1d._bcdict)
-        self._vardict = { 'height': self.height, 'velocity': self.velocity, 'massflow': self.massflow}
+        self._vardict.merge(shallowwater1d._vardict)
         self._numfluxdict = {'centered': self.numflux_centeredflux,
                              'rusanov': self.numflux_rusanov, 'hll': self.numflux_hll }
 
@@ -67,12 +68,15 @@ class shallowwater1d(base.model):
         qdata = [ pdata[0], pdata[0]*pdata[1]]
         return qdata # Convervative variables
 
+    @_vardict.register()
     def height(self, qdata):
         return qdata[0].copy()
 
+    @_vardict.register()
     def massflow(self,qdata):
         return qdata[1].copy()
 
+    @_vardict.register()
     def velocity(self, qdata):
         return qdata[1]/qdata[0]
 
