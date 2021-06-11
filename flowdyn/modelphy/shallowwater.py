@@ -21,25 +21,25 @@
  """
 
 import numpy as np
-from flowdyn.modelphy.base import model, methoddict
+import flowdyn.modelphy.base as base
 
 # ===============================================================
 # implementation of MODEL class
 
-class base(model):
-    pass
+#class base(model):
+#    pass
 
-class shallowwater1d(base):
+class shallowwater1d(base.model):
     """
     Class model for shallow water equations
 
     attributes:
 
     """
-    _bcdict = methoddict()   # dict and associated decorator method to register BC
+    _bcdict = base.methoddict('bc_')   # dict and associated decorator method to register BC
 
     def __init__(self, g=9.81, source=None):
-        model.__init__(self, name='shallowwater', neq=2)
+        base.model.__init__(self, name='shallowwater', neq=2)
         self.islinear    = 0
         self.shape       = [1, 1]
         self.g           = g # gravity attraction
@@ -141,12 +141,12 @@ class shallowwater1d(base):
         dt = condition*dx / c
         return dt
 
-    @_bcdict.register('sym')
+    @_bcdict.register()
     def bc_sym(self, dir, data, param): # In primitive values here
         "symmetry boundary condition, for inviscid equations, it is equivalent to a wall, do not need user parameters"
         return [ data[0], -data[1] ]
 
-    @_bcdict.register('infinite')
+    @_bcdict.register()
     def bc_inf(self, dir, data, param): # Simulate infinite plane : not sure...
         #zeros_h = np.zeros( np.shape(data[0]))
         #zeros_u = np.zeros( np.shape(data[1]))

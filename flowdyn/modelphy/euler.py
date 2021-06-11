@@ -48,7 +48,7 @@ class base(mbase.model):
     attributes:
 
     """
-    _bcdict = mbase.methoddict()   # dict and associated decorator method to register BC
+    _bcdict = mbase.methoddict('bc_')   # dict and associated decorator method to register BC
 
     def __init__(self, gamma=1.4, source=None):
         mbase.model.__init__(self, name='euler', neq=3)
@@ -314,18 +314,13 @@ class euler1d(base):
     """
     Class model for 2D euler equations
     """
-    _bcdict = mbase.methoddict()
+    _bcdict = mbase.methoddict('bc_')
 
     def __init__(self, gamma=1.4, source=None):
         base.__init__(self, gamma=gamma, source=source)
         self.shape       = [1, 1, 1]
         self._bcdict.merge(euler1d._bcdict)
         self._vardict.update({ 'massflow': self.massflow })
-        # self._bcdict.update({'sym': self.bc_sym,
-        #                  'insub': self.bc_insub,
-        #                  'insup': self.bc_insup,
-        #                  'outsub': self.bc_outsub,
-        #                  'outsup': self.bc_outsup })
         self._numfluxdict = { 'hllc': self.numflux_hllc, 'hlle': self.numflux_hlle,
                         'centered': self.numflux_centeredflux, 'centeredmassflow': self.numflux_centeredmassflow }
 
@@ -341,12 +336,12 @@ class euler1d(base):
     def massflow(self,qdata): # for 1D model only
         return qdata[1].copy()
 
-    @_bcdict.register('sym')
+    @_bcdict.register()
     def bc_sym(self, dir, data, param):
         "symmetry boundary condition, for inviscid equations, it is equivalent to a wall, do not need user parameters"
         return [ data[0], -data[1], data[2] ]
 
-    @_bcdict.register('insub')
+    @_bcdict.register()
     def bc_insub(self, dir, data, param):
         g   = self.gamma
         gmu = g-1.
@@ -355,7 +350,7 @@ class euler1d(base):
         rh = param['ptot']/param['rttot']/(1.+.5*gmu*m2)**(1./gmu)
         return [ rh, -dir*np.sqrt(g*m2*p/rh), p ]
 
-    @_bcdict.register('insub_cbc')
+    @_bcdict.register()
     def bc_insub_cbc(self, dir, data, param):
         g   = self.gamma
         gmu = g-1.
@@ -369,7 +364,7 @@ class euler1d(base):
         p1 = param['ptot']/f_m1sqr**(g/gmu)
         return [ rh1, u1, p1 ]
 
-    @_bcdict.register('insup')
+    @_bcdict.register()
     def bc_insup(self, dir, data, param):
         # expected parameters are 'ptot', 'rttot' and 'p'
         g   = self.gamma
@@ -379,12 +374,12 @@ class euler1d(base):
         rh = param['ptot']/param['rttot']/(1.+.5*gmu*m2)**(1./gmu)
         return [ rh, -dir*np.sqrt(g*m2*p/rh), p ]
 
-    @_bcdict.register('outsub')
-    @_bcdict.register('outsub_prim')
+    @_bcdict.register(name='outsub')
+    @_bcdict.register()
     def bc_outsub_prim(self, dir, data, param):
         return [ data[0], data[1], param['p'] ]
 
-    @_bcdict.register('outsub_qtot')
+    @_bcdict.register()
     def bc_outsub_qtot(self, dir, data, param):
         g   = self.gamma
         gmu = g-1.
@@ -398,7 +393,7 @@ class euler1d(base):
         rho = ptot/rttot/(1.+.5*gmu*m2)**(1./gmu)
         return [ rho, dir*np.sqrt(g*m2*p/rho), p ]
 
-    @_bcdict.register('outsub_rh')
+    @_bcdict.register()
     def bc_outsub_rh(self, dir, data, param):
         g   = self.gamma
         gmu = g-1.
@@ -416,7 +411,7 @@ class euler1d(base):
         rho1 = data[0]*rhoratio
         return [ rho1, u1, p1 ]
 
-    @_bcdict.register('outsub_nrcbc')
+    @_bcdict.register()
     def bc_outsub_nrcbc(self, dir, data, param):
         g   = self.gamma
         gmu = g-1.
@@ -430,7 +425,7 @@ class euler1d(base):
         u1 = data[1] + dir*2/gmu*(a1-a0)
         return [ rho1, u1, p1 ]
 
-    @_bcdict.register('outsup')
+    @_bcdict.register()
     def bc_outsup(self, dir, data, param):
         return data
 
@@ -483,7 +478,7 @@ class euler2d(base):
     """
     Class model for 2D euler equations
     """
-    _bcdict = mbase.methoddict()
+    _bcdict = mbase.methoddict('bc_')
 
     def __init__(self, gamma=1.4, source=None):
         base.__init__(self, gamma=gamma, source=source)
@@ -491,12 +486,6 @@ class euler2d(base):
         self._bcdict.merge(euler2d._bcdict)
         self._vardict.update({ 'velocity_x': self.velocity_x, 'velocity_y': self.velocity_y,
                          })
-        #self._bcdict.update({ #'sym': self.bc_sym,
-                        #  'insub': self.bc_insub,
-                        #  'insup': self.bc_insup,
-                        #  'outsub': self.bc_outsub,
-                        #  'outsup': self.bc_outsup
-        #                })
         self._numfluxdict = { #'hllc': self.numflux_hllc, 'hlle': self.numflux_hlle,
                         'centered': self.numflux_centeredflux  }
 

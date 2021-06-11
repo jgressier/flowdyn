@@ -21,12 +21,24 @@
 class methoddict():
     """decorator to register decorated method as specific and tagged in the class model
     """
-    def __init__(self, items={}):
+    def __init__(self, items={}, pref=""): # pref = prefix to be stripped off the method's name
+        if type(items) == type(""): # if only the prefix is given as argument
+            pref = items
+            items = {}
         self.dict = dict(items)
+        self.pref = pref
 
-    def register(self, name):
+    def register(self, pref=None, name=None): # name = alternate name for the method in the dict
         def decorator(classmeth):
-            self.dict[name] = classmeth
+            rpref = self.pref if pref is None else pref
+            if name is None:
+                rname = classmeth.__name__
+                if not rname[:len(rpref)] == rpref:
+                    raise(LookupError("Prefix "+repr(rpref)+" not found in name "+repr(rname)))
+                rname = rname[len(rpref):]
+            else:
+                rname = name
+            self.dict[rname] = classmeth
             return classmeth
         return decorator
 
@@ -54,7 +66,7 @@ class model():
         has_source_terms
 
     """
-    _bcdict = methoddict()   # dict and associated decorator method to register BC
+    _bcdict = methoddict('bc_')   # dict and associated decorator method to register BC
 
     def __init__(self, name='not defined', neq=0):
         self.equation = name
@@ -64,8 +76,8 @@ class model():
         self.has_firstorder_terms  = 0
         self.has_secondorder_terms = 0
         self.has_source_terms      = 0
-        self._vardict = { }
         self._bcdict  = model._bcdict.copy()
+        self._vardict = { }
 
     def __repr__(self):
         print("model: ", self.equation)
@@ -101,7 +113,7 @@ class model():
     #------------------------------------
     # definition of boundary conditions with name bc_*
 
-    @_bcdict.register('dirichlet')
+    @_bcdict.register()
     def bc_dirichlet(self, dir, data, param):
         return param['prim']
 
