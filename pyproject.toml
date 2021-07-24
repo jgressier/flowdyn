@@ -5,6 +5,7 @@ description = "Model of discretization of hyperbolic model, base is Finite Volum
 authors = ["j.gressier <jeremie.gressier@isae-supaero.fr>"]
 license = "MIT"
 repository = "https://github.com/jgressier/flowdyn"
+readme = "README.md"
 documentation = "https://flowdyn.readthedocs.io/en/latest/"
 classifiers = [
     "Development Status :: 5 - Production/Stable",
