@@ -21,6 +21,8 @@
 
 import numpy as np
 import math
+
+from numpy.lib.function_base import _angle_dispatcher
 import flowdyn.modelphy.base as mbase
 
 # ===============================================================
@@ -344,7 +346,8 @@ class euler1d(base):
         # expected parameters are 'ptot', 'rttot' and 'p'
         g   = self.gamma
         gmu = g-1.
-        m2 = np.maximum(0., ((param['ptot']/param['p'])**(gmu/g)-1.)*2./gmu)
+        p=param['p']
+        m2 = np.maximum(0., ((param['ptot']/p)**(gmu/g)-1.)*2./gmu)
         rh = param['ptot']/param['rttot']/(1.+.5*gmu*m2)**(1./gmu)
         return [rh, -dir*np.sqrt(g*m2*p/rh), p]
 
@@ -498,9 +501,14 @@ class euler2d(base):
         g   = self.gamma
         gmu = g-1.
         p  = param['p']
+        if 'angle' in param:
+            ang = np.deg2rad(param['angle'])
+            dir_in = np.full_like(dir, [[np.cos(ang)],[np.sin(ang)]])
+        else:
+            dir_in = -dir
         m2 = np.maximum(0., ((param['ptot']/p)**(gmu/g)-1.)*2./gmu)
         rh = param['ptot']/param['rttot']/(1.+.5*gmu*m2)**(1./gmu)
-        return [rh, _sca_mult_vec(-np.sqrt(m2),dir), p]
+        return [rh, _sca_mult_vec(np.sqrt(m2),dir_in), p]
 
     def bc_outsub(self, dir, data, param):
         return [ data[0], data[1], param['p'] ] 
