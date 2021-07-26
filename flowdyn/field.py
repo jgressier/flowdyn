@@ -135,7 +135,7 @@ class fdata():
         var = np.average((self.phydata(name)-avg)**2, weights=self.mesh.dx())
         return avg, var
         
-    def contour(self, name, style={}, axes=plt):
+    def contour(self, name, style={}, axes=None):
         """
 
         Args:
@@ -146,11 +146,12 @@ class fdata():
         Returns:
 
         """
+        if axes is None: axes=plt.gca()
         xx, yy = self.mesh.centers()
         axes.set_aspect('equal')
-        return axes.contour(xx.reshape((self.mesh.nx, self.mesh.ny)),
-                             yy.reshape((self.mesh.nx, self.mesh.ny)), 
-                             self.phydata(name).reshape((self.mesh.nx, self.mesh.ny)))
+        return axes.contour(xx.reshape((self.mesh.ny, self.mesh.nx)),
+                             yy.reshape((self.mesh.ny, self.mesh.nx)), 
+                             self.phydata(name).reshape((self.mesh.ny, self.mesh.nx)))
 
     def contourf(self, name, style={}, axes=plt):
         """
