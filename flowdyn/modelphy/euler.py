@@ -494,7 +494,7 @@ class euler2d(base):
         p  = data[2]
         m2 = np.maximum(0., ((param['ptot']/p)**(gmu/g)-1.)*2./gmu)
         rh = param['ptot']/param['rttot']/(1.+.5*gmu*m2)**(1./gmu)
-        return [ rh, _sca_mult_vec(-np.sqrt(m2),dir), p ] 
+        return [rh, _sca_mult_vec(np.sqrt(g*p*m2/rh),dir_in), p]
 
     def bc_insup(self, dir, data, param):
         # needed parameters : ptot, rttot
@@ -508,7 +508,7 @@ class euler2d(base):
             dir_in = -dir
         m2 = np.maximum(0., ((param['ptot']/p)**(gmu/g)-1.)*2./gmu)
         rh = param['ptot']/param['rttot']/(1.+.5*gmu*m2)**(1./gmu)
-        return [rh, _sca_mult_vec(np.sqrt(m2),dir_in), p]
+        return [rh, _sca_mult_vec(np.sqrt(g*p*m2/rh),dir_in), p]
 
     def bc_outsub(self, dir, data, param):
         return [ data[0], data[1], param['p'] ] 
