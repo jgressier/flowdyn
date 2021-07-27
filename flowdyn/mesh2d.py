@@ -49,6 +49,13 @@ class mesh2d(meshbase.virtualmesh):
         "compute cell sizes in a mesh"
         return self.ly / self.ny
 
+    def vol(self):
+        "compute cell sizes in a mesh"
+        # dx = np.zeros(self.ncell)
+        # for i in np.arange(self.ncell):
+        #     dx[i] = (self.xf[i+1]-self.xf[i])
+        return np.repeat(self.dx()*self.dy(), self.ncell)
+
     def __repr__(self):
         print("mesh object: mesh2d")
         # print("length : ", self.length)

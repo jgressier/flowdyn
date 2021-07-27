@@ -324,7 +324,7 @@ class euler(base.model):
 
 class euler1d(euler):
     """
-    Class model for 2D euler equations
+    Class model for 1D euler equations
     """
     _bcdict = base.methoddict('bc_')
     _vardict = base.methoddict()
@@ -592,7 +592,7 @@ class euler2d(euler):
         p  = data[2]
         m2 = np.maximum(0., ((param['ptot']/p)**(gmu/g)-1.)*2./gmu)
         rh = param['ptot']/param['rttot']/(1.+.5*gmu*m2)**(1./gmu)
-        return [ rh, _sca_mult_vec(-np.sqrt(m2),dir), p ] 
+        return [ rh, _sca_mult_vec(-np.sqrt(g*p*m2/rh),dir), p ] 
 
     @_bcdict.register()
     def bc_insup(self, dir, data, param):
@@ -607,7 +607,7 @@ class euler2d(euler):
             dir_in = -dir
         m2 = np.maximum(0., ((param['ptot']/p)**(gmu/g)-1.)*2./gmu)
         rh = param['ptot']/param['rttot']/(1.+.5*gmu*m2)**(1./gmu)
-        return [rh, _sca_mult_vec(np.sqrt(m2),dir_in), p]
+        return [rh, _sca_mult_vec(np.sqrt(g*p*m2/rh),dir_in), p]
 
     @_bcdict.register()
     def bc_outsub(self, dir, data, param):

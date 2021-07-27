@@ -9,7 +9,7 @@ import numpy as np
 
 import flowdyn.mesh2d as mesh2d
 from flowdyn.field import *
-from flowdyn.xnum  import *
+from flowdyn.xnum  import extrapol2d1, extrapol2dk
 import flowdyn.integration    as integ
 import flowdyn.modelphy.euler as euler
 import flowdyn.modeldisc      as modeldisc
@@ -30,13 +30,13 @@ bcsym = { 'type': 'sym' }
 rhs = modeldisc.fvm2d(model, meshsim, 
 		num=extrapol2dk(1./3.),
 #		num=extrapol2d1(),
-		numflux='hlle', 
+		numflux='centered', 
 		bclist={'left': bcper, 'right': bcper, 'top': bcper, 'bottom': bcper} )
 #		bclist={'left': bcsym, 'right': bcsym, 'top': bcsym, 'bottom': bcsym} )
 solver = integ.rk3ssp(meshsim, rhs)
 # computation
 #
-endtime = 2.5
+endtime = 5.
 cfl     = 1.
 
 # initial functions
