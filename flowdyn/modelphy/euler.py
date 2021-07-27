@@ -471,13 +471,14 @@ class nozzle(euler1d):
         self.sectionlaw = sectionlaw
 
     def initdisc(self, mesh):
-        self.geomterm = 1./self.sectionlaw(mesh.centers())* \
+        self._xc = mesh.centers()
+        self.geomterm = 1./self.sectionlaw(self._xc)* \
                     (self.sectionlaw(mesh.xf[1:mesh.ncell+1])-self.sectionlaw(mesh.xf[0:mesh.ncell])) / \
                     (mesh.xf[1:mesh.ncell+1]-mesh.xf[0:mesh.ncell])
         return
 
     def massflow(self,qdata):
-        return qdata[1]*self.sectionlaw(mesh.centers())
+        return qdata[1]*self.sectionlaw(self._xc)
 
     def src_mass(self, x, qdata):
         return -self.geomterm * qdata[1]
