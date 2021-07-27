@@ -45,7 +45,7 @@ class methoddict():
         self.dict.update(mdict.dict)
 
     def update(self, ddict: dict):
-        self.dict.update(ndict)
+        self.dict.update(ddict)
 
     def copy(self):
         return methoddict(self.dict)
