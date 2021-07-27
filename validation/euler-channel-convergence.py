@@ -3,15 +3,14 @@
 test integration methods
 """
 
-import time
-import cProfile
-from matplotlib.pyplot import *
+#import cProfile
+from matplotlib.pyplot import figure, ylabel, grid, show
 import numpy as np 
 
-from flowdyn.mesh  import *
-from flowdyn.field import *
+from flowdyn.mesh  import unimesh
+#from flowdyn.field import *
 from flowdyn.xnum  import *
-from flowdyn.integration import *
+import flowdyn.integration as tnum
 import flowdyn.modelphy.euler as euler
 import flowdyn.modeldisc      as modeldisc
 #import flowdyn.solution.euler_riemann as sol
@@ -27,8 +26,8 @@ bcR = { 'type': 'outsub', 'p': 1. }
 rhs = modeldisc.fvm(model, meshsim, muscl(minmod), 
       bcL=bcL, bcR=bcR)
 
-solver1 = rk3ssp(meshsim, rhs)
-solver2 = gear(meshsim, rhs)
+solver1 = tnum.rk3ssp(meshsim, rhs)
+solver2 = tnum.gear(meshsim, rhs)
 
 # computation
 #

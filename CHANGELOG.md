@@ -16,7 +16,49 @@ pip show flowdyn
 
 ## Versions
 
-### [1.x.x](https://pypi.org/project/flowdyn/) (2021-xx-xx)
+### [1.2.x](https://pypi.org/project/flowdyn/) (2021-xx-xx)
+
+#### new features
+
+- new subsonic inlet/oulet boundary condition for `euler1d` model
+    - `insub_cbc` with stagnation parameters but more stable
+    - `outsub_rh` able to trigger shock wave even in supersonic flow
+- `field.semilogy('name')` for semi-logarithmic plots
+
+### [1.2.0](https://pypi.org/project/flowdyn/) (2021-06-05)
+
+#### new features
+
+- shallow water model `modelphy.shallowwater`
+- new subsonic outlet boundary condition for `euler1d` model
+    - `outsub_prim` as a legacy primitive variables set, same as `outsub`
+    - `outsub_qtot` computed with `p` parameter and `ptot` and `rttot` extrapolation
+    - `outsub_nrcbc` for non-reflective characteristics conditions
+- new option to `timemodel.solve`: stop parameter with dictionary `tottime` or `maxit`
+- new monitoring feature to `timemodel.solve`
+
+#### fixed
+
+- bad initialization of cpu time computation in `show_perf()` for successive integration
+- fix `solution.nozzle` for fully supersonic cases
+
+### [1.1.2](https://pypi.org/project/flowdyn/) (2021-04-17)
+
+#### changed
+
+- add `asound` variable to `euler` model
+
+#### fixed
+
+- fix MUSCL vanleer limiter (defective since 1.1.0)
+
+### [1.1.1](https://pypi.org/project/flowdyn/) (2021-04-06)
+
+#### fixed
+
+- bug fix in 1d euler supersonic inlet condition
+
+### [1.1.0](https://pypi.org/project/flowdyn/) (2021-03-10)
 
 #### new features
 

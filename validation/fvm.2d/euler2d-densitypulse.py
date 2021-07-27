@@ -3,8 +3,7 @@
 test integration methods
 """
 
-import time
-import cProfile
+#import cProfile
 import matplotlib.pyplot as plt
 import numpy as np 
 
@@ -42,8 +41,8 @@ cfl     = 1.
 
 # initial functions
 def fuv(x,y):
-    vmag = .01 ; k = 10.
-    return euler.datavector(0.*x+.4, 0.*x)
+    #vmag = .01 ; k = 10.
+    return euler.datavector(0.*x+.4, 0.*x+.2)
 def fp(x,y): # gamma = 1.4
     return 0.*x+1.
 def frho(x,y):

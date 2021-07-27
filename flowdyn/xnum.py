@@ -6,6 +6,8 @@ xnum: package for spatial numerical methods
   extrapol3()
   extrapolk()
 """
+__all__ = ['extrapol1', 'extrapol2', 'extrapol3', 'extrapolk', 'extrapol2d1',
+        'muscl', 'minmod', 'vanalbada', 'vanleer', 'superbee']
 
 import numpy as np
 #import mesh
@@ -14,11 +16,14 @@ class virtualmeth():
     def __init__(self):
         self.gradmeth = 'none'
     
-    def interp_face(self, mesh, data):
+    def interp_face(self, mesh, data, grad):
         pass
     
 class extrapol1(virtualmeth):
     "first order method"
+    def __init__(self):
+        virtualmeth.__init__(self)
+
     def interp_face(self, mesh, data, grad='none'):
         "returns 2x (L/R) neq list of (ncell+1) nparray"
         nc = data[0].size
@@ -36,6 +41,7 @@ class extrapol1(virtualmeth):
 class extrapol2(virtualmeth):
     "second order method without limitation, equivalent to extrapolk with k=-1"
     def __init__(self):
+        virtualmeth.__init__(self)
         self.gradmeth = 'face'
         
     def interp_face(self, mesh, data, grad):
@@ -54,6 +60,7 @@ class extrapol2(virtualmeth):
 class extrapolk(virtualmeth):
     "second order method without limitation and k coefficient"
     def __init__(self, k):
+        virtualmeth.__init__(self)
         self.gradmeth = 'face'
         self.kprec    = k
         
@@ -175,7 +182,8 @@ def vanalbada(a,b):
 def vanleer(a,b):
     p = a*b
     s = np.abs(a+b)+1.e-20
-    return np.where(p <= 1e-40, 0., 2*np.abs(p)/s )
+    return np.where(p <= 1e-40, 0., 2*p/s*np.sign(a) )
+    #return np.where(p <= 0., 0, 2*p/(a+b) )
 
 def superbee(a,b):
     p = a*b
@@ -188,6 +196,7 @@ def superbee(a,b):
 class muscl(virtualmeth):
     "second order MUSCL method"
     def __init__(self, limiter=minmod):
+        virtualmeth.__init__(self)
         self.gradmeth = 'face'
         self.limiter  = limiter
 #        print limiter

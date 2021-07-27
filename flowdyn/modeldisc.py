@@ -5,13 +5,7 @@
     Provides ...
  
     :Example:
- 
-    >>> import aerokit.aero.Isentropic as Is
-    >>> Is.TiTs_Mach(1.)
-    1.2
-    >>> Is.TiTs_Mach(2., gamma=1.6)
-    2.2
- 
+  
     Available functions
     -------------------
  
@@ -20,8 +14,9 @@
     or using aerokit.common.defaultgas module
  """
 
+import math
 import numpy               as np
-import flowdyn.modelphy.base as model
+#import flowdyn.modelphy.base as model
 #import flowdyn.mesh          as mesh
 import flowdyn.field         as field
 
@@ -57,6 +52,15 @@ class base():
     def fdata_fromprim(self, data):
         f = field.fdata(self.model, self.mesh, data)
         return field.fdata(self.model, self.mesh, self.model.prim2cons(f.data))
+
+    def average(self, q):
+        """compute average of one field only"""
+        return self.mesh.average(q)
+
+    def all_L2average(self, qdata):
+        """compute average of all fields """
+        qavg = [ self.mesh.L2average(q) for q in qdata ]
+        return math.sqrt(np.average(qavg)**2)
 
     def rhs(self, field):
         #print("t=",field.time)

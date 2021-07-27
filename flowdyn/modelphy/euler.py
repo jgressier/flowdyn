@@ -1,29 +1,27 @@
 # -*- coding: utf-8 -*-
 """
-    The ``base`` module of modelphy library
+    The ``euler`` module of modelphy library
     =========================
- 
-    Provides ...
- 
+
+    Provides Euler model
+
     :Example:
- 
+
     >>> import aerokit.aero.Isentropic as Is
     >>> Is.TiTs_Mach(1.)
     1.2
     >>> Is.TiTs_Mach(2., gamma=1.6)
     2.2
- 
+
     Available functions
     -------------------
- 
-    Provides ...
+
  """
 
 import numpy as np
 import math
-
-from numpy.lib.function_base import _angle_dispatcher
-import flowdyn.modelphy.base as mbase
+#from numpy.lib.function_base import _angle_dispatcher
+import flowdyn.modelphy.base as base
 
 # ===============================================================
 def _vecmag(qdata):
@@ -36,7 +34,7 @@ def _sca_mult_vec(r, v):
     return r*v # direct multiplication thanks to shape (:)*(2,:)
 
 def _vec_dot_vec(v1, v2):
-    return np.einsum('ij,ij->j', v1, v2) 
+    return np.einsum('ij,ij->j', v1, v2)
 
 def datavector(ux, uy, uz=None):
     return np.vstack([ux, uy]) if not uz else np.vstack([ux, uy, uz])
@@ -44,23 +42,27 @@ def datavector(ux, uy, uz=None):
 # ===============================================================
 # implementation of MODEL class
 
-class base(mbase.model):
+class euler(base.model):
     """
     Class model for euler equations
 
     attributes:
 
     """
+    _bcdict = base.methoddict('bc_')   # dict and associated decorator method to register BC
+    _vardict = base.methoddict()
+    _numfluxdict = base.methoddict('numflux_')
+
     def __init__(self, gamma=1.4, source=None):
-        mbase.model.__init__(self, name='euler', neq=3)
+        base.model.__init__(self, name='euler', neq=3)
         self.islinear    = 0
         self.shape       = [1, 1, 1]
         self.gamma       = gamma
         self.source      = source
-        self._vardict = { 'pressure': self.pressure, 'density': self.density,
-                          'velocity': self.velocity, 'mach': self.mach, 'enthalpy': self.enthalpy,
-                          'entropy': self.entropy, 'ptot': self.ptot, 'rttot': self.rttot, 'htot': self.htot }
-        
+        self._bcdict.merge(euler._bcdict)
+        self._vardict.merge(euler._vardict)
+        self._numfluxdict.merge(euler._numfluxdict)
+
     def cons2prim(self, qdata): # qdata[ieq][cell] :
         """
         Primitives variables are rho, u, p
@@ -70,8 +72,8 @@ class base(mbase.model):
         rho = qdata[0]
         u   = qdata[1]/qdata[0]
         p   = self.pressure(qdata)
-        pdata = [ rho, u ,p ] 
-        return pdata 
+        pdata = [ rho, u ,p ]
+        return pdata
 
     def prim2cons(self, pdata): # qdata[ieq][cell] :
         """
@@ -82,39 +84,54 @@ class base(mbase.model):
         rhoe = pdata[2]/(self.gamma-1.) + .5*pdata[0]*V2
         return [ pdata[0], _sca_mult_vec(pdata[0], pdata[1]), rhoe ]
 
+    @_vardict.register()
     def density(self, qdata):
         return qdata[0].copy()
 
+    @_vardict.register()
     def pressure(self, qdata): # returns (gam-1)*( rho.et) - .5 * (rho.u)**2 / rho )
         return (self.gamma-1.0)*(qdata[2]-self.kinetic_energy(qdata))
 
+    @_vardict.register()
     def velocity(self, qdata):  # returns (rho u)/rho, works for both scalar and vector
         return qdata[1]/qdata[0]
 
     def velocitymag(self, qdata):  # returns mag(rho u)/rho, depending if scalar or vector
         return np.abs(qdata[1])/qdata[0] if qdata[1].ndim==1 else _vecmag(qdata[1])/qdata[0]
 
-    def kinetic_energy(self, qdata):  
+    @_vardict.register(name="kinetic-energy")
+    @_vardict.register()
+    def kinetic_energy(self, qdata):
         """volumic kinetic energy"""
         return .5*qdata[1]**2/qdata[0] if qdata[1].ndim==1 else .5*_vecsqrmag(qdata[1])/qdata[0]
 
+    @_vardict.register()
+    def asound(self, qdata):
+        return np.sqrt(self.gamma*self.pressure(qdata)/qdata[0])
+
+    @_vardict.register()
     def mach(self, qdata):
         return qdata[1]/np.sqrt(self.gamma*((self.gamma-1.0)*(qdata[0]*qdata[2]-0.5*qdata[1]**2)))
 
+    @_vardict.register()
     def entropy(self, qdata): # S/r
         return np.log(self.pressure(qdata)/qdata[0]**self.gamma)/(self.gamma-1.)
 
-    def enthalpy(self, qdata): 
+    @_vardict.register()
+    def enthalpy(self, qdata):
         return (qdata[2]-0.5*qdata[1]**2/qdata[0])*self.gamma/qdata[0]
 
+    @_vardict.register()
     def ptot(self, qdata):
         gm1 = self.gamma-1.
         return self.pressure(qdata)*(1.+.5*gm1*self.mach(qdata)**2)**(self.gamma/gm1)
 
+    @_vardict.register()
     def rttot(self, qdata):
         ec = 0.5*qdata[1]**2/qdata[0]
         return ((qdata[2]-ec)*self.gamma + ec)/qdata[0]/self.gamma*(self.gamma-1.)
 
+    @_vardict.register()
     def htot(self, qdata):
         ec = 0.5*qdata[1]**2/qdata[0]
         return ((qdata[2]-ec)*self.gamma + ec)/qdata[0]
@@ -131,9 +148,11 @@ class base(mbase.model):
         return Rrho, uRoe, cRoe
 
     def numflux(self, name, pdataL, pdataR, dir=None):
-        if name==None: name='hllc'
-        return (self._numfluxdict[name])(pdataL, pdataR, dir)
+        if name is None: name='hllc'
+        return (self._numfluxdict.dict[name])(self, pdataL, pdataR, dir)
 
+    @_numfluxdict.register(name='centered')
+    @_numfluxdict.register()
     def numflux_centeredflux(self, pdataL, pdataR, dir=None): # centered flux ; pL[ieq][face]
         gam  = self.gamma
         gam1 = gam-1.
@@ -157,6 +176,7 @@ class base(mbase.model):
 
         return [Frho, Frhou, FrhoE]
 
+    @_numfluxdict.register()
     def numflux_centeredmassflow(self, pdataL, pdataR, dir=None): # centered flux ; pL[ieq][face]
         gam  = self.gamma
         gam1 = gam-1.
@@ -180,7 +200,7 @@ class base(mbase.model):
 
         return [Frho, Frhou, FrhoE]
 
-
+    @_numfluxdict.register()
     def numflux_hlle(self, pdataL, pdataR, dir=None): # HLLE Riemann solver ; pL[ieq][face]
 
         gam  = self.gamma
@@ -199,7 +219,7 @@ class base(mbase.model):
         HR  = cR2/gam1 + 0.5*uR**2
 
         # The HLLE Riemann solver
-                
+
         # sorry for using little "e" here - is is not just internal energy
         eL   = HL-pL/rhoL
         eR   = HR-pR/rhoR
@@ -217,6 +237,7 @@ class base(mbase.model):
 
         return [Frho, Frhou, FrhoE]
 
+    @_numfluxdict.register()
     def numflux_hllc(self, pdataL, pdataR, dir=None): # HLLC Riemann solver ; pL[ieq][face]
 
         gam  = self.gamma
@@ -237,7 +258,7 @@ class base(mbase.model):
         HR = cR2/gam1 + 0.5*uR**2
 
         # The HLLC Riemann solver
-                
+
         # sorry for using little "e" here - is is not just internal energy
         eL   = HL-pL/rhoL
         eR   = HR-pR/rhoR
@@ -290,7 +311,7 @@ class base(mbase.model):
         return [Frho, Frhou, FrhoE]
 
     def timestep(self, data, dx, condition):
-        "computation of timestep: data(=pdata) is not used, dx is an array of cell sizes, condition is the CFL number"
+        "computation of timestep with conservative data"
         #        dt = CFL * dx / ( |u| + c )
         # dt = np.zeros(len(dx)) #test use zeros instead
         #dt = condition*dx/ (data[1] + np.sqrt(self.gamma*data[2]/data[0]) )
@@ -298,25 +319,23 @@ class base(mbase.model):
         dt = condition*dx / ( Vmag  + np.sqrt(self.gamma*(self.gamma-1.0)*(data[2]/data[0]-0.5*Vmag**2) ))
         return dt
 
-
 # ===============================================================
 # implementation of euler 1D class
 
-class euler1d(base):
+class euler1d(euler):
     """
     Class model for 2D euler equations
     """
+    _bcdict = base.methoddict('bc_')
+    _vardict = base.methoddict()
+    _numfluxdict = base.methoddict('numflux_')
+
     def __init__(self, gamma=1.4, source=None):
-        base.__init__(self, gamma=gamma, source=source)
+        euler.__init__(self, gamma=gamma, source=source)
         self.shape       = [1, 1, 1]
-        self._vardict.update({ 'massflow': self.massflow })
-        self._bcdict.update({'sym': self.bc_sym,
-                         'insub': self.bc_insub,
-                         'insup': self.bc_insup,
-                         'outsub': self.bc_outsub,
-                         'outsup': self.bc_outsup })
-        self._numfluxdict = { 'hllc': self.numflux_hllc, 'hlle': self.numflux_hlle, 
-                        'centered': self.numflux_centeredflux, 'centeredmassflow': self.numflux_centeredmassflow }
+        self._bcdict.merge(euler1d._bcdict)
+        self._vardict.merge(euler1d._vardict)
+        self._numfluxdict.merge(euler1d._numfluxdict)
 
     def _derived_fromprim(self, pdata, dir):
         """
@@ -327,21 +346,39 @@ class euler1d(base):
         H  = c2/(self.gamma-1.) + .5*pdata[1]**2
         return pdata[0], pdata[1], pdata[1], c2, H
 
+    @_vardict.register()
     def massflow(self,qdata): # for 1D model only
         return qdata[1].copy()
 
+    @_bcdict.register()
     def bc_sym(self, dir, data, param):
         "symmetry boundary condition, for inviscid equations, it is equivalent to a wall, do not need user parameters"
         return [ data[0], -data[1], data[2] ]
 
+    @_bcdict.register()
     def bc_insub(self, dir, data, param):
         g   = self.gamma
         gmu = g-1.
         p  = data[2]
         m2 = np.maximum(0., ((param['ptot']/p)**(gmu/g)-1.)*2./gmu)
         rh = param['ptot']/param['rttot']/(1.+.5*gmu*m2)**(1./gmu)
-        return [ rh, -dir*np.sqrt(g*m2*p/rh), p ] 
+        return [ rh, -dir*np.sqrt(g*m2*p/rh), p ]
 
+    @_bcdict.register()
+    def bc_insub_cbc(self, dir, data, param):
+        g   = self.gamma
+        gmu = g-1.
+        p  = data[2]
+        invcm = data[1]+dir*2*np.sqrt(g*p/data[0])/gmu
+        adiscri = g*(g+1)/gmu*param['rttot']-.5*gmu*invcm**2
+        a1 = (dir*invcm+np.sqrt(adiscri))*gmu/(g+1.)
+        u1 = invcm-dir*2*a1/gmu
+        f_m1sqr= 1.+.5*gmu*(u1/a1)**2
+        rh1 = param['ptot']/param['rttot']/f_m1sqr**(1./gmu)
+        p1 = param['ptot']/f_m1sqr**(g/gmu)
+        return [ rh1, u1, p1 ]
+
+    @_bcdict.register()
     def bc_insup(self, dir, data, param):
         # expected parameters are 'ptot', 'rttot' and 'p'
         g   = self.gamma
@@ -351,9 +388,58 @@ class euler1d(base):
         rh = param['ptot']/param['rttot']/(1.+.5*gmu*m2)**(1./gmu)
         return [rh, -dir*np.sqrt(g*m2*p/rh), p]
 
-    def bc_outsub(self, dir, data, param):
-        return [ data[0], data[1], param['p'] ] 
+    @_bcdict.register(name='outsub')
+    @_bcdict.register()
+    def bc_outsub_prim(self, dir, data, param):
+        return [ data[0], data[1], param['p'] ]
 
+    @_bcdict.register()
+    def bc_outsub_qtot(self, dir, data, param):
+        g   = self.gamma
+        gmu = g-1.
+        m2  = data[1]**2/(g*data[2]/data[0])
+        fm2 = 1.+.5*gmu*m2
+        rttot = data[2]/data[0]*fm2
+        ptot  = data[2]*fm2**(g/gmu)
+        # right (external) state
+        p  = param['p']
+        m2 = np.maximum(0., ((ptot/p)**(gmu/g)-1.)*2./gmu)
+        rho = ptot/rttot/(1.+.5*gmu*m2)**(1./gmu)
+        return [ rho, dir*np.sqrt(g*m2*p/rho), p ]
+
+    @_bcdict.register()
+    def bc_outsub_rh(self, dir, data, param):
+        g   = self.gamma
+        gmu = g-1.
+        # pratio > Ms > Ws/a0
+        p0 = data[2]
+        pratio = param['p']/p0
+        u0 = data[1]
+        # relative shock Mach number Ms=(u0-Ws)/a0
+        Ms2 = 1.+(pratio-1.)*(g+1.)/(2.*g)
+        rhoratio = ((g+1.)*Ms2)/(2.+gmu*Ms2)
+        Ws = u0 - dir*np.sqrt(g*p0/data[0]*Ms2)
+        # right (external) state
+        p1  = param['p']
+        u1 = Ws + (u0-Ws)/rhoratio
+        rho1 = data[0]*rhoratio
+        return [ rho1, u1, p1 ]
+
+    @_bcdict.register()
+    def bc_outsub_nrcbc(self, dir, data, param):
+        g   = self.gamma
+        gmu = g-1.
+        # 0 and 1 stand for internal/external
+        p1 = param['p']
+        # isentropic invariant p/rho**gam = cst
+        rho1 = data[0]*(p1/data[2])**(1./g)
+        # C- invariant (or C+ according to dir)
+        a0 = np.sqrt(g*data[2]/data[0])
+        a1 = np.sqrt(g*p1/rho1)
+        u1 = data[1] + dir*2/gmu*(a1-a0)
+        return [ rho1, u1, p1 ]
+
+    @_bcdict.register()
     def bc_outsup(self, dir, data, param):
         return data
 
@@ -370,6 +456,10 @@ class nozzle(euler1d):
     attributes:
 
     """
+    _bcdict = base.methoddict('bc_')
+    _vardict = base.methoddict()
+    _numfluxdict = base.methoddict('numflux_')
+
     def __init__(self, sectionlaw, gamma=1.4, source=None):
         nozsrc = [ self.src_mass, self.src_mom, self.src_energy ]
         allsrc = nozsrc # init all sources to nozzle sources
@@ -379,13 +469,18 @@ class nozzle(euler1d):
                     allsrc[i] = lambda x,q: isrc(x,q)+nozsrc[i](x,q)
         euler1d.__init__(self, gamma=gamma, source=allsrc)
         self.sectionlaw = sectionlaw
- 
+        self._bcdict.merge(nozzle._bcdict)
+        self._vardict.merge(nozzle._vardict)
+        self._numfluxdict.merge(nozzle._numfluxdict)
+
+
     def initdisc(self, mesh):
         self.geomterm = 1./self.sectionlaw(mesh.centers())* \
                     (self.sectionlaw(mesh.xf[1:mesh.ncell+1])-self.sectionlaw(mesh.xf[0:mesh.ncell])) / \
                     (mesh.xf[1:mesh.ncell+1]-mesh.xf[0:mesh.ncell])
-        return 
+        return
 
+    @_vardict.register()
     def massflow(self,qdata):
         return qdata[1]*self.sectionlaw(mesh.centers())
 
@@ -402,39 +497,39 @@ class nozzle(euler1d):
 # ===============================================================
 # implementation of euler 2D class
 
-class euler2d(base):
+class euler2d(euler):
     """
     Class model for 2D euler equations
     """
+    _bcdict = base.methoddict('bc_')
+    _vardict = base.methoddict()
+    _numfluxdict = base.methoddict('numflux_')
+
     def __init__(self, gamma=1.4, source=None):
-        base.__init__(self, gamma=gamma, source=source)
+        euler.__init__(self, gamma=gamma, source=source)
         self.shape       = [1, 2, 1]
-        self._vardict.update({ 'velocity_x': self.velocity_x, 'velocity_y': self.velocity_y,
-                         })
-        self._bcdict.update({ 'sym': self.bc_sym ,
-                         'insub': self.bc_insub,
-                         'insup': self.bc_insup,
-                         'outsub': self.bc_outsub,
-                         'outsup': self.bc_outsup 
-                        })
-        self._numfluxdict = { 'hlle': self.numflux_hlle, #'hllc': self.numflux_hllc, 
-                        'centered': self.numflux_centeredflux  }
+        self._bcdict.merge(euler2d._bcdict)
+        self._vardict.merge(euler2d._vardict)
+        self._numfluxdict.merge(euler2d._numfluxdict)
 
     def _derived_fromprim(self, pdata, dir):
         """
         returns rho, un, V, p, H, c2
         """
         c2 = self.gamma * pdata[2] / pdata[0]
-        un = _vec_dot_vec(pdata[1], dir) 
-        H  = c2/(self.gamma-1.) + .5*_vecsqrmag(pdata[1])
+        un = _vec_dot_vec(pdata[1], dir)
+        H  = c2/(self.gamma-1.) + .5*_vecmag(pdata[1])
         return pdata[0], un, pdata[1], pdata[2], H, c2
 
+    @_vardict.register()
     def velocity_x(self, qdata):  # returns (rho ux)/rho
         return qdata[1][0,:]/qdata[0]
 
+    @_vardict.register()
     def velocity_y(self, qdata):  # returns (rho uy)/rho
         return qdata[1][1,:]/qdata[0]
 
+    @_vardict.register()
     def mach(self, qdata):
         rhoUmag = _vecmag(qdata[1])
         return rhoUmag/np.sqrt(self.gamma*((self.gamma-1.0)*(qdata[0]*qdata[2]-0.5*rhoUmag**2)))
@@ -450,17 +545,18 @@ class euler2d(base):
         cRoe  = np.sqrt((hRoe - 0.5*_vecsqrmag(URoe))*(self.gamma-1.))
         return Rrho, unRoe, cRoe
 
+    @_numfluxdict.register(name='centered')
+    @_numfluxdict.register()
     def numflux_centeredflux(self, pdataL, pdataR, dir): # centered flux ; pL[ieq][face]
-        gam  = self.gamma
-        gam1 = gam-1.
         rhoL, unL, VL, pL, HL, cL2 = self._derived_fromprim(pdataL, dir)
-        rhoR, unR, VR, pR, HR, cR2 = self._derived_fromprim(pdataR, dir)    
+        rhoR, unR, VR, pR, HR, cR2 = self._derived_fromprim(pdataR, dir)
         # final flux
         Frho  = .5*( rhoL*unL + rhoR*unR )
         Frhou = .5*( (rhoL*unL)*VL + pL*dir + (rhoR*unR)*VR + pR*dir)
         FrhoE = .5*( (rhoL*unL*HL) + (rhoR*unR*HR))
         return [Frho, Frhou, FrhoE]
 
+    @_numfluxdict.register(name='hlle')
     def numflux_hlle(self, pdataL, pdataR, dir): # HLLE Riemann solver ; pL[ieq][face]
         gam  = self.gamma
         gam1 = gam-1.
@@ -480,6 +576,7 @@ class euler2d(base):
         FrhoE = (sR*(rhoL*unL*HL) - sL*(rhoR*unR*HR) + sL*sR*(rhoR*etR-rhoL*etL))/(sR-sL)
         return [Frho, Frhou, FrhoE]
 
+    @_bcdict.register()
     def bc_sym(self, dir, data, param):
         "symmetry boundary condition, for inviscid equations, it is equivalent to a wall, do not need user parameters"
         VL=data[1]
@@ -487,6 +584,7 @@ class euler2d(base):
         VR=VL-2.0*(Vn*dir)
         return [ data[0], VR, data[2] ]
 
+    @_bcdict.register()
     def bc_insub(self, dir, data, param):
         #needed parameters : ptot, rttot
         g   = self.gamma
@@ -496,6 +594,7 @@ class euler2d(base):
         rh = param['ptot']/param['rttot']/(1.+.5*gmu*m2)**(1./gmu)
         return [ rh, _sca_mult_vec(-np.sqrt(m2),dir), p ] 
 
+    @_bcdict.register()
     def bc_insup(self, dir, data, param):
         # needed parameters : ptot, rttot
         g   = self.gamma
@@ -510,9 +609,11 @@ class euler2d(base):
         rh = param['ptot']/param['rttot']/(1.+.5*gmu*m2)**(1./gmu)
         return [rh, _sca_mult_vec(np.sqrt(m2),dir_in), p]
 
+    @_bcdict.register()
     def bc_outsub(self, dir, data, param):
         return [ data[0], data[1], param['p'] ] 
 
+    @_bcdict.register()
     def bc_outsup(self, dir, data, param):
         return data
 

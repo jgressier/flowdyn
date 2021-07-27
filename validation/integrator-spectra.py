@@ -1,7 +1,7 @@
 import numpy as np
 import matplotlib.pyplot as plt
 from itertools import cycle
-import matplotlib.patches as mpatch
+#import matplotlib.patches as mpatch
 import flowdyn.integration as tnum
 
 
