@@ -518,7 +518,7 @@ class euler2d(euler):
         """
         c2 = self.gamma * pdata[2] / pdata[0]
         un = _vec_dot_vec(pdata[1], dir)
-        H  = c2/(self.gamma-1.) + .5*_vecmag(pdata[1])
+        H  = c2/(self.gamma-1.) + .5*_vecsqrmag(pdata[1])
         return pdata[0], un, pdata[1], pdata[2], H, c2
 
     @_vardict.register()

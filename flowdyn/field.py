@@ -196,11 +196,12 @@ class fdata:
         if axes is None: axes=plt.gca()
         xx, yy = self.mesh.centers()
         axes.set_aspect('equal')
-        return axes.contour(xx.reshape((self.mesh.ny, self.mesh.nx)),
-                             yy.reshape((self.mesh.ny, self.mesh.nx)), 
-                             self.phydata(name).reshape((self.mesh.ny, self.mesh.nx)))
+        return axes.contour(
+            xx.reshape((self.mesh.ny, self.mesh.nx)),
+            yy.reshape((self.mesh.ny, self.mesh.nx)), 
+            self.phydata(name).reshape((self.mesh.ny, self.mesh.nx)))
 
-    def contourf(self, name, style={}, axes=plt):
+    def contourf(self, name, style={}, axes=None):
         """
 
         Args:
@@ -211,13 +212,14 @@ class fdata:
         Returns:
 
         """
+        if axes is None: axes=plt.gca()
         # TODO must check this is a 2D mesh
         xx, yy = self.mesh.centers()
         axes.set_aspect("equal")
         return axes.contourf(
-            xx.reshape((self.mesh.nx, self.mesh.ny)),
-            yy.reshape((self.mesh.nx, self.mesh.ny)),
-            self.phydata(name).reshape((self.mesh.nx, self.mesh.ny)),
+            xx.reshape((self.mesh.ny, self.mesh.nx)),
+            yy.reshape((self.mesh.ny, self.mesh.nx)), 
+            self.phydata(name).reshape((self.mesh.ny, self.mesh.nx)),
         )
 
     def set_plotdata(self, line, name):
