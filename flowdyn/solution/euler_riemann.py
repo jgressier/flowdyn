@@ -6,7 +6,7 @@ test integration methods
 import numpy as np
 import flowdyn.field           as field
 import flowdyn.modelphy.euler  as euler
-import flowdyn.modeldisc       as modeldisc
+#import flowdyn.modeldisc       as modeldisc
 import aerokit.aero.unsteady1D as uq
 import aerokit.instance.riemann as riem
 
@@ -18,7 +18,7 @@ class riemann():
         :param primR: primitive (rho, u, p) data on the right
     """
 
-    def __init__(self, model, primL, primR):
+    def __init__(self, model: euler.base, primL, primR):
 
         self.model = model
         self.rhoL, self.uL, self.pL = primL
@@ -38,7 +38,7 @@ class riemann():
         :param t: time 
 
         """
-        if t==None:
+        if t is None:
             xot = np.where(mesh.centers()<0., -1e6, 1e6)
         else:
             xot = mesh.centers()/t

@@ -11,6 +11,9 @@ theme:
   features:
     - navigation.tabs
 
+extra_css:
+  - stylesheets/extra.css
+
 nav:
   - Home: index.md
   - User Guide:
@@ -20,7 +23,8 @@ nav:
     - Examples: examples.md
     - Nozzle: examples/euler-nozzle.ipynb
     - Rayleigh flow: examples/euler-rayleigh-flow.ipynb
-  - Code reference: coderef.md
+  - Code reference: 
+    - flowdyn.monitors: coderef/flowdyn.monitors.md
   - About: 
     - About: about.md
     - Change log: changelog.md
@@ -34,3 +38,15 @@ plugins:
   - exclude:
       glob:
         - ".ipynb_checkpoints"
+  - mkdocstrings:
+      default_handler: python
+      handlers:
+        python:
+          rendering:
+            show_root_heading: false
+            show_source: true
+            show_category_heading: true
+          selection:
+            #docstring_style: "restructured-text" # default is "google"
+            filters:
+              - "!^_"  # exclude all members starting with _

@@ -3,14 +3,13 @@
 test integration methods
 """
 
-import time
-import cProfile
+#import cProfile
 import matplotlib.pyplot as plt
 import numpy as np 
 
 import flowdyn.mesh2d as mesh2d
 from flowdyn.field import *
-from flowdyn.xnum  import *
+from flowdyn.xnum  import extrapol2d1, extrapol2dk
 import flowdyn.integration    as integ
 import flowdyn.modelphy.euler as euler
 import flowdyn.modeldisc      as modeldisc
@@ -31,19 +30,19 @@ bcsym = { 'type': 'sym' }
 rhs = modeldisc.fvm2d(model, meshsim, 
 		num=extrapol2dk(1./3.),
 #		num=extrapol2d1(),
-		numflux='hlle', 
+		numflux='centered', 
 		bclist={'left': bcper, 'right': bcper, 'top': bcper, 'bottom': bcper} )
 #		bclist={'left': bcsym, 'right': bcsym, 'top': bcsym, 'bottom': bcsym} )
 solver = integ.rk3ssp(meshsim, rhs)
 # computation
 #
-endtime = 2.5
+endtime = 5.
 cfl     = 1.
 
 # initial functions
 def fuv(x,y):
-    vmag = .01 ; k = 10.
-    return euler.datavector(0.*x+.4, 0.*x)
+    #vmag = .01 ; k = 10.
+    return euler.datavector(0.*x+.4, 0.*x+.2)
 def fp(x,y): # gamma = 1.4
     return 0.*x+1.
 def frho(x,y):

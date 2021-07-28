@@ -1,20 +1,20 @@
 # -*- coding: utf-8 -*-
-"""
-Created on Fri May 10 16:58:31 2013
+"""module field
 
-@author: j.gressier
 """
+__all__ = ["fdata"]
+
 import numpy as np
+
 try:
     import matplotlib.pyplot as plt
 except ImportError:
     print("unable to import matplotlib, some features will be missing")
 
-#import model
-#import mesh
+# import model
+# import mesh
 
-
-class fdata():
+class fdata:
     """define field: neq x nelem data
       model : number of equations
       mesh  : mesh
@@ -25,27 +25,30 @@ class fdata():
     Returns:
 
     """
-    def __init__(self, model, mesh, data=None, t=0.):
+
+    def __init__(self, model, mesh, data=None, t=0.0):
         self.model = model
-        self.neq   = model.neq
-        self.mesh  = mesh
+        self.neq = model.neq
+        self.mesh = mesh
         self.nelem = mesh.ncell
-        self.time  = t
-        if data!=None:
-            self.data = data[:] # copy shape
+        self.time = t
+        if data is not None:
+            self.data = data[:]  # copy shape
             # and check
             for i, d in enumerate(data):
                 if np.ndim(d) < self.model.shape[i]:
-                    self.data[i] = np.repeat(np.expand_dims(d, axis=0), self.nelem, axis=0).T
+                    self.data[i] = np.repeat(
+                        np.expand_dims(d, axis=0), self.nelem, axis=0
+                    ).T
                 else:
                     self.data[i] = d.copy()
-            #self.data = [ np.array(d).T*np.ones(self.nelem) for d in data ] # old version only working for scalars
+            # self.data = [ np.array(d).T*np.ones(self.nelem) for d in data ] # old version only working for scalars
         else:
             raise NotImplementedError("no more possible to get data signature")
-            self.data = [ np.zeros(self.nelem) ] * self.neq
+            # self.data = [ np.zeros(self.nelem) ] * self.neq
             # for i in range(self.neq):
             #     self.data.append(np.zeros(nelem))
-                    
+
     def copy(self):
         """ """
         new = fdata(self.model, self.mesh, self.data, t=self.time)
@@ -55,10 +58,10 @@ class fdata():
         return new
 
     def set(self, f):
-        """
+        """set (as a reference) all members of a fielf to current field
 
         Args:
-          f: 
+          f: field
 
         Returns:
 
@@ -68,6 +71,37 @@ class fdata():
 
     def set_time(self, time):
         self.time = time
+
+    def interpol_t(self, f, t):
+        """create a new field time-interpolated between self and f
+
+        Args:
+            f (field): field to interpolate to
+            t (float): time to interpolate
+        Returns:
+            new interpolated field
+        """
+        new = self.copy()
+        k = (t-self.time)/(f.time-self.time)
+        new.time = t
+        for i in range(f.neq):
+            new.data[i] += k * (f.data[i]-self.data[i])
+        return new
+
+    def diff(self, f):
+        """create a new field time-interpolated between self and f
+
+        Args:
+            f (field): field to interpolate to
+            t (float): time to interpolate
+        Returns:
+            new interpolated field
+        """
+        new = self.copy()
+        new.time -= f.time
+        for i in range(f.neq):
+            new.data[i] -= f.data[i]
+        return new
 
     def zero_datalist(self, newdim=None):
         """returns a list of numpy.array with the same shape of self.data, possibly resizes to dim if provided
@@ -79,21 +113,21 @@ class fdata():
 
         """
         if newdim:
-            datalist = [ 0 for d in self.data]
+            datalist = [0 for d in self.data]
             for i, d in enumerate(self.data):
                 newshape = np.array(d.shape)
                 newshape[-1] = newdim
-                datalist[i]  = np.zeros(newshape)
+                datalist[i] = np.zeros(newshape)
         else:
-            datalist = [ np.zeros(d.shape) for d in self.data]
+            datalist = [np.zeros(d.shape) for d in self.data]
         return datalist
 
     def isnan(self):
         """check nan valies is all solution field"""
-        return any([ np.any(np.isnan(d)) for d in self.data])
+        return any([np.any(np.isnan(d)) for d in self.data])
 
     def phydata(self, name):
-        """returns the numpy array of given physical name, according to (internal) model
+        """returns the numpy array of given physical name, according to self.model
 
         Args:
           name: name of physical data, available in model.list_var()
@@ -103,7 +137,7 @@ class fdata():
         """
         return self.model.nameddata(name, self.data)
 
-    def plot(self, name, style='o', axes=plt):
+    def plot(self, name, style="o", axes=plt):
         """plot named physical date along x axis of internal mesh
 
         Args:
@@ -122,6 +156,19 @@ class fdata():
     
     
 
+    def semilogy(self, name, style="o", axes=plt):
+        """plot named physical date along x axis of internal mesh
+
+        Args:
+          name: name of physical data, available in model.list_var()
+          style:  (Default value = 'o')
+          axes: specify optional axes system (Default value = plt)
+
+        Returns:
+
+        """
+        return axes.semilogy(self.mesh.centers(), self.phydata(name), style)
+
     def stats(self, name):
         """Computes average and variance of named data
 
@@ -131,15 +178,15 @@ class fdata():
         Returns:
 
         """
-        avg = np.average(self.phydata(name), weights=self.mesh.dx())
-        var = np.average((self.phydata(name)-avg)**2, weights=self.mesh.dx())
+        avg = self.mesh.average(self.phydata(name))
+        var = self.mesh.average((self.phydata(name) - avg) ** 2)
         return avg, var
         
     def contour(self, name, style={}, axes=None):
         """
 
         Args:
-          name: 
+          name:
           style:  (Default value = {})
           axes:  (Default value = plt)
 
@@ -149,34 +196,38 @@ class fdata():
         if axes is None: axes=plt.gca()
         xx, yy = self.mesh.centers()
         axes.set_aspect('equal')
-        return axes.contour(xx.reshape((self.mesh.ny, self.mesh.nx)),
-                             yy.reshape((self.mesh.ny, self.mesh.nx)), 
-                             self.phydata(name).reshape((self.mesh.ny, self.mesh.nx)))
+        return axes.contour(
+            xx.reshape((self.mesh.ny, self.mesh.nx)),
+            yy.reshape((self.mesh.ny, self.mesh.nx)), 
+            self.phydata(name).reshape((self.mesh.ny, self.mesh.nx)))
 
-    def contourf(self, name, style={}, axes=plt):
+    def contourf(self, name, style={}, axes=None):
         """
 
         Args:
-          name: 
+          name:
           style:  (Default value = {})
           axes:  (Default value = plt)
 
         Returns:
 
         """
+        if axes is None: axes=plt.gca()
         # TODO must check this is a 2D mesh
         xx, yy = self.mesh.centers()
-        axes.set_aspect('equal')
-        return axes.contourf(xx.reshape((self.mesh.nx, self.mesh.ny)),
-                             yy.reshape((self.mesh.nx, self.mesh.ny)), 
-                             self.phydata(name).reshape((self.mesh.nx, self.mesh.ny)))
+        axes.set_aspect("equal")
+        return axes.contourf(
+            xx.reshape((self.mesh.ny, self.mesh.nx)),
+            yy.reshape((self.mesh.ny, self.mesh.nx)), 
+            self.phydata(name).reshape((self.mesh.ny, self.mesh.nx)),
+        )
 
     def set_plotdata(self, line, name):
         """
 
         Args:
-          line: 
-          name: 
+          line:
+          name:
 
         Returns:
 

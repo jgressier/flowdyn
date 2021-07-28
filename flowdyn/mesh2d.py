@@ -5,8 +5,6 @@ Created on Fri May 10 15:42:29 2013
 @author: j.gressier
 """
 
-import sys
-import math
 import numpy as np
 import flowdyn.meshbase as meshbase
 
@@ -50,6 +48,13 @@ class mesh2d(meshbase.virtualmesh):
     def dy(self):
         "compute cell sizes in a mesh"
         return self.ly / self.ny
+
+    def vol(self):
+        "compute cell sizes in a mesh"
+        # dx = np.zeros(self.ncell)
+        # for i in np.arange(self.ncell):
+        #     dx[i] = (self.xf[i+1]-self.xf[i])
+        return np.repeat(self.dx()*self.dy(), self.ncell)
 
     def __repr__(self):
         print("mesh object: mesh2d")
