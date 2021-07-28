@@ -36,6 +36,14 @@ class Test_densitypulse():
         finit = rhs.fdata_fromprim([ frho(xc, yc), fuv(xc, yc), fp(xc, yc) ]) # rho, (u,v), p
         return solver, finit
 
+    def test_variables(self):
+        solver, finit = self.case_solver(50, 50, xn.extrapol2d1(), 'centered')
+        assert not finit.isnan()
+        data = 2*finit.phydata('kinetic-energy') - finit.phydata('density')*(
+                 finit.phydata('velocity_x')**2 + finit.phydata('velocity_y')**2)
+        error = np.sum(np.abs(data))
+        assert error < 1.e-12
+
     def test_centered(self):
         solver, finit = self.case_solver(50, 50, xn.extrapol2d1(), 'centered')
         endtime = 5.
@@ -44,7 +52,7 @@ class Test_densitypulse():
         assert not fsol[-1].isnan()
         rhoavg, rhovar = fsol[-1].stats("density")
         assert rhoavg == pytest.approx(1.408796) # mass conservation
-        assert rhovar == pytest.approx(.00114, rel=.01)
+        assert rhovar == pytest.approx(.00115, rel=.01)
 
     def test_O1_hlle(self):
         solver, finit = self.case_solver(50, 50, xn.extrapol2d1(), 'hlle')
@@ -54,7 +62,7 @@ class Test_densitypulse():
         assert not fsol[-1].isnan()
         rhoavg, rhovar = fsol[-1].stats("density")
         assert rhoavg == pytest.approx(1.408796) # mass conservation
-        assert rhovar == pytest.approx(5.5e-6, rel=.01)
+        assert rhovar == pytest.approx(5.12e-6, rel=.01)
 
     def test_O3_hlle(self):
         solver, finit = self.case_solver(50, 50, xn.extrapol2dk(1./3.), 'hlle')
@@ -64,7 +72,7 @@ class Test_densitypulse():
         assert not fsol[-1].isnan()
         rhoavg, rhovar = fsol[-1].stats("density")
         assert rhoavg == pytest.approx(1.408796) # mass conservation
-        assert rhovar == pytest.approx(6.2e-4, rel=.01)
+        assert rhovar == pytest.approx(6.32e-4, rel=.01)
 
 class TestStraightDuct2d():
 
@@ -94,19 +102,28 @@ class TestStraightDuct2d():
         print(fsol[-1].phydata('mach'), mach_th)
         assert error < 1.e-8
 
-    # def test_flow_sup(self):
-    #     endtime = 100.
-    #     cfl     = 1.2
-    #     xnum    = muscl(minmod) 
-    #     tnum    = integ.rk4
-    #     meshsim = self.mesh20
-    #     bcL = { 'type': 'insup',  'ptot': 3., 'rttot': 1., 'p': 1.}
-    #     bcR = { 'type': 'outsup' }
-    #     rhs = modeldisc.fvm(self.model, meshsim, xnum, bcL=bcL, bcR=bcR)
-    #     finit = rhs.fdata_fromprim([ 1., 3., 1. ]) # rho, u, p
-    #     solver = tnum(meshsim, rhs)
-    #     fsol = solver.solve(finit, cfl, [endtime])
-    #     assert not fsol[-1].isnan()
-    #     mach_th = np.sqrt(((bcL['ptot']/bcL['p'])**(1./3.5)-1.)/.2)
-    #     error = np.sqrt(np.sum((fsol[-1].phydata('mach')-mach_th)**2)/meshsim.ncell)/mach_th 
-    #     assert error < 1.e-8
+    def test_flow_sub(self):
+        endtime = 100.
+        cfl     = 1.5
+        bcL = { 'type': 'insub',  'ptot': 1.4, 'rttot': 1. }
+        bcR = { 'type': 'outsub', 'p': 1. }
+        solver, finit = self.case_solver(20, 5, xn.extrapol2d1(), 'hlle', bcL, bcR)
+        fsol = solver.solve(finit, cfl, [endtime])
+        assert not fsol[-1].isnan()
+        mach_th = np.sqrt(((bcL['ptot']/bcR['p'])**(1./3.5)-1.)/.2)
+        error = np.sqrt(np.sum((fsol[-1].phydata('mach')-mach_th)**2)/fsol[-1].nelem)/mach_th 
+        print(fsol[-1].phydata('mach'), mach_th)
+        assert error < 1.e-8
+
+    def test_flow_sup(self):
+        endtime = 100.
+        cfl     = 1.5
+        bcL = { 'type': 'insup',  'ptot': 1.4, 'rttot': 1., 'p': 1. }
+        bcR = { 'type': 'outsup', 'p': 1. }
+        solver, finit = self.case_solver(20, 5, xn.extrapol2d1(), 'hlle', bcL, bcR)
+        fsol = solver.solve(finit, cfl, [endtime])
+        assert not fsol[-1].isnan()
+        mach_th = np.sqrt(((bcL['ptot']/bcL['p'])**(1./3.5)-1.)/.2)
+        error = np.sqrt(np.sum((fsol[-1].phydata('mach')-mach_th)**2)/fsol[-1].nelem)/mach_th 
+        print(fsol[-1].phydata('mach'), mach_th)
+        assert error < 1.e-8

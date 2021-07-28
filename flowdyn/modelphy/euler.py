@@ -96,6 +96,7 @@ class euler(base.model):
     def velocity(self, qdata):  # returns (rho u)/rho, works for both scalar and vector
         return qdata[1]/qdata[0]
 
+    @_vardict.register()
     def velocitymag(self, qdata):  # returns mag(rho u)/rho, depending if scalar or vector
         return np.abs(qdata[1])/qdata[0] if qdata[1].ndim==1 else _vecmag(qdata[1])/qdata[0]
 
