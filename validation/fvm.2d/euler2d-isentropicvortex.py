@@ -10,7 +10,7 @@ import numpy as np
 import flowdyn.mesh2d as mesh2d
 from flowdyn.field import *
 import flowdyn.xnum as xn 
-from flowdyn.integration import *
+import flowdyn.integration as tn
 import flowdyn.modelphy.euler as euler
 import flowdyn.modeldisc      as modeldisc
 #import flowdyn.solution.euler_riemann as sol
@@ -32,7 +32,7 @@ xnum=xn.extrapol2dk(k=1./3.)
 rhs = modeldisc.fvm2d(
     model, meshsim, num=xnum, numflux='hlle', 
     bclist={'left': bcper, 'right': bcper, 'top': bcper, 'bottom': bcper} )
-solver = rk3ssp(meshsim, rhs)
+solver = tn.rk3ssp(meshsim, rhs)
 
 # computation
 #

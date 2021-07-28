@@ -16,8 +16,8 @@ class virtualmeth():
     def __init__(self):
         self.gradmeth = 'none'
     
-    def interp_face(self, mesh, data, grad):
-        pass
+    # def interp_face(self, mesh, data, grad):
+    #     pass
     
 class extrapol1(virtualmeth):
     "first order method"
@@ -80,6 +80,10 @@ class extrapolk(virtualmeth):
 
 class extrapol2d1(virtualmeth):
     "first order method"
+    def __init__(self, k):
+        virtualmeth.__init__(self)
+        self.gradmeth = 'face'
+
     def interp_face(self, mesh, data,  field, neq,xgrad='none',ygrad='none'):
         Ldata = []
         Rdata = []
@@ -112,6 +116,7 @@ class extrapol2d1(virtualmeth):
 
 class extrapol2dk(virtualmeth):
     def __init__(self, k):
+        virtualmeth.__init__(self)
         self.gradmeth = 'face'
         self.kprec    = k
 

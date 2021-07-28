@@ -261,7 +261,7 @@ class fvm2dcart(base):
                             data_bc[i][:,iofaces] = p
     
     def calc_bc_grad(self):
-        bclist = self._bclist
+        #bclist = self._bclist
         nx = self.mesh.nx
         ny = self.mesh.ny
         if self.is_per('left') and self.is_per('right'):
