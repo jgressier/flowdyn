@@ -3,23 +3,22 @@
 test integration methods
 """
 
-import time
-import cProfile
+#import cProfile
 import matplotlib.pyplot as plt
 import numpy as np 
 
-import pyfvm.mesh2d as mesh2d
-from pyfvm.field import *
-from pyfvm.xnum  import *
-from pyfvm.integration import *
-import pyfvm.modelphy.euler as euler
-import pyfvm.modeldisc      as modeldisc
-#import pyfvm.solution.euler_riemann as sol
+import flowdyn.mesh2d as mesh2d
+from flowdyn.field import *
+import flowdyn.xnum as xn 
+from flowdyn.integration import *
+import flowdyn.modelphy.euler as euler
+import flowdyn.modeldisc      as modeldisc
+#import flowdyn.solution.euler_riemann as sol
 
 nx = 100
 ny = 100
-lx = 20
-ly = 20
+lx = 10
+ly = 10
 gam = 1.4
 b=1.5
 meshsim  = mesh2d.unimesh(nx, ny, lx, ly)
@@ -28,14 +27,14 @@ model = euler.euler2d()
 
 bcper = { 'type': 'per' }
 bcsym = { 'type': 'sym' }
-xnum=extrapol2dk(k=1./3.)
-#xnum=extrapol2d1()
+xnum=xn.extrapol2dk(k=1./3.)
+#xnum=xn.extrapol2d1()
 rhs = modeldisc.fvm2d(model, meshsim, num=xnum, numflux='hlle', bclist={'left': bcper, 'right': bcper, 'top': bcper, 'bottom': bcper} )
 solver = rk3ssp(meshsim, rhs)
 
 # computation
 #
-endtime = 2. #10.
+endtime = 20.
 cfl     = 1.
 
 # initial functions

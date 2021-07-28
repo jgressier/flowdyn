@@ -19,7 +19,7 @@
  """
 
 import numpy as np
-import math
+#import math
 #from numpy.lib.function_base import _angle_dispatcher
 import flowdyn.modelphy.base as base
 
@@ -129,12 +129,12 @@ class euler(base.model):
 
     @_vardict.register()
     def rttot(self, qdata):
-        ec = 0.5*qdata[1]**2/qdata[0]
+        ec = self.kinetic_energy(qdata)
         return ((qdata[2]-ec)*self.gamma + ec)/qdata[0]/self.gamma*(self.gamma-1.)
 
     @_vardict.register()
     def htot(self, qdata):
-        ec = 0.5*qdata[1]**2/qdata[0]
+        ec = self.kinetic_energy(qdata)
         return ((qdata[2]-ec)*self.gamma + ec)/qdata[0]
 
     def _Roe_average(self, rhoL, uL, HL, rhoR, uR, HR):
@@ -142,7 +142,7 @@ class euler(base.model):
         # Roe's averaging
         Rrho = np.sqrt(rhoR/rhoL)
         tmp    = 1.0/(1.0+Rrho)
-        velRoe = tmp*(uL + uR*Rrho)
+        #velRoe = tmp*(uL + uR*Rrho)
         uRoe   = tmp*(uL + uR*Rrho)
         hRoe   = tmp*(HL + HR*Rrho)
         cRoe  = np.sqrt((hRoe - 0.5*uRoe**2)*(self.gamma-1.))
@@ -559,8 +559,6 @@ class euler2d(euler):
 
     @_numfluxdict.register(name='hlle')
     def numflux_hlle(self, pdataL, pdataR, dir): # HLLE Riemann solver ; pL[ieq][face]
-        gam  = self.gamma
-        gam1 = gam-1.
         rhoL, unL, VL, pL, HL, cL2 = self._derived_fromprim(pdataL, dir)
         rhoR, unR, VR, pR, HR, cR2 = self._derived_fromprim(pdataR, dir)    
         # The HLLE Riemann solver
