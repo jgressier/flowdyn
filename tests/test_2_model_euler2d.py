@@ -57,7 +57,7 @@ class Test_densitypulse():
     def test_O1_hlle(self):
         solver, finit = self.case_solver(50, 50, xn.extrapol2d1(), 'hlle')
         endtime = 5.
-        cfl     = 1.
+        cfl     = 1.6
         fsol = solver.solve(finit, cfl, [endtime])
         assert not fsol[-1].isnan()
         rhoavg, rhovar = fsol[-1].stats("density")
@@ -67,12 +67,12 @@ class Test_densitypulse():
     def test_O3_hlle(self):
         solver, finit = self.case_solver(50, 50, xn.extrapol2dk(1./3.), 'hlle')
         endtime = 5.
-        cfl     = 1.
+        cfl     = 1.2
         fsol = solver.solve(finit, cfl, [endtime])
         assert not fsol[-1].isnan()
         rhoavg, rhovar = fsol[-1].stats("density")
         assert rhoavg == pytest.approx(1.408796) # mass conservation
-        assert rhovar == pytest.approx(6.32e-4, rel=.01)
+        assert rhovar == pytest.approx(5.23e-4, rel=.01)
 
 class TestStraightDuct2d():
 
@@ -86,7 +86,7 @@ class TestStraightDuct2d():
                                  num=xnum, numflux=flux, 
                                  bclist=bclist)
         solver = integ.rk3ssp(meshsim, rhs)
-        finit = rhs.fdata_fromprim([ 1., [0., 0.], 1. ]) # rho, (u,v), p
+        finit = rhs.fdata_fromprim([ 1., [0.8, 0.], 1. ]) # rho, (u,v), p
         return solver, finit
 
     def test_flow_sub(self):
@@ -112,18 +112,16 @@ class TestStraightDuct2d():
         assert not fsol[-1].isnan()
         mach_th = np.sqrt(((bcL['ptot']/bcR['p'])**(1./3.5)-1.)/.2)
         error = np.sqrt(np.sum((fsol[-1].phydata('mach')-mach_th)**2)/fsol[-1].nelem)/mach_th 
-        print(fsol[-1].phydata('mach'), mach_th)
         assert error < 1.e-8
 
     def test_flow_sup(self):
         endtime = 100.
         cfl     = 1.5
-        bcL = { 'type': 'insup',  'ptot': 1.4, 'rttot': 1., 'p': 1. }
-        bcR = { 'type': 'outsup', 'p': 1. }
+        bcL = { 'type': 'insup',  'ptot': 2.8, 'rttot': 1., 'p': 1. }
+        bcR = { 'type': 'outsup'}
         solver, finit = self.case_solver(20, 5, xn.extrapol2d1(), 'hlle', bcL, bcR)
         fsol = solver.solve(finit, cfl, [endtime])
         assert not fsol[-1].isnan()
         mach_th = np.sqrt(((bcL['ptot']/bcL['p'])**(1./3.5)-1.)/.2)
-        error = np.sqrt(np.sum((fsol[-1].phydata('mach')-mach_th)**2)/fsol[-1].nelem)/mach_th 
-        print(fsol[-1].phydata('mach'), mach_th)
+        error = np.sqrt(np.sum((fsol[-1].phydata('mach')-mach_th)**2)/fsol[-1].nelem)/mach_th
         assert error < 1.e-8
