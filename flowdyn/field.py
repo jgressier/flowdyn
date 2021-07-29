@@ -69,6 +69,9 @@ class fdata:
         self.__init__(f.model, f.mesh, f.data)
         self.time = f.time
 
+    def set_time(self, time):
+        self.time = time
+
     def interpol_t(self, f, t):
         """create a new field time-interpolated between self and f
 
@@ -146,6 +149,12 @@ class fdata:
 
         """
         return axes.plot(self.mesh.centers(), self.phydata(name), style)
+    
+    def plot2dcart(self, name, style='o', axes=plt): #basic idea on how to get a plot based on 2D FVM while using a 1D case.
+        xx,yy = self.mesh.centers()
+        return axes.plot(xx[0:self.mesh.nx], self.phydata(name)[0:self.mesh.nx], style)
+    
+    
 
     def semilogy(self, name, style="o", axes=plt):
         """plot named physical date along x axis of internal mesh
@@ -172,8 +181,8 @@ class fdata:
         avg = self.mesh.average(self.phydata(name))
         var = self.mesh.average((self.phydata(name) - avg) ** 2)
         return avg, var
-
-    def contour(self, name, style={}, axes=plt):
+        
+    def contour(self, name, style={}, axes=None):
         """
 
         Args:
@@ -184,15 +193,15 @@ class fdata:
         Returns:
 
         """
+        if axes is None: axes=plt.gca()
         xx, yy = self.mesh.centers()
-        axes.set_aspect("equal")
+        axes.set_aspect('equal')
         return axes.contour(
-            xx.reshape((self.mesh.nx, self.mesh.ny)),
-            yy.reshape((self.mesh.nx, self.mesh.ny)),
-            self.phydata(name).reshape((self.mesh.nx, self.mesh.ny)),
-        )
+            xx.reshape((self.mesh.ny, self.mesh.nx)),
+            yy.reshape((self.mesh.ny, self.mesh.nx)), 
+            self.phydata(name).reshape((self.mesh.ny, self.mesh.nx)))
 
-    def contourf(self, name, style={}, axes=plt):
+    def contourf(self, name, style={}, axes=None):
         """
 
         Args:
@@ -203,13 +212,14 @@ class fdata:
         Returns:
 
         """
+        if axes is None: axes=plt.gca()
         # TODO must check this is a 2D mesh
         xx, yy = self.mesh.centers()
         axes.set_aspect("equal")
         return axes.contourf(
-            xx.reshape((self.mesh.nx, self.mesh.ny)),
-            yy.reshape((self.mesh.nx, self.mesh.ny)),
-            self.phydata(name).reshape((self.mesh.nx, self.mesh.ny)),
+            xx.reshape((self.mesh.ny, self.mesh.nx)),
+            yy.reshape((self.mesh.ny, self.mesh.nx)), 
+            self.phydata(name).reshape((self.mesh.ny, self.mesh.nx)),
         )
 
     def set_plotdata(self, line, name):
