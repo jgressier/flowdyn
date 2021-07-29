@@ -72,7 +72,7 @@ class Test_densitypulse():
         assert not fsol[-1].isnan()
         rhoavg, rhovar = fsol[-1].stats("density")
         assert rhoavg == pytest.approx(1.408796) # mass conservation
-        assert rhovar == pytest.approx(9.63e-4, rel=.01)
+        assert rhovar == pytest.approx(9.05e-4, rel=.01)
 
 class TestStraightDuct2d():
 
