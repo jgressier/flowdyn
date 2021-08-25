@@ -19,6 +19,7 @@ import numpy               as np
 #import flowdyn.modelphy.base as model
 #import flowdyn.mesh          as mesh
 import flowdyn.field         as field
+import flowdyn._data as dd
 
 _default_bc = { 'type': 'per' }
 
@@ -59,7 +60,7 @@ class base():
 
     def all_L2average(self, qdata):
         """compute average of all fields """
-        qavg = [ self.mesh.L2average(q) for q in qdata ]
+        qavg = [ self.mesh.L2average(dd._vecsqrmag(q)) if q.ndim==2 else self.mesh.L2average(q) for q in qdata ]
         return math.sqrt(np.average(qavg)**2)
 
     def rhs(self, field):
