@@ -19,25 +19,10 @@
  """
 
 import numpy as np
-import math
+#import math
 #from numpy.lib.function_base import _angle_dispatcher
 import flowdyn.modelphy.base as base
-
-# ===============================================================
-def _vecmag(qdata):
-    return np.sqrt(np.sum(qdata**2, axis=0))
-
-def _vecsqrmag(qdata):
-    return np.sum(qdata**2, axis=0)
-
-def _sca_mult_vec(r, v):
-    return r*v # direct multiplication thanks to shape (:)*(2,:)
-
-def _vec_dot_vec(v1, v2):
-    return np.einsum('ij,ij->j', v1, v2)
-
-def datavector(ux, uy, uz=None):
-    return np.vstack([ux, uy]) if not uz else np.vstack([ux, uy, uz])
+from flowdyn._data import *
 
 # ===============================================================
 # implementation of MODEL class
@@ -96,6 +81,7 @@ class euler(base.model):
     def velocity(self, qdata):  # returns (rho u)/rho, works for both scalar and vector
         return qdata[1]/qdata[0]
 
+    @_vardict.register()
     def velocitymag(self, qdata):  # returns mag(rho u)/rho, depending if scalar or vector
         return np.abs(qdata[1])/qdata[0] if qdata[1].ndim==1 else _vecmag(qdata[1])/qdata[0]
 
@@ -128,12 +114,12 @@ class euler(base.model):
 
     @_vardict.register()
     def rttot(self, qdata):
-        ec = 0.5*qdata[1]**2/qdata[0]
+        ec = self.kinetic_energy(qdata)
         return ((qdata[2]-ec)*self.gamma + ec)/qdata[0]/self.gamma*(self.gamma-1.)
 
     @_vardict.register()
     def htot(self, qdata):
-        ec = 0.5*qdata[1]**2/qdata[0]
+        ec = self.kinetic_energy(qdata)
         return ((qdata[2]-ec)*self.gamma + ec)/qdata[0]
 
     def _Roe_average(self, rhoL, uL, HL, rhoR, uR, HR):
@@ -141,7 +127,7 @@ class euler(base.model):
         # Roe's averaging
         Rrho = np.sqrt(rhoR/rhoL)
         tmp    = 1.0/(1.0+Rrho)
-        velRoe = tmp*(uL + uR*Rrho)
+        #velRoe = tmp*(uL + uR*Rrho)
         uRoe   = tmp*(uL + uR*Rrho)
         hRoe   = tmp*(HL + HR*Rrho)
         cRoe  = np.sqrt((hRoe - 0.5*uRoe**2)*(self.gamma-1.))
@@ -558,8 +544,6 @@ class euler2d(euler):
 
     @_numfluxdict.register(name='hlle')
     def numflux_hlle(self, pdataL, pdataR, dir): # HLLE Riemann solver ; pL[ieq][face]
-        gam  = self.gamma
-        gam1 = gam-1.
         rhoL, unL, VL, pL, HL, cL2 = self._derived_fromprim(pdataL, dir)
         rhoR, unR, VR, pR, HR, cR2 = self._derived_fromprim(pdataR, dir)    
         # The HLLE Riemann solver

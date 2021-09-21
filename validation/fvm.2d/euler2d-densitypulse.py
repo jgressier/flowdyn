@@ -30,8 +30,8 @@ bcsym = { 'type': 'sym' }
 rhs = modeldisc.fvm2d(model, meshsim, 
 		num=extrapol2dk(1./3.),
 #		num=extrapol2d1(),
-		numflux='centered', 
-		bclist={'left': bcper, 'right': bcper, 'top': bcper, 'bottom': bcper} )
+		numflux='hlle', 
+		bclist={'left': bcper, 'right': bcper, 'top': bcsym, 'bottom': bcsym} )
 #		bclist={'left': bcsym, 'right': bcsym, 'top': bcsym, 'bottom': bcsym} )
 solver = integ.rk3ssp(meshsim, rhs)
 # computation
@@ -42,7 +42,7 @@ cfl     = 1.
 # initial functions
 def fuv(x,y):
     #vmag = .01 ; k = 10.
-    return euler.datavector(0.*x+.4, 0.*x+.2)
+    return euler.datavector(0.*x+.4, 0.*x)
 def fp(x,y): # gamma = 1.4
     return 0.*x+1.
 def frho(x,y):
@@ -57,7 +57,7 @@ fsol = solver.solve(finit, cfl, [endtime])
 solver.show_perf()
 
 # Figure / Plot
-vars = ['density', 'pressure', 'velocity_x', 'mach']
+vars = ['density', 'pressure', 'velocity_x']
 nvars = len(vars)
 fig, ax = plt.subplots(ncols=nvars, figsize=(8*nvars-2,6))
 fig.suptitle('density pulse: ')

@@ -150,7 +150,7 @@ class fdata:
         """
         return axes.plot(self.mesh.centers(), self.phydata(name), style)
     
-    def plot2d(self, name, style='o', axes=plt): #basic idea on how to get a plot based on 2D FVM while using a 1D case.
+    def plot2dcart(self, name, style='o', axes=plt): #basic idea on how to get a plot based on 2D FVM while using a 1D case.
         xx,yy = self.mesh.centers()
         return axes.plot(xx[0:self.mesh.nx], self.phydata(name)[0:self.mesh.nx], style)
     

@@ -19,6 +19,7 @@ import numpy               as np
 #import flowdyn.modelphy.base as model
 #import flowdyn.mesh          as mesh
 import flowdyn.field         as field
+import flowdyn._data as dd
 
 _default_bc = { 'type': 'per' }
 
@@ -59,7 +60,7 @@ class base():
 
     def all_L2average(self, qdata):
         """compute average of all fields """
-        qavg = [ self.mesh.L2average(q) for q in qdata ]
+        qavg = [ self.mesh.L2average(dd._vecsqrmag(q)) if q.ndim==2 else self.mesh.L2average(q) for q in qdata ]
         return math.sqrt(np.average(qavg)**2)
 
     def rhs(self, field):
@@ -188,7 +189,10 @@ class fvm2dcart(base):
         for tag in self.mesh.list_of_bctags():
             if tag not in bclist:
                 raise NameError("missing BC tag '"+tag+"' in bclist argument")
-            
+
+    def is_per(self, name):
+        return self._bclist[name]['type'] == 'per'
+
     def calc_grad(self):
         """
         Computes face-based gradients of each primitive data
@@ -258,27 +262,50 @@ class fvm2dcart(base):
                             data_bc[i][:,iofaces] = p
     
     def calc_bc_grad(self):
-        bcper = { 'type': 'per' }
-        bclist = self._bclist
+        #bclist = self._bclist
         nx = self.mesh.nx
         ny = self.mesh.ny
-        if bclist['left'] == bcper and bclist['right'] == bcper:
+        if self.is_per('left') and self.is_per('right'):
             for p in range(self.neq):
                 if self.pdata[p].ndim == 2:
-                    for j in range(ny):
-                        self.xgrad[p][:,(nx+1)*j:(nx+1)*(j+1):nx] = 0.
+                    grad = self.pdata[p][:,::nx]-self.pdata[p][:,nx-1::nx]
+                    self.xgrad[p][:,::nx+1] = grad
+                    self.xgrad[p][:,nx::nx+1] = grad
                 else:
-                    for j in range(ny):
-                        self.xgrad[p][(nx+1)*j:(nx+1)*(j+1):nx] = 0.
+                    grad = self.pdata[p][::nx]-self.pdata[p][nx-1::nx]
+                    self.xgrad[p][::nx+1] = grad
+                    self.xgrad[p][nx::nx+1] = grad
+        elif self.is_per('left') or self.is_per('right'):     # inconsistent periodic boundary conditions:
+            raise NameError("both conditions should be periodic")
+        else:
+            for p in range(self.neq):
+                if self.pdata[p].ndim == 2:
+                    self.xgrad[p][:,::nx+1] = 0.
+                    self.xgrad[p][:,nx::nx+1] = 0.
+                else:
+                    self.xgrad[p][::nx+1] = 0.
+                    self.xgrad[p][nx::nx+1] = 0.
 
-        if bclist['top'] == bcper and bclist['bottom'] == bcper:
+        if self.is_per('top') and self.is_per('bottom'):
             for p in range(self.neq):
                 if self.pdata[p].ndim == 2:
-                    for j in range(nx):
-                        self.ygrad[p][:,j:nx*nx+(j+1):nx*nx] = 0.
+                    grad = self.pdata[p][:,0:nx]-self.pdata[p][:,(ny-1)*nx:]
+                    self.ygrad[p][:,0:nx] = grad
+                    self.ygrad[p][:,ny*nx:] = grad
                 else:
-                    for j in range(nx):
-                        self.ygrad[p][j:nx*nx+(j+1):nx*nx] = 0.
+                    grad = self.pdata[p][0:nx]-self.pdata[p][(ny-1)*nx:]
+                    self.ygrad[p][0:nx] = grad
+                    self.ygrad[p][ny*nx:] = grad
+        elif self.is_per('top') or self.is_per('bottom'):     # inconsistent periodic boundary conditions:
+            raise NameError("both conditions should be periodic")
+        else:
+            for p in range(self.neq):
+                if self.pdata[p].ndim == 2:
+                    self.ygrad[p][:,0:nx] = 0.
+                    self.ygrad[p][:,ny*nx:] = 0.
+                else:
+                    self.ygrad[p][0:nx] = 0.
+                    self.ygrad[p][ny*nx:] = 0.
 
         return
 
