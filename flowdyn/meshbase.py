@@ -6,7 +6,7 @@ Created on Fri May 10 15:42:29 2013
 """
 
 #import sys
-import math
+#import math
 import numpy as np
 
 class virtualmesh():
@@ -39,7 +39,7 @@ class virtualmesh():
 
     def L2average(self, data):
         "volume weighted average of data"
-        return math.sqrt(np.average(data**2, weights=self.vol()))
+        return np.sqrt(np.average(data**2, weights=self.vol()))
 
     def __repr__(self):
         raise NotImplementedError()
