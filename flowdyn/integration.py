@@ -208,7 +208,7 @@ class timemodel:
         self._time = self.Qn.time
         if flush:
             alldata = [d for d in self.Qn.data]
-        results = []
+        results = field.fieldlist()
         start = myclock()
         isave, nsave = 0, len(tsave)
         # loop testing all ending criteria

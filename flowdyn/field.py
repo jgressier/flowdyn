@@ -234,3 +234,26 @@ class fdata:
         """
         line.set_data(self.mesh.centers(), self.phydata(name))
         return
+
+class fieldlist():
+    """define field list: result of solver integration
+
+    Args:
+
+    Returns:
+
+    """
+
+    def __init__(self):
+        self.solutions = list()
+        self._packed = False
+
+    def __getitem__(self, i):
+        return self.solutions[i]
+
+    def __len__(self):
+        return len(self.solutions)
+
+    def append(self, s):
+        self._packed = False
+        return self.solutions.append(s)
