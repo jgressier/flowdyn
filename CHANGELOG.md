@@ -16,7 +16,7 @@ pip show flowdyn
 
 ## Versions
 
-### [1.2.x](https://pypi.org/project/flowdyn/) (2021-xx-xx)
+### [1.3.x](https://pypi.org/project/flowdyn/) (2021-xx-xx)
 
 #### new features
 
@@ -31,6 +31,7 @@ pip show flowdyn
   - `insub_cbc` with stagnation parameters but more stable
   - `outsub_rh` able to trigger shock wave even in supersonic flow
 - `field.semilogy('name')` for semi-logarithmic plots
+- specific `fieldlist` object output from integration
 
 ### [1.2.0](https://pypi.org/project/flowdyn/) (2021-06-05)
 
