@@ -1,8 +1,13 @@
 # Models
 
+All models are available in `flowdyn.modelphy`.
+
 ## linear convection model
 
 ## Burgers model
+
+## Shallow water model
+
 ## 1D Euler model
 
 A very classical 1D inviscid compressible model is defined in `modelphy.euler`. It is only dependend on $`\gamma`$ coefficient (specific heats ratio) which is 1.4 by default. Additional source terms can be added to mass, momentum, energy equations. It allows the definition of derived models. The model uses
