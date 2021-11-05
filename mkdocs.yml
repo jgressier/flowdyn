@@ -17,7 +17,12 @@ extra_css:
 nav:
   - Home: index.md
   - User Guide:
-    - Models: userguide/models.md
+    - Models: 
+      - model definition: userguide/models.md
+      - convection: userguide/models/convection.md
+      - Burgers: userguide/models/burgers.md
+      - shallow water: userguide/models/shallowwater.md
+      - Euler: userguide/models/euler.md
     - Numerical methods: userguide/num.md
   - Examples: 
     - Examples: examples.md
