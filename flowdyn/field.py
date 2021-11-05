@@ -152,9 +152,7 @@ class fdata:
     
     def plot2dcart(self, name, style='o', axes=plt): #basic idea on how to get a plot based on 2D FVM while using a 1D case.
         xx,yy = self.mesh.centers()
-        return axes.plot(xx[0:self.mesh.nx], self.phydata(name)[0:self.mesh.nx], style)
-    
-    
+        return axes.plot(xx[0:self.mesh.nx], self.phydata(name)[0:self.mesh.nx], style)    
 
     def semilogy(self, name, style="o", axes=plt):
         """plot named physical date along x axis of internal mesh
@@ -169,6 +167,17 @@ class fdata:
         """
         return axes.semilogy(self.mesh.centers(), self.phydata(name), style)
 
+    def average(self, name):
+        """Computes average named data
+
+        Args:
+          name: name of physical data, available in model.list_var()
+
+        Returns: average (cell volume weighted)
+
+        """
+        return self.mesh.average(self.phydata(name))
+           
     def stats(self, name):
         """Computes average and variance of named data
 
@@ -183,7 +192,7 @@ class fdata:
         return avg, var
         
     def contour(self, name, style={}, axes=None):
-        """
+        """draw contour lines from 2d data
 
         Args:
           name:
@@ -202,7 +211,7 @@ class fdata:
             self.phydata(name).reshape((self.mesh.ny, self.mesh.nx)))
 
     def contourf(self, name, style={}, axes=None):
-        """
+        """draw flooded contour from 2d data
 
         Args:
           name:
@@ -223,7 +232,7 @@ class fdata:
         )
 
     def set_plotdata(self, line, name):
-        """
+        """apply data to line object (often for animations)
 
         Args:
           line:
@@ -234,3 +243,26 @@ class fdata:
         """
         line.set_data(self.mesh.centers(), self.phydata(name))
         return
+
+class fieldlist():
+    """define field list: result of solver integration
+        can be handled as a list object but add some specific functions
+    Args:
+
+    Returns:
+
+    """
+
+    def __init__(self):
+        self.solutions = list()
+        self._packed = False
+
+    def __getitem__(self, i):
+        return self.solutions[i]
+
+    def __len__(self):
+        return len(self.solutions)
+
+    def append(self, s):
+        self._packed = False
+        return self.solutions.append(s)

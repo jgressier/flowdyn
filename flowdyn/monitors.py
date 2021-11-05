@@ -12,6 +12,11 @@ Example:
 
 """
 
+try:
+    import matplotlib.pyplot as plt
+except ImportError:
+    print("unable to import matplotlib, some features will be missing")
+
 # --------------------------------------------------------------------
 # class monitor
 
@@ -42,3 +47,18 @@ class monitor():
         self._it.append(it)
         self._time.append(time)
         self._value.append(value)
+
+    def lastratio(self):
+        return self._value[-1]/self._value[0]
+
+    def plot_it(self, ax=plt, **kwargs):
+        ax.plot(self._it, self._value, **kwargs)
+
+    def plot_time(self, ax=plt, **kwargs):
+        ax.plot(self._time, self._value, **kwargs)
+
+    def semilogplot_it(self, ax=plt, **kwargs):
+        ax.semilogy(self._it, self._value, **kwargs)
+
+    def semilogplot_time(self, ax=plt, **kwargs):
+        ax.semilogy(self._time, self._value, **kwargs)

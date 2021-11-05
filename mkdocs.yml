@@ -17,6 +17,7 @@ extra_css:
 nav:
   - Home: index.md
   - User Guide:
+    - Starting guide: userguide/start.md
     - Models: userguide/models.md
     - Numerical methods: userguide/num.md
   - Examples: 

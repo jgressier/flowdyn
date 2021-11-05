@@ -13,6 +13,12 @@ flowdyn
 [![codecov](https://img.shields.io/codecov/c/github/jgressier/flowdyn.svg?style=flat)](https://codecov.io/gh/jgressier/flowdyn)
 [![lgtm](https://img.shields.io/lgtm/grade/python/github/jgressier/flowdyn.svg?style=flat)](https://lgtm.com/projects/g/jgressier/flowdyn/)
 
+### Documentation and examples
+
+* documentation of the [official release](https://flowdyn.readthedocs.io/en/latest/) or [development branch](https://flowdyn.readthedocs.io/en/develop/)
+* some [examples in the documentation](https://flowdyn.readthedocs.io/en/latest/examples) pages
+* some examples in the [github repository](https://github.com/jgressier/flowdyn/tree/master/validation)
+
 ### Features
 
 Current version includes

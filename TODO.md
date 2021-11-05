@@ -8,9 +8,9 @@
 
 ## known limitations / enhancements
 
-- stop integration with max number of iteration criterion
-- stop integration with residual criterion
-- stop integration with total cpu time
+- [x] stop integration with max number of iteration criterion
+- [ ] stop integration with residual criterion
+- [x] stop integration with total cpu time
 
 ## documentation
 
