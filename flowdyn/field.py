@@ -69,6 +69,9 @@ class fdata:
         self.__init__(f.model, f.mesh, f.data)
         self.time = f.time
 
+    def set_time(self, time):
+        self.time = time
+
     def interpol_t(self, f, t):
         """create a new field time-interpolated between self and f
 
@@ -146,6 +149,10 @@ class fdata:
 
         """
         return axes.plot(self.mesh.centers(), self.phydata(name), style)
+    
+    def plot2dcart(self, name, style='o', axes=plt): #basic idea on how to get a plot based on 2D FVM while using a 1D case.
+        xx,yy = self.mesh.centers()
+        return axes.plot(xx[0:self.mesh.nx], self.phydata(name)[0:self.mesh.nx], style)    
 
     def semilogy(self, name, style="o", axes=plt):
         """plot named physical date along x axis of internal mesh
@@ -160,6 +167,17 @@ class fdata:
         """
         return axes.semilogy(self.mesh.centers(), self.phydata(name), style)
 
+    def average(self, name):
+        """Computes average named data
+
+        Args:
+          name: name of physical data, available in model.list_var()
+
+        Returns: average (cell volume weighted)
+
+        """
+        return self.mesh.average(self.phydata(name))
+           
     def stats(self, name):
         """Computes average and variance of named data
 
@@ -172,9 +190,9 @@ class fdata:
         avg = self.mesh.average(self.phydata(name))
         var = self.mesh.average((self.phydata(name) - avg) ** 2)
         return avg, var
-
-    def contour(self, name, style={}, axes=plt):
-        """
+        
+    def contour(self, name, style={}, axes=None):
+        """draw contour lines from 2d data
 
         Args:
           name:
@@ -184,16 +202,16 @@ class fdata:
         Returns:
 
         """
+        if axes is None: axes=plt.gca()
         xx, yy = self.mesh.centers()
-        axes.set_aspect("equal")
+        axes.set_aspect('equal')
         return axes.contour(
-            xx.reshape((self.mesh.nx, self.mesh.ny)),
-            yy.reshape((self.mesh.nx, self.mesh.ny)),
-            self.phydata(name).reshape((self.mesh.nx, self.mesh.ny)),
-        )
+            xx.reshape((self.mesh.ny, self.mesh.nx)),
+            yy.reshape((self.mesh.ny, self.mesh.nx)), 
+            self.phydata(name).reshape((self.mesh.ny, self.mesh.nx)))
 
-    def contourf(self, name, style={}, axes=plt):
-        """
+    def contourf(self, name, style={}, axes=None):
+        """draw flooded contour from 2d data
 
         Args:
           name:
@@ -203,17 +221,18 @@ class fdata:
         Returns:
 
         """
+        if axes is None: axes=plt.gca()
         # TODO must check this is a 2D mesh
         xx, yy = self.mesh.centers()
         axes.set_aspect("equal")
         return axes.contourf(
-            xx.reshape((self.mesh.nx, self.mesh.ny)),
-            yy.reshape((self.mesh.nx, self.mesh.ny)),
-            self.phydata(name).reshape((self.mesh.nx, self.mesh.ny)),
+            xx.reshape((self.mesh.ny, self.mesh.nx)),
+            yy.reshape((self.mesh.ny, self.mesh.nx)), 
+            self.phydata(name).reshape((self.mesh.ny, self.mesh.nx)),
         )
 
     def set_plotdata(self, line, name):
-        """
+        """apply data to line object (often for animations)
 
         Args:
           line:
@@ -224,3 +243,26 @@ class fdata:
         """
         line.set_data(self.mesh.centers(), self.phydata(name))
         return
+
+class fieldlist():
+    """define field list: result of solver integration
+        can be handled as a list object but add some specific functions
+    Args:
+
+    Returns:
+
+    """
+
+    def __init__(self):
+        self.solutions = list()
+        self._packed = False
+
+    def __getitem__(self, i):
+        return self.solutions[i]
+
+    def __len__(self):
+        return len(self.solutions)
+
+    def append(self, s):
+        self._packed = False
+        return self.solutions.append(s)

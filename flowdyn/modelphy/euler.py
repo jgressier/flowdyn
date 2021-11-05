@@ -19,23 +19,10 @@
  """
 
 import numpy as np
+#import math
+#from numpy.lib.function_base import _angle_dispatcher
 import flowdyn.modelphy.base as base
-
-# ===============================================================
-def _vecmag(qdata):
-    return np.sqrt(np.sum(qdata**2, axis=0))
-
-def _vecsqrmag(qdata):
-    return np.sum(qdata**2, axis=0)
-
-def _sca_mult_vec(r, v):
-    return r*v # direct multiplication thanks to shape (:)*(2,:)
-
-def _vec_dot_vec(v1, v2):
-    return np.einsum('ij,ij->j', v1, v2)
-
-def datavector(ux, uy, uz=None):
-    return np.vstack([ux, uy]) if not uz else np.vstack([ux, uy, uz])
+from flowdyn._data import *
 
 # ===============================================================
 # implementation of MODEL class
@@ -94,6 +81,7 @@ class euler(base.model):
     def velocity(self, qdata):  # returns (rho u)/rho, works for both scalar and vector
         return qdata[1]/qdata[0]
 
+    @_vardict.register()
     def velocitymag(self, qdata):  # returns mag(rho u)/rho, depending if scalar or vector
         return np.abs(qdata[1])/qdata[0] if qdata[1].ndim==1 else _vecmag(qdata[1])/qdata[0]
 
@@ -126,13 +114,24 @@ class euler(base.model):
 
     @_vardict.register()
     def rttot(self, qdata):
-        ec = 0.5*qdata[1]**2/qdata[0]
+        ec = self.kinetic_energy(qdata)
         return ((qdata[2]-ec)*self.gamma + ec)/qdata[0]/self.gamma*(self.gamma-1.)
 
     @_vardict.register()
     def htot(self, qdata):
-        ec = 0.5*qdata[1]**2/qdata[0]
+        ec = self.kinetic_energy(qdata)
         return ((qdata[2]-ec)*self.gamma + ec)/qdata[0]
+
+    def _Roe_average(self, rhoL, uL, HL, rhoR, uR, HR):
+        """returns Roe averaged rho, u, usound"""
+        # Roe's averaging
+        Rrho = np.sqrt(rhoR/rhoL)
+        tmp    = 1.0/(1.0+Rrho)
+        #velRoe = tmp*(uL + uR*Rrho)
+        uRoe   = tmp*(uL + uR*Rrho)
+        hRoe   = tmp*(HL + HR*Rrho)
+        cRoe  = np.sqrt((hRoe - 0.5*uRoe**2)*(self.gamma-1.))
+        return Rrho, uRoe, cRoe
 
     def numflux(self, name, pdataL, pdataR, dir=None):
         if name is None: name='hllc'
@@ -212,16 +211,7 @@ class euler(base.model):
         eR   = HR-pR/rhoR
 
         # Roe's averaging
-        Rrho = np.sqrt(rhoR/rhoL)
-        #
-        tmp    = 1.0/(1.0+Rrho);
-        velRoe = tmp*(uL + uR*Rrho)
-        uRoe   = tmp*(uL + uR*Rrho)
-        #hRoe   = tmp*(HL + HR*Rrho)
-
-        gamPdivRho = tmp*( (cL2+0.5*gam1*uL*uL) + (cR2+0.5*gam1*uR*uR)*Rrho )
-        cRoe  = np.sqrt(gamPdivRho - gam1*0.5*velRoe**2)
-
+        Rrho, uRoe, cRoe = self._Roe_average(rhoL, uL, HL, rhoR, uR, HR)
         # max HLL 2 waves "velocities"
         sL = np.minimum(0., np.minimum(uRoe-cRoe, unL-np.sqrt(cL2)))
         sR = np.maximum(0., np.maximum(uRoe+cRoe, unR+np.sqrt(cR2)))
@@ -260,15 +250,7 @@ class euler(base.model):
         eR   = HR-pR/rhoR
 
         # Roe's averaging
-        Rrho = np.sqrt(rhoR/rhoL)
-
-        tmp    = 1.0/(1.0+Rrho);
-        velRoe = tmp*(uL + uR*Rrho)
-        uRoe   = tmp*(uL + uR*Rrho)
-        #hRoe   = tmp*(HL + HR*Rrho)
-
-        gamPdivRho = tmp*( (cL2+0.5*gam1*uL*uL) + (cR2+0.5*gam1*uR*uR)*Rrho )
-        cRoe  = np.sqrt(gamPdivRho - gam1*0.5*velRoe**2)
+        Rrho, uRoe, cRoe = self._Roe_average(rhoL, uL, HL, rhoR, uR, HR)
 
         # speed of sound at L and R
         sL = np.minimum(uRoe-cRoe, unL-np.sqrt(cL2))
@@ -328,7 +310,7 @@ class euler(base.model):
 
 class euler1d(euler):
     """
-    Class model for 2D euler equations
+    Class model for 1D euler equations
     """
     _bcdict = base.methoddict('bc_')
     _vardict = base.methoddict()
@@ -387,10 +369,10 @@ class euler1d(euler):
         # expected parameters are 'ptot', 'rttot' and 'p'
         g   = self.gamma
         gmu = g-1.
-        p  = param['p']
-        m2 = np.maximum(0., ((param['ptot']/param['p'])**(gmu/g)-1.)*2./gmu)
+        p=param['p']
+        m2 = np.maximum(0., ((param['ptot']/p)**(gmu/g)-1.)*2./gmu)
         rh = param['ptot']/param['rttot']/(1.+.5*gmu*m2)**(1./gmu)
-        return [ rh, -dir*np.sqrt(g*m2*p/rh), p ]
+        return [rh, -dir*np.sqrt(g*m2*p/rh), p]
 
     @_bcdict.register(name='outsub')
     @_bcdict.register()
@@ -460,6 +442,10 @@ class nozzle(euler1d):
     attributes:
 
     """
+    _bcdict = base.methoddict('bc_')
+    _vardict = base.methoddict()
+    _numfluxdict = base.methoddict('numflux_')
+
     def __init__(self, sectionlaw, gamma=1.4, source=None):
         nozsrc = [ self.src_mass, self.src_mom, self.src_energy ]
         allsrc = nozsrc # init all sources to nozzle sources
@@ -469,6 +455,10 @@ class nozzle(euler1d):
                     allsrc[i] = lambda x,q: isrc(x,q)+nozsrc[i](x,q)
         euler1d.__init__(self, gamma=gamma, source=allsrc)
         self.sectionlaw = sectionlaw
+        self._bcdict.merge(nozzle._bcdict)
+        self._vardict.merge(nozzle._vardict)
+        self._numfluxdict.merge(nozzle._numfluxdict)
+
 
     def initdisc(self, mesh):
         self._xc = mesh.centers()
@@ -477,6 +467,7 @@ class nozzle(euler1d):
                     (mesh.xf[1:mesh.ncell+1]-mesh.xf[0:mesh.ncell])
         return
 
+    @_vardict.register()
     def massflow(self,qdata):
         return qdata[1]*self.sectionlaw(self._xc)
 
@@ -510,12 +501,11 @@ class euler2d(euler):
 
     def _derived_fromprim(self, pdata, dir):
         """
-        returns rho, un, V, c2, H
-        'dir' is ignored
+        returns rho, un, V, p, H, c2
         """
         c2 = self.gamma * pdata[2] / pdata[0]
         un = _vec_dot_vec(pdata[1], dir)
-        H  = c2/(self.gamma-1.) + .5*_vecmag(pdata[1])
+        H  = c2/(self.gamma-1.) + .5*_vecsqrmag(pdata[1])
         return pdata[0], un, pdata[1], pdata[2], H, c2
 
     @_vardict.register()
@@ -531,6 +521,17 @@ class euler2d(euler):
         rhoUmag = _vecmag(qdata[1])
         return rhoUmag/np.sqrt(self.gamma*((self.gamma-1.0)*(qdata[0]*qdata[2]-0.5*rhoUmag**2)))
 
+    def _Roe_average(self, rhoL, unL, UL, HL, rhoR, unR, UR, HR):
+        """returns Roe averaged rho, u, usound"""
+        # Roe's averaging
+        Rrho = np.sqrt(rhoR/rhoL)
+        tmp    = 1.0/(1.0+Rrho)
+        unRoe  = tmp*(unL + unR*Rrho)
+        URoe   = tmp*(UL + UR*Rrho)
+        hRoe   = tmp*(HL + HR*Rrho)
+        cRoe  = np.sqrt((hRoe - 0.5*_vecsqrmag(URoe))*(self.gamma-1.))
+        return Rrho, unRoe, cRoe
+
     @_numfluxdict.register(name='centered')
     @_numfluxdict.register()
     def numflux_centeredflux(self, pdataL, pdataR, dir): # centered flux ; pL[ieq][face]
@@ -540,8 +541,67 @@ class euler2d(euler):
         Frho  = .5*( rhoL*unL + rhoR*unR )
         Frhou = .5*( (rhoL*unL)*VL + pL*dir + (rhoR*unR)*VR + pR*dir)
         FrhoE = .5*( (rhoL*unL*HL) + (rhoR*unR*HR))
-
         return [Frho, Frhou, FrhoE]
+
+    @_numfluxdict.register(name='hlle')
+    def numflux_hlle(self, pdataL, pdataR, dir): # HLLE Riemann solver ; pL[ieq][face]
+        rhoL, unL, VL, pL, HL, cL2 = self._derived_fromprim(pdataL, dir)
+        rhoR, unR, VR, pR, HR, cR2 = self._derived_fromprim(pdataR, dir)    
+        # The HLLE Riemann solver
+        etL   = HL-pL/rhoL
+        etR   = HR-pR/rhoR
+        # Roe's averaging
+        Rrho, uRoe, cRoe = self._Roe_average(rhoL, unL, VL, HL, rhoR, unR, VR, HR)
+        # max HLL 2 waves "velocities"
+        sL = np.minimum(0., np.minimum(uRoe-cRoe, unL-np.sqrt(cL2)))
+        sR = np.maximum(0., np.maximum(uRoe+cRoe, unR+np.sqrt(cR2)))
+        # final flux
+        Frho  = (sR*rhoL*unL - sL*rhoR*unR + sL*sR*(rhoR-rhoL))/(sR-sL)
+        Frhou = (sR*((rhoL*unL)*VL + pL*dir) - sL*((rhoR*unR)*VR + pR*dir) + sL*sR*(rhoR*VR-rhoL*VL))/(sR-sL)
+        FrhoE = (sR*(rhoL*unL*HL) - sL*(rhoR*unR*HR) + sL*sR*(rhoR*etR-rhoL*etL))/(sR-sL)
+        return [Frho, Frhou, FrhoE]
+
+    @_bcdict.register()
+    def bc_sym(self, dir, data, param):
+        "symmetry boundary condition, for inviscid equations, it is equivalent to a wall, do not need user parameters"
+        VL=data[1]
+        Vn=_vec_dot_vec(VL,dir)
+        VR=VL-2.0*(Vn*dir)
+        return [ data[0], VR, data[2] ]
+
+    @_bcdict.register()
+    def bc_insub(self, dir, data, param):
+        #needed parameters : ptot, rttot
+        g   = self.gamma
+        gmu = g-1.
+        p  = data[2]
+        m2 = np.maximum(0., ((param['ptot']/p)**(gmu/g)-1.)*2./gmu)
+        rh = param['ptot']/param['rttot']/(1.+.5*gmu*m2)**(1./gmu)
+        return [ rh, _sca_mult_vec(-np.sqrt(g*p*m2/rh),dir), p ] 
+
+    @_bcdict.register()
+    def bc_insup(self, dir, data, param):
+        # needed parameters : ptot, rttot
+        g   = self.gamma
+        gmu = g-1.
+        p  = param['p']
+        if 'angle' in param:
+            ang = np.deg2rad(param['angle'])
+            dir_in = np.full_like(dir, [[np.cos(ang)],[np.sin(ang)]])
+        else:
+            dir_in = -dir
+        m2 = np.maximum(0., ((param['ptot']/p)**(gmu/g)-1.)*2./gmu)
+        rh = param['ptot']/param['rttot']/(1.+.5*gmu*m2)**(1./gmu)
+        return [rh, _sca_mult_vec(np.sqrt(g*p*m2/rh),dir_in), p]
+
+    @_bcdict.register()
+    def bc_outsub(self, dir, data, param):
+        return [ data[0], data[1], param['p'] ] 
+
+    @_bcdict.register()
+    def bc_outsup(self, dir, data, param):
+        return data
+
 
 # ===============================================================
 # automatic testing

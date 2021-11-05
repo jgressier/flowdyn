@@ -35,3 +35,4 @@ Untitled*.ipynb
 
 # Visual Studio Code
 .vscode
+.DS_Store
