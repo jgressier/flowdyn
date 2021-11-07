@@ -16,15 +16,36 @@ pip show flowdyn
 
 ## Versions
 
+### [1.3.0](https://pypi.org/project/flowdyn/) (2021-11-05)
+
+#### new features
+
+- Finite Volume method on 2D cartesian grids
+  - 'extrapol2d1' and 'extrapol2dk' linear extrapolation (1st to 3rd order)
+  - geometric symmetry or periodic conditions, or model based
+- euler 2d model on cartesian grids
+  - 'hlle' and 'centered' flux
+  - set of 2d variables
+  - 'insup', 'insub', 'ousub', 'outsub' conditions
+- new subsonic inlet/oulet boundary condition for `euler1d` model
+  - `insub_cbc` with stagnation parameters but more stable
+  - `outsub_rh` able to trigger shock wave even in supersonic flow
+- `field.semilogy('name')` for semi-logarithmic plots
+- specific `fieldlist` object output from integration
+- monitoring features:
+  - new monitor `data_average`
+  - monitor type handled via monitor name or type
+  - monitor class provides plotting functions
+
 ### [1.2.0](https://pypi.org/project/flowdyn/) (2021-06-05)
 
 #### new features
 
 - shallow water model `modelphy.shallowwater`
 - new subsonic outlet boundary condition for `euler1d` model
-    - `outsub_prim` as a legacy primitive variables set, same as `outsub`
-    - `outsub_qtot` computed with `p` parameter and `ptot` and `rttot` extrapolation
-    - `outsub_nrcbc` for non-reflective characteristics conditions
+  - `outsub_prim` as a legacy primitive variables set, same as `outsub`
+  - `outsub_qtot` computed with `p` parameter and `ptot` and `rttot` extrapolation
+  - `outsub_nrcbc` for non-reflective characteristics conditions
 - new option to `timemodel.solve`: stop parameter with dictionary `tottime` or `maxit`
 - new monitoring feature to `timemodel.solve`
 
@@ -53,10 +74,9 @@ pip show flowdyn
 
 #### new features
 
-- Runge-Kutta methods `rk2_heun`and `'rk3_heun` from Heun 
+- Runge-Kutta methods `rk2_heun`and `'rk3_heun` from Heun
 - low storage Runge-Kutta (LSRK) methods from Hu and Hussaini
 - LSRK implementation of Bogey and Bailly `lsrk25bb`and `lsrk26bb``
-
 
 #### changed
 
@@ -74,7 +94,7 @@ pip show flowdyn
 
 #### fixed
 
-- fix computation of `modelphy.euler` supersonic inlet condition 
+- fix computation of `modelphy.euler` supersonic inlet condition
 
 ### [1.0.0](https://pypi.org/project/flowdyn/) (2021-01-27)
 

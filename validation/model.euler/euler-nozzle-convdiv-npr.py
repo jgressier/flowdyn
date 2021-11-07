@@ -34,7 +34,10 @@ bcR = { 'type': 'outsub', 'p': 1. }
 
 rhs = modeldisc.fvm(model, meshsim, muscl(vanleer), bcL=bcL, bcR=bcR)
 
-monitors = {'residual':{ 'name':'pipo' }}
+monitors = {
+    'residual':{ 'name':'pipo', 'frequency': 1 },
+    'data_average':{ 'data': 'mach', 'name':'Mach average', 'frequency': 1 }
+    }
 solver = tnum.rk3ssp(meshsim, rhs, monitors=monitors)
 
 # computation
@@ -59,16 +62,20 @@ print(s.getvalue())
 
 # Figure / Plot
 name = 'mach'
-fig, ax = plt.subplots(1, 2, figsize=(16,8))
+fig, ax = plt.subplots(1, 3, figsize=(22,8))
 monres = monitors['residual']['output']
-#ax[O].ylabel(monres.name)
+monavg = monitors['data_average']['output']
+ax[0].set_ylabel(monavg.name)
 ax[0].grid(linestyle='--', color='0.5')
-ax[0].semilogy(monres._it, monres._value)
-ax[1].set_ylabel(name)
+ax[0].plot(monavg._it, monavg._value)
+ax[1].set_ylabel(monres.name)
 ax[1].grid(linestyle='--', color='0.5')
+ax[1].semilogy(monres._it, monres._value)
+ax[2].set_ylabel(name)
+ax[2].grid(linestyle='--', color='0.5')
 #finit.plot(name, 'k-.')
-fsol[0].plot(name, 'bo', ax[1])
-fref.plot(name, 'k-', ax[1])
+fsol[0].plot(name, 'bo', ax[2])
+fref.plot(name, 'k-', ax[2])
 #fig.savefig(name+'.png', bbox_inches='tight')
 plt.show()
 

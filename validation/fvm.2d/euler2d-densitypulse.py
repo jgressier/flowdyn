@@ -9,34 +9,40 @@ import numpy as np
 
 import flowdyn.mesh2d as mesh2d
 from flowdyn.field import *
-from flowdyn.xnum  import *
+import flowdyn.xnum as xn
 import flowdyn.integration    as integ
 import flowdyn.modelphy.euler as euler
 import flowdyn.modeldisc      as modeldisc
 #import flowdyn.solution.euler_riemann as sol
 
-nx = 100
-ny = 100
+nx = 50
+ny = 50
 
 meshsim  = mesh2d.unimesh(nx, ny)
 
 model = euler.euler2d()
 
 #bcL = { 'type': 'insub',  'ptot': 1.4, 'rttot': 1. }
-bcR = { 'type': 'outsub', 'p': 1. }
+#bcR = { 'type': 'outsub', 'p': 1. }
+bcper = { 'type': 'per' }
+bcsym = { 'type': 'sym' }
 
-rhs = modeldisc.fvm2d(model, meshsim, num=None, numflux='centered', bclist={} )
-solver = integ.rk4(meshsim, rhs)
-
+rhs = modeldisc.fvm2d(model, meshsim, 
+		num=xn.extrapol2dk(1./3.),
+#		num=xn.extrapol2d1(),
+		numflux='hlle', 
+		bclist={'left': bcper, 'right': bcper, 'top': bcsym, 'bottom': bcsym} )
+#		bclist={'left': bcsym, 'right': bcsym, 'top': bcsym, 'bottom': bcsym} )
+solver = integ.rk3ssp(meshsim, rhs)
 # computation
 #
 endtime = 5.
-cfl     = 2.
+cfl     = 1.
 
 # initial functions
 def fuv(x,y):
     #vmag = .01 ; k = 10.
-    return euler.datavector(0.*x+.4, 0.*x+.2)
+    return euler.datavector(0.*x+.4, 0.*x)
 def fp(x,y): # gamma = 1.4
     return 0.*x+1.
 def frho(x,y):
@@ -51,7 +57,7 @@ fsol = solver.solve(finit, cfl, [endtime])
 solver.show_perf()
 
 # Figure / Plot
-vars = ['density', 'pressure', 'velocity_x', 'mach']
+vars = ['density', 'pressure', 'velocity_x']
 nvars = len(vars)
 fig, ax = plt.subplots(ncols=nvars, figsize=(8*nvars-2,6))
 fig.suptitle('density pulse: ')

@@ -72,6 +72,7 @@ class fakedisc:
 
 class timemodel:
     """ """
+    __default_monitor_freq = 10
 
     def __init__(self, mesh, modeldisc, monitors={}):
         self.mesh = mesh
@@ -79,7 +80,9 @@ class timemodel:
         self.monitors = monitors
         self.reset()
         # define function for monitoring
-        self._monitordict = { 'residual': self.mon_residual }
+        self._monitordict = { 
+            'residual': self.mon_residual,
+            'data_average': self.mon_dataavg }
 
     def reset(self):
         """ """
@@ -135,11 +138,14 @@ class timemodel:
         return any(check_end.values())
 
     def _parse_monitors(self, monitors):
-        for monkey, monval in monitors.items():
-            if monkey in self._monitordict.keys():
-                self._monitordict[monkey](monval)
+        """ Parse dictionnary of mnonitors and apply associated function
+        """
+        for name, monval in monitors.items():
+            montype = monval.get('type', name) # if type not set, name can be the type
+            if montype in self._monitordict.keys():
+                self._monitordict[montype](monval)
             else:
-                raise NameError("unknown monitor key: "+monkey)
+                raise NameError("unknown monitor key: "+montype)
 
 
     def solve_legacy(self, f, condition, tsave, 
@@ -208,7 +214,7 @@ class timemodel:
         self._time = self.Qn.time
         if flush:
             alldata = [d for d in self.Qn.data]
-        results = []
+        results = field.fieldlist()
         start = myclock()
         isave, nsave = 0, len(tsave)
         # loop testing all ending criteria
@@ -271,12 +277,25 @@ class timemodel:
         Args:
             params (dict): [description]
         """
-        if self._nit % params.get('frequency', 10) == 0:
+        if self._nit % params.get('frequency', self.__default_monitor_freq) == 0:
             if 'output' not in params:
                 params['output'] = monitor('residual')
             mon = params['output']
             self.calcrhs(self.Qn)
             value = self.modeldisc.all_L2average(self.residual)
+            mon.append(it=self._nit, time=self._time, value=value)
+
+    def mon_dataavg(self, params: dict):
+        """compute average of current field and monitor it
+
+        Args:
+            params (dict): [description]
+        """
+        if self._nit % params.get('frequency', self.__default_monitor_freq) == 0:
+            if 'output' not in params:
+                params['output'] = monitor('data_average')
+            mon = params['output']
+            value = self.Qn.average(params['data'])
             mon.append(it=self._nit, time=self._time, value=value)
 
     def propagator(self, z):
