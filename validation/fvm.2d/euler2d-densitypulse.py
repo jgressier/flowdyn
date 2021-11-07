@@ -9,7 +9,7 @@ import numpy as np
 
 import flowdyn.mesh2d as mesh2d
 from flowdyn.field import *
-from flowdyn.xnum  import extrapol2d1, extrapol2dk
+import flowdyn.xnum as xn
 import flowdyn.integration    as integ
 import flowdyn.modelphy.euler as euler
 import flowdyn.modeldisc      as modeldisc
@@ -28,8 +28,8 @@ bcper = { 'type': 'per' }
 bcsym = { 'type': 'sym' }
 
 rhs = modeldisc.fvm2d(model, meshsim, 
-		num=extrapol2dk(1./3.),
-#		num=extrapol2d1(),
+		num=xn.extrapol2dk(1./3.),
+#		num=xn.extrapol2d1(),
 		numflux='hlle', 
 		bclist={'left': bcper, 'right': bcper, 'top': bcsym, 'bottom': bcsym} )
 #		bclist={'left': bcsym, 'right': bcsym, 'top': bcsym, 'bottom': bcsym} )

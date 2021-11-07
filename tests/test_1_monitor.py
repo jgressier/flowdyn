@@ -50,16 +50,24 @@ class Test_Monitor_Euler(monitor_data):
         rhs = modeldisc.fvm(self.eulermodel, self.mesh50, self.xsch, 
             bcL=self.bcL, bcR=self.bcR)
         finit = rhs.fdata_fromprim([ 1., 0., 1. ]) # rho, u, p
-
-
         solver = tnum.rk4(self.mesh50, rhs)
         stop_directive = { 'maxit': 800 }
         monitors = { 'res_euler': {'type': 'residual' ,'frequency': 5}}
         fsol = solver.solve(finit, self.cfl, 
                         stop=stop_directive, monitors=monitors)
         assert not fsol[-1].isnan()
-        #mach_th = np.sqrt(((bcL['ptot']/bcR['p'])**(1./3.5)-1.)/.2)
-        #error = np.sqrt(np.sum((fsol[-1].phydata('mach')-mach_th)**2)/meshsim.ncell)/mach_th 
-        #assert error < 1.e-8
-        assert not fsol[-1].isnan()
         assert monitors['res_euler']['output'].lastratio() < 1.e-3
+
+    def test_datavg(self):
+        rhs = modeldisc.fvm(self.eulermodel, self.mesh50, self.xsch, 
+            bcL=self.bcL, bcR=self.bcR)
+        finit = rhs.fdata_fromprim([ 1., 0., 1. ]) # rho, u, p
+        solver = tnum.rk4(self.mesh50, rhs)
+        stop_directive = { 'maxit': 800 }
+        monitors = { 'Mach_avg': {'type': 'data_average' , 'data': 'mach', 'frequency': 5}}
+        fsol = solver.solve(finit, self.cfl, 
+                        stop=stop_directive, monitors=monitors)
+        assert not fsol[-1].isnan()
+        mach_th = np.sqrt(((self.bcL['ptot']/self.bcR['p'])**(1./3.5)-1.)/.2)
+        error = abs(monitors['Mach_avg']['output']._value[-1]-mach_th)/mach_th 
+        assert error < 1.e-2
