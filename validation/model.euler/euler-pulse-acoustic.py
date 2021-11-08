@@ -3,17 +3,15 @@
 test integration methods
 """
 
-import time
-import cProfile
-from pylab import *
+import matplotlib.pyplot as plt
 import numpy as np 
 
-from flowdyn.mesh  import *
-from flowdyn.field import *
+from flowdyn.mesh  import unimesh
 from flowdyn.xnum  import *
-from flowdyn.integration import *
+import flowdyn.integration as tnum
 import flowdyn.modelphy.euler as euler
 import flowdyn.modeldisc      as modeldisc
+import flowdyn.solution.euler_riemann as sol
 
 meshsim  = unimesh(ncell=200,  length=1.)
 meshref  = unimesh(ncell=1000, length=1.)
@@ -26,7 +24,7 @@ xnum = muscl(vanalbada) ; flux = 'hllc'
 #xnum = extrapol1() ; flux = 'centered'
 
 rhs = modeldisc.fvm(model, meshsim, numflux=flux, num=xnum, bcL=bcL, bcR=bcR)
-solver = rk3ssp(meshsim, rhs)
+solver = tnum.rk3ssp(meshsim, rhs)
 
 # computation
 #
@@ -78,4 +76,4 @@ ax2.set_ylabel('t') ; ax2.set_xlim(0., 1.)
 #ax2.grid(linestyle='--', color='0.5')
 flood  = ax2.contour(xx, xt, solgrid, np.linspace(vmin, vmax, 50))
 line2, = ax2.plot([0., 10.], [ttime[-1], ttime[-1]], 'k--')
-show()
+plt.show()
