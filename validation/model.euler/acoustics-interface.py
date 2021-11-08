@@ -3,15 +3,13 @@
 test integration methods
 """
 
-import time
-import cProfile
-from pylab import *
+#import cProfile
+import matplotlib.pyplot as plt
 import numpy as np 
 
-from flowdyn.mesh  import *
-from flowdyn.field import *
-from flowdyn.xnum  import *
-from flowdyn.integration import *
+from flowdyn.mesh import unimesh
+from flowdyn.xnum import *
+import flowdyn.integration as tnum
 import flowdyn.modelphy.euler as euler
 import flowdyn.modeldisc      as modeldisc
 
@@ -22,11 +20,11 @@ model = euler.model()
 
 bcL  = { 'type': 'sym' } # not physical but can work
 bcR  = { 'type': 'sym' } # for wall
-#xnum = muscl(vanalbada) ; flux = 'hllc'
-xnum = extrapol1() ; flux = 'centered'
+xnum = muscl(vanalbada) ; flux = 'hllc'
+#xnum = extrapol1() ; flux = 'centered'
 
 rhs = modeldisc.fvm(model, meshsim, numflux=flux, num=xnum, bcL=bcL, bcR=bcR)
-solver = rk3ssp(meshsim, rhs)
+solver = tnum.lsrk26bb(meshsim, rhs)
 
 # computation
 #
@@ -36,7 +34,7 @@ cfl     = .8
 
 # initial functions
 def fu(x):
-    vmag = .01 ; k = 10.
+    vmag = .01 #; k = 10.
     return vmag*np.exp(-500*(x-.2)**2) #*np.sin(2*np.pi*k*x)
 def fp(x): # gamma = 1.4
     return (1. + .2*fu(x))**7.  # satisfies C- invariant to make only C+ wave
@@ -68,4 +66,4 @@ ax2.set_ylabel('t') ; ax2.set_xlim(0., 1.)
 #ax2.grid(linestyle='--', color='0.5')
 flood  = ax2.contour(xx, xt, solgrid, np.linspace(vmin, vmax, 50))
 line2, = ax2.plot([0., 10.], [ttime[-1], ttime[-1]], 'k--')
-show()
+plt.show()
