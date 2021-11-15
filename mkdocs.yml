@@ -18,6 +18,12 @@ nav:
   - Home: index.md
   - User Guide:
     - Starting guide: userguide/start.md
+    - Models: 
+      - model definition: userguide/models.md
+      - convection: userguide/models/convection.md
+      - Burgers: userguide/models/burgers.md
+      - shallow water: userguide/models/shallowwater.md
+      - Euler: userguide/models/euler.md
     - Models: userguide/models.md
     - Numerical methods: userguide/num.md
   - Examples: 

@@ -3,15 +3,13 @@
 test integration methods
 """
 
-import time
-import cProfile
-from pylab import *
+#import cProfile
+import matplotlib.pyplot as plt
 import numpy as np 
 
-from flowdyn.mesh  import *
-from flowdyn.field import *
+from flowdyn.mesh  import unimesh
 from flowdyn.xnum  import *
-from flowdyn.integration import *
+import flowdyn.integration as tnum
 import flowdyn.modelphy.euler as euler
 import flowdyn.modeldisc      as modeldisc
 import flowdyn.solution.euler_riemann as sol
@@ -28,10 +26,10 @@ bcR  = { 'type': 'dirichlet',  'prim':  sod.bcR() }
 xnum1 = muscl(minmod) # 
 xnum2 = muscl(vanalbada) # 
 
-rhs1 = modeldisc.fvm(model1, meshsim, xnum1, numflux='hllc', bcL=bcL, bcR=bcR)
-solver1 = rk3ssp(meshsim, rhs1)
-rhs2 = modeldisc.fvm(model2, meshsim, xnum1, numflux='hlle', bcL=bcL, bcR=bcR)
-solver2 = rk3ssp(meshsim, rhs2)
+rhs1 = modeldisc.fvm(model1, meshsim, xnum1, numflux='hlle', bcL=bcL, bcR=bcR)
+solver1 = tnum.rk3ssp(meshsim, rhs1)
+rhs2 = modeldisc.fvm(model2, meshsim, xnum2, numflux='hlle', bcL=bcL, bcR=bcR)
+solver2 = tnum.rk3ssp(meshsim, rhs2)
 
 # computation
 #
@@ -50,12 +48,12 @@ solver2.show_perf()
 fref = sod.fdata(meshref, endtime)
 
 for name in ['density', 'pressure', 'mach']:
-    fig = figure(figsize=(10,8))
-    ylabel(name)
-    grid(linestyle='--', color='0.5')
+    fig = plt.figure(figsize=(10,8))
+    plt.ylabel(name)
+    plt.grid(linestyle='--', color='0.5')
     #finit.plot(name, 'k-.')
     fref.plot(name, 'k-')
     fsol1[0].plot(name, 'b-')
     fsol2[0].plot(name, 'r-')
     fig.savefig(name+'.png', bbox_inches='tight')
-show()
+plt.show()
