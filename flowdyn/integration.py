@@ -25,10 +25,11 @@ from flowdyn.monitors import monitor
 # --------------------------------------------------------------------
 # portage
 
-if float(sys.version[:3]) >= 3.3:  # or 3.8
-    myclock = time.process_time
-else:
-    myclock = time.clock
+# if float(sys.version[:3]) >= 3.3:  # or 3.8 !!! fail test of 3.10
+#     myclock = time.process_time
+# else:
+#     myclock = time.clock
+myclock = time.process_time # remove test since minimum version is 3.7
 
 # --------------------------------------------------------------------
 
@@ -138,7 +139,7 @@ class timemodel:
         return any(check_end.values())
 
     def _parse_monitors(self, monitors):
-        """ Parse dictionnary of mnonitors and apply associated function
+        """ Parse dictionnary of monitors and apply associated function
         """
         for name, monval in monitors.items():
             montype = monval.get('type', name) # if type not set, name can be the type
