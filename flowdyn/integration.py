@@ -205,10 +205,12 @@ class timemodel:
         """
         self.reset() # reset cputime and nit
         self.condition = condition
+        # default stopping criterion
         stopcrit = { 'tottime': tsave[-1] } if len(tsave)>0 else {}
         if stop is not None: stopcrit.update(stop)
         if not stopcrit:
             raise ValueError("missing stopping criteria")
+        # default monitors
         monitors = { **self.monitors, **monitors }
         # initialization before loop
         self.Qn = f.copy()
@@ -221,11 +223,15 @@ class timemodel:
         # loop testing all ending criteria
         checkend = self._check_end(stopcrit)
         self._parse_monitors(monitors)
+        # find first time to save if exists
+        while (isave < nsave) and (self.Qn.time > tsave[isave]):
+            isave += 1
+        # MAIN LOOP
         while not checkend:
             dtloc = self.modeldisc.calc_timestep(self.Qn, condition)
             mindtloc = min(dtloc)
             Qnn = self.Qn.copy()
-            if isave < nsave:
+            if isave < nsave: # specific step to save result and go back to Qn
                 if self.Qn.time+mindtloc >= tsave[isave]:
                     # compute smaller step with same integrator
                     self.step(Qnn, tsave[isave]-self.Qn.time)
@@ -243,6 +249,7 @@ class timemodel:
                 for i, q in zip(range(len(alldata)), self.Qn.data):
                     alldata[i] = np.vstack((alldata[i], q))
             checkend = self._check_end(stopcrit)
+            # save at least current state
             if checkend and len(results)==0:
                 results.append(self.Qn)
         self._cputime = myclock() - start
