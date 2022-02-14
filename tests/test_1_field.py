@@ -20,9 +20,20 @@ class Test_fdataclass():
     def test_init_empty(self):
         f = field.fdata(self.convmodel, self.curmesh, [])
         assert f.time == 0. # default value
+        assert f.it == -1 # default value
         assert f.data == []
         f.set_time(10.)
-        assert f.time == 10. 
+        assert f.time == 10.
+
+    def test_reset(self):
+        f = field.fdata(self.convmodel, self.curmesh, [])
+        f.set_time(10.)
+        f.reset(t=5.)
+        assert f.time == 5.
+        assert f.it == -1 # default value
+        f.reset(it=20)
+        assert f.time == 0. # default value
+        assert f.it == 20
 
     def test_init_expand(self):
         f = field.fdata(self.convmodel, self.curmesh, [ 1. ])
@@ -58,7 +69,7 @@ class Test_fieldlistclass():
     convmodel = conv.model(convcoef=1.)
     curmesh = mesh.unimesh(ncell=50, length=1.)
 
-    def test_init_scalararray(self):
+    def test_append_scalararray(self):
         flist = field.fieldlist()
         f1 = field.fdata(self.convmodel, self.curmesh, [1.])
         flist.append(f1)
@@ -68,3 +79,19 @@ class Test_fieldlistclass():
         assert len(flist) == 2
         assert flist[0].time == 0.
         assert flist[-1].time == 10.
+
+    def test_extend_scalararray(self):
+        flist = field.fieldlist()
+        f1 = field.fdata(self.convmodel, self.curmesh, [1.])
+        flist.append(f1)
+        f2 = f1.copy()
+        f2.set_time(10.)
+        flist.append(f2)
+        newlist = field.fieldlist()
+        newlist.append(f2)
+        newlist.append(f2)
+        flist.extend(newlist)
+        f2.set_time(100.)
+        assert len(flist) == 4
+        assert flist[0].time == 0.
+        assert flist[-1].time == 100.

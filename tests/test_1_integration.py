@@ -120,8 +120,7 @@ class Test_solve(integration_data):
         assert not fsol0[-1].isnan()
         assert fsol0[-1].time == breaktime
         #
-        stop_directive = { 'tottime': tottime }
-        fsol = solver.solve(fsol0[-1], cfl, tsave, stop=stop_directive)
+        fsol = solver.restart(fsol0[-1], cfl, tsave, stop=stop_directive)
         assert len(fsol) < nsol # only last snapshots
         assert not fsol[-1].isnan()
         assert fsol[-1].time == tottime
