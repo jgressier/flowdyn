@@ -85,10 +85,11 @@ class timemodel:
             'residual': self.mon_residual,
             'data_average': self.mon_dataavg }
 
-    def reset(self):
+    def reset(self, itstart=0):
         """ """
         self._cputime = 0.0
         self._nit = 0
+        self._itstart = itstart
 
     def calcrhs(self, field):
         """compute RHS with a call to modeldisc function
@@ -148,6 +149,11 @@ class timemodel:
             else:
                 raise NameError("unknown monitor key: "+montype)
 
+    def _remove_monitor_output(self, monitors):
+        """ Parse dictionnary of monitors and apply associated function
+        """
+        for key in monitors.keys():
+            monitors[key].pop("output", None) # None is needed to prevent missing key error
 
     def solve_legacy(self, f, condition, tsave, 
             stop=None, flush=None, monitors={}):
@@ -191,7 +197,19 @@ class timemodel:
         return results
 
     def solve(self, f, condition, tsave=[], 
-            stop=None, flush=None, monitors={}):
+            stop=None, flush=None, monitors={}, directives={}):
+        """ """
+        self.reset(itstart=0) # reset cputime and nit
+        self._remove_monitor_output(monitors)
+        return self._solve(f, condition, tsave, stop, flush, monitors, directives)
+
+    def restart(self, f, condition, tsave=[], 
+            stop=None, flush=None, monitors={}, directives={}):
+        """ """
+        self.reset(itstart=max(f.it, 0)) # reset cputime and nit
+        return self._solve(f, condition, tsave, stop, flush, monitors, directives)
+
+    def _solve(self, f, condition, tsave, stop, flush, monitors, directives):
         """Solve dQ/dt=RHS(Q,t)
 
         Args:
@@ -203,7 +221,10 @@ class timemodel:
         Returns:
           list of solution fields (size of tsave)
         """
-        self.reset() # reset cputime and nit
+        self._time = f.time
+        # directives
+        verbose = 'verbose' in directives.keys()
+        #
         self.condition = condition
         # default stopping criterion
         stopcrit = { 'tottime': tsave[-1] } if len(tsave)>0 else {}
@@ -214,7 +235,6 @@ class timemodel:
         monitors = { **self.monitors, **monitors }
         # initialization before loop
         self.Qn = f.copy()
-        self._time = self.Qn.time
         if flush:
             alldata = [d for d in self.Qn.data]
         results = field.fieldlist()
@@ -235,8 +255,10 @@ class timemodel:
                 if self.Qn.time+mindtloc >= tsave[isave]:
                     # compute smaller step with same integrator
                     self.step(Qnn, tsave[isave]-self.Qn.time)
+                    Qnn.it = self._itstart + self._nit
                     results.append(Qnn)
-                    #results.append(self.Qn.interpol(Qnn, tsave[isave]))
+                    if verbose:
+                        print("save state at it {:5i} and time {:6.2f}".format(self._nit, Qnn.time))
                     isave += 1
                     # step back to self.Qn
                     Qnn = self.Qn.copy()
