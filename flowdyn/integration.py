@@ -95,7 +95,7 @@ class _coreiterative:
 
     def perf_micros(self):
         """returns perf in µs"""
-        return self._cputime * 1.0e6 / self._nit / self.modeldisc.nelem
+        return self.cputime() * 1.0e6 / self.nit() / self.modeldisc.nelem
 
     def show_perf(self):
         """print performance"""
@@ -581,7 +581,7 @@ class implicitmodel(timemodel):
         Returns:
 
         """
-        print("not implemented for virtual implicit class")
+        raise NotImplementedError("not implemented: virtual implicit class")
 
     def calc_jacobian(self, field, epsdiff=1.0e-6):
         """jacobian matrix dR/dQ of dQ/dt=R(Q) is computed as successive columns by finite difference of R(Q+dQ)
