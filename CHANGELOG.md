@@ -16,6 +16,13 @@ pip show flowdyn
 
 ## Versions
 
+### [1.x.x](https://pypi.org/project/flowdyn/) (2022-xx-xx)
+
+#### new features
+
+- Euler model: new outlet CBC (characteristic based) condition `outsub_cbc`
+- Euler model: NRCBC (non-reflecting CBC) with relaxation
+
 ### [1.3.0](https://pypi.org/project/flowdyn/) (2021-11-05)
 
 #### new features

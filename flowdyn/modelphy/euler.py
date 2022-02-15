@@ -412,11 +412,65 @@ class euler1d(euler):
         return [ rho1, u1, p1 ]
 
     @_bcdict.register()
+    def bc_outsub_cbc(self, dir, data, param):
+        g   = self.gamma
+        gmu = g-1.
+        # 0 and 1 stand for internal/external
+        p1 = param['p']
+        # isentropic invariant p/rho**gam = cst
+        rho1 = data[0]*(p1/data[2])**(1./g)
+        # C- invariant (or C+ according to dir)
+        a0 = np.sqrt(g*data[2]/data[0])
+        a1 = np.sqrt(g*p1/rho1)
+        u1 = data[1] - dir*2/gmu*(a1-a0)
+        return [ rho1, u1, p1 ]
+
+    @_bcdict.register()
     def bc_outsub_nrcbc(self, dir, data, param):
         g   = self.gamma
         gmu = g-1.
         # 0 and 1 stand for internal/external
         p1 = param['p']
+        # isentropic invariant p/rho**gam = cst
+        rho1 = data[0]*(p1/data[2])**(1./g)
+        # C- invariant (or C+ according to dir)
+        a0 = np.sqrt(g*data[2]/data[0])
+        a1 = np.sqrt(g*p1/rho1)
+        u1 = data[1] + dir*2/gmu*(a1-a0)
+        return [ rho1, u1, p1 ]
+
+    @_bcdict.register()  # temporary for student project
+    def bc_outsub_pnrcbc(self, dir, data, param):
+        #real relaxation on the bc itself --> allow some information to go upstream (relax between outsub_nrcbc and outsub_cbc)
+        g   = self.gamma
+        gmu = g-1.
+        #setting default value of relaxation param 'relax_bc' to 0
+        relax_bc = 0 #if relax_bc=0 then no relax and one recovers outsub_nrcbc
+        for key in param.keys():
+            if key == 'relax_bc':
+                relax_bc = param['relax_bc']
+        # 0 and 1 stand for internal/external
+        p1 = param['p']
+        # isentropic invariant p/rho**gam = cst
+        rho1 = data[0]*(p1/data[2])**(1./g)
+        # C- invariant (or C+ according to dir)
+        a0 = np.sqrt(g*data[2]/data[0])
+        a1 = np.sqrt(g*p1/rho1)
+        u1 = data[1] + (1-2*relax_bc)*dir*2/gmu*(a1-a0)
+        return [ rho1, u1, p1 ]
+
+    @_bcdict.register() # temporary for student project
+    def bc_outsub_nrcbc2(self, dir, data, param):
+        #pseudo relaxation on pressure at outlet p1 --> relax p1 between p_user and p0
+        g   = self.gamma
+        gmu = g-1.
+        #setting default value of relaxation param 'relax' to 0
+        relax_p = 0 #if relax_p=0 then no relax and one recovers outsub_nrcbc
+        for key in param.keys():
+            if key == 'relax_p':
+                relax_p = param['relax_p']
+        # 0 and 1 stand for internal/external
+        p1 = relax_p*data[2] + (1-relax_p)*param['p'] # relaxation with w
         # isentropic invariant p/rho**gam = cst
         rho1 = data[0]*(p1/data[2])**(1./g)
         # C- invariant (or C+ according to dir)
