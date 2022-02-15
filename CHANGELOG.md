@@ -16,6 +16,21 @@ pip show flowdyn
 
 ## Versions
 
+### [1.x.x](https://pypi.org/project/flowdyn/) (2022-xx-xx)
+
+#### new features
+
+- `integration.restart` function similar to `integration.solve` without initialization
+- solution lists `fieldlist` has new `.extend()` function
+
+#### changed
+
+- monitors outputs are removed when using `integration.solve`
+
+#### fixed
+
+- fix outputs if (tsave) times before first solution time
+
 ### [1.3.0](https://pypi.org/project/flowdyn/) (2021-11-05)
 
 #### new features

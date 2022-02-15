@@ -116,12 +116,12 @@ class Test_solve(integration_data):
         #
         stop_directive = { 'tottime': breaktime }
         fsol0 = solver.solve(finit, cfl, tsave, stop=stop_directive)
-        assert len(fsol0) < nsol # end before expected by tsave
+        assert len(fsol0) == 6 # end before expected by tsave
         assert not fsol0[-1].isnan()
         assert fsol0[-1].time == breaktime
         #
-        fsol = solver.restart(fsol0[-1], cfl, tsave, stop=stop_directive)
-        assert len(fsol) < nsol # only last snapshots
+        fsol = solver.restart(fsol0[-1], cfl, tsave)
+        assert len(fsol) == 6 # only last snapshots ; time 5. is saved again
         assert not fsol[-1].isnan()
         assert fsol[-1].time == tottime
 
