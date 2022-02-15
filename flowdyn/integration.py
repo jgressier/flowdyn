@@ -25,10 +25,11 @@ from flowdyn.monitors import monitor
 # --------------------------------------------------------------------
 # portage
 
-if float(sys.version[:3]) >= 3.3:  # or 3.8
-    myclock = time.process_time
-else:
-    myclock = time.clock
+# if float(sys.version[:3]) >= 3.3:  # or 3.8 !!! fail test of 3.10
+#     myclock = time.process_time
+# else:
+#     myclock = time.clock
+myclock = time.process_time # remove test since minimum version is 3.7
 
 # --------------------------------------------------------------------
 
@@ -69,25 +70,56 @@ class fakedisc:
 # --------------------------------------------------------------------
 # generic model
 # --------------------------------------------------------------------
+class _coreiterative:
 
-class timemodel:
+    def __init__(self):
+        self.reset()
+
+    def reset(self, itstart=0):
+        """ """
+        self._cputime = 0.0
+        self._nit = 0
+        self._itstart = itstart
+
+    def totnit(self):
+        """returns total number of computed iterations"""
+        return self._itstart+self._nit
+
+    def nit(self):
+        """returns number of computed iterations"""
+        return self._nit
+
+    def cputime(self):
+        """returns cputime"""
+        return self._cputime
+
+    def perf_micros(self):
+        """returns perf in µs"""
+        return self.cputime() * 1.0e6 / self.nit() / self.modeldisc.nelem
+
+    def show_perf(self):
+        """print performance"""
+        print(
+            "cpu time computation ({0:d} it) : {1:.3f}s\n  {2:.2f} µs/cell/it".format(
+                self._nit,
+                self._cputime,
+                self.perf_micros(),
+            )
+        )
+
+class timemodel(_coreiterative):
     """ """
     __default_monitor_freq = 10
 
     def __init__(self, mesh, modeldisc, monitors={}):
+        _coreiterative.__init__(self)
         self.mesh = mesh
         self.modeldisc = modeldisc
         self.monitors = monitors
-        self.reset()
         # define function for monitoring
         self._monitordict = { 
             'residual': self.mon_residual,
             'data_average': self.mon_dataavg }
-
-    def reset(self):
-        """ """
-        self._cputime = 0.0
-        self._nit = 0
 
     def calcrhs(self, field):
         """compute RHS with a call to modeldisc function
@@ -138,7 +170,7 @@ class timemodel:
         return any(check_end.values())
 
     def _parse_monitors(self, monitors):
-        """ Parse dictionnary of mnonitors and apply associated function
+        """ Parse dictionnary of monitors and apply associated function
         """
         for name, monval in monitors.items():
             montype = monval.get('type', name) # if type not set, name can be the type
@@ -147,6 +179,11 @@ class timemodel:
             else:
                 raise NameError("unknown monitor key: "+montype)
 
+    def _remove_monitor_output(self, monitors):
+        """ Parse dictionnary of monitors and apply associated function
+        """
+        for key in monitors.keys():
+            monitors[key].pop("output", None) # None is needed to prevent missing key error
 
     def solve_legacy(self, f, condition, tsave, 
             stop=None, flush=None, monitors={}):
@@ -190,7 +227,19 @@ class timemodel:
         return results
 
     def solve(self, f, condition, tsave=[], 
-            stop=None, flush=None, monitors={}):
+            stop=None, flush=None, monitors={}, directives={}):
+        """ """
+        self.reset(itstart=0) # reset cputime and nit
+        self._remove_monitor_output(monitors)
+        return self._solve(f, condition, tsave, stop, flush, monitors, directives)
+
+    def restart(self, f, condition, tsave=[], 
+            stop=None, flush=None, monitors={}, directives={}):
+        """ """
+        self.reset(itstart=max(f.it, 0)) # reset cputime and nit
+        return self._solve(f, condition, tsave, stop, flush, monitors, directives)
+
+    def _solve(self, f, condition, tsave, stop, flush, monitors, directives):
         """Solve dQ/dt=RHS(Q,t)
 
         Args:
@@ -202,16 +251,20 @@ class timemodel:
         Returns:
           list of solution fields (size of tsave)
         """
-        self.reset() # reset cputime and nit
+        self._time = f.time
+        # directives
+        verbose = 'verbose' in directives.keys()
+        #
         self.condition = condition
+        # default stopping criterion
         stopcrit = { 'tottime': tsave[-1] } if len(tsave)>0 else {}
         if stop is not None: stopcrit.update(stop)
         if not stopcrit:
             raise ValueError("missing stopping criteria")
+        # default monitors
         monitors = { **self.monitors, **monitors }
         # initialization before loop
         self.Qn = f.copy()
-        self._time = self.Qn.time
         if flush:
             alldata = [d for d in self.Qn.data]
         results = field.fieldlist()
@@ -220,16 +273,22 @@ class timemodel:
         # loop testing all ending criteria
         checkend = self._check_end(stopcrit)
         self._parse_monitors(monitors)
+        # find first time to save if exists
+        while (isave < nsave) and (self.Qn.time > tsave[isave]):
+            isave += 1
+        # MAIN LOOP
         while not checkend:
             dtloc = self.modeldisc.calc_timestep(self.Qn, condition)
             mindtloc = min(dtloc)
             Qnn = self.Qn.copy()
-            if isave < nsave:
+            if isave < nsave: # specific step to save result and go back to Qn
                 if self.Qn.time+mindtloc >= tsave[isave]:
                     # compute smaller step with same integrator
                     self.step(Qnn, tsave[isave]-self.Qn.time)
+                    Qnn.it = self._itstart + self._nit
                     results.append(Qnn)
-                    #results.append(self.Qn.interpol(Qnn, tsave[isave]))
+                    if verbose:
+                        print("save state at it {:5d} and time {:6.2e}".format(self._nit, Qnn.time))
                     isave += 1
                     # step back to self.Qn
                     Qnn = self.Qn.copy()
@@ -242,6 +301,7 @@ class timemodel:
                 for i, q in zip(range(len(alldata)), self.Qn.data):
                     alldata[i] = np.vstack((alldata[i], q))
             checkend = self._check_end(stopcrit)
+            # save at least current state
             if checkend and len(results)==0:
                 results.append(self.Qn)
         self._cputime = myclock() - start
@@ -249,41 +309,19 @@ class timemodel:
             np.save(flush, alldata)
         return results
 
-    def nit(self):
-        """returns number of computed iterations"""
-        return self._nit
-
-    def cputime(self):
-        """returns cputime"""
-        return self._cputime
-
-    def perf_micros(self):
-        """returns perf in µs"""
-        return self._cputime * 1.0e6 / self._nit / self.modeldisc.nelem
-
-    def show_perf(self):
-        """print performance"""
-        print(
-            "cpu time computation ({0:d} it) : {1:.3f}s\n  {2:.2f} µs/cell/it".format(
-                self._nit,
-                self._cputime,
-                self.perf_micros(),
-            )
-        )
-
     def mon_residual(self, params: dict):
         """compute residual average and monitor it
 
         Args:
             params (dict): [description]
         """
-        if self._nit % params.get('frequency', self.__default_monitor_freq) == 0:
+        if self.totnit() % params.get('frequency', self.__default_monitor_freq) == 0:
             if 'output' not in params:
                 params['output'] = monitor('residual')
             mon = params['output']
             self.calcrhs(self.Qn)
             value = self.modeldisc.all_L2average(self.residual)
-            mon.append(it=self._nit, time=self._time, value=value)
+            mon.append(it=self.totnit(), time=self._time, value=value)
 
     def mon_dataavg(self, params: dict):
         """compute average of current field and monitor it
@@ -291,12 +329,12 @@ class timemodel:
         Args:
             params (dict): [description]
         """
-        if self._nit % params.get('frequency', self.__default_monitor_freq) == 0:
+        if self.totnit() % params.get('frequency', self.__default_monitor_freq) == 0:
             if 'output' not in params:
                 params['output'] = monitor('data_average')
             mon = params['output']
             value = self.Qn.average(params['data'])
-            mon.append(it=self._nit, time=self._time, value=value)
+            mon.append(it=self.totnit(), time=self._time, value=value)
 
     def propagator(self, z):
         """computes scalar complex propagator of one time step
@@ -543,7 +581,7 @@ class implicitmodel(timemodel):
         Returns:
 
         """
-        print("not implemented for virtual implicit class")
+        raise NotImplementedError("not implemented: virtual implicit class")
 
     def calc_jacobian(self, field, epsdiff=1.0e-6):
         """jacobian matrix dR/dQ of dQ/dt=R(Q) is computed as successive columns by finite difference of R(Q+dQ)

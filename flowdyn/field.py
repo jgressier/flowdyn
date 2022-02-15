@@ -26,12 +26,13 @@ class fdata:
 
     """
 
-    def __init__(self, model, mesh, data=None, t=0.0):
+    def __init__(self, model, mesh, data=None, t=0.0, it=-1):
         self.model = model
         self.neq = model.neq
         self.mesh = mesh
         self.nelem = mesh.ncell
         self.time = t
+        self.it   = it
         if data is not None:
             self.data = data[:]  # copy shape
             # and check
@@ -50,11 +51,9 @@ class fdata:
             #     self.data.append(np.zeros(nelem))
 
     def copy(self):
-        """ """
-        new = fdata(self.model, self.mesh, self.data, t=self.time)
-        # new.mesh  = self.mesh
-        # new.nelem = self.nelem
-        # new.data = [ d.copy() for d in self.data ]
+        """ returns copy of current instance """
+        new = fdata(self.model, self.mesh, self.data, 
+                t=self.time, it=self.it)
         return new
 
     def set(self, f):
@@ -66,11 +65,15 @@ class fdata:
         Returns:
 
         """
-        self.__init__(f.model, f.mesh, f.data)
-        self.time = f.time
+        self.__init__(f.model, f.mesh, f.data,
+                     t=f.time, it=f.it)
 
     def set_time(self, time):
         self.time = time
+
+    def reset(self, t=0., it=-1):
+        self.time=t
+        self.it=it
 
     def interpol_t(self, f, t):
         """create a new field time-interpolated between self and f
@@ -82,6 +85,7 @@ class fdata:
             new interpolated field
         """
         new = self.copy()
+        new.it = -1 # don't know how to define
         k = (t-self.time)/(f.time-self.time)
         new.time = t
         for i in range(f.neq):
@@ -98,6 +102,7 @@ class fdata:
             new interpolated field
         """
         new = self.copy()
+        new.it = -1
         new.time -= f.time
         for i in range(f.neq):
             new.data[i] -= f.data[i]
@@ -265,4 +270,8 @@ class fieldlist():
 
     def append(self, s):
         self._packed = False
-        return self.solutions.append(s)
+        self.solutions.append(s)
+
+    def extend(self, flist):
+        self._packed = False
+        self.solutions.extend(flist.solutions)
