@@ -22,6 +22,16 @@ pip show flowdyn
 
 - Euler model: new outlet CBC (characteristic based) condition `outsub_cbc`
 - Euler model: NRCBC (non-reflecting CBC) with relaxation
+- `integration.restart` function similar to `integration.solve` without initialization
+- solution lists `fieldlist` has new `.extend()` function
+
+#### changed
+
+- monitors outputs are removed when using `integration.solve`
+
+#### fixed
+
+- fix outputs if (tsave) times before first solution time
 
 ### [1.3.0](https://pypi.org/project/flowdyn/) (2021-11-05)
 

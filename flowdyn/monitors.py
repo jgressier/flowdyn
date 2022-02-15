@@ -25,13 +25,16 @@ class monitor():
     """ """
     def __init__(self, name):
         self._name = name
-        self._it = []
-        self._time = []
-        self._value = []
-
+        self.reset()
+        
     def name(self):
         """get monitor name"""
         return self._name
+
+    def reset(self):
+        self._it = []
+        self._time = []
+        self._value = []
 
     def append(self, it, time, value):
         """add it, time, value to monitor

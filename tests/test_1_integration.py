@@ -95,6 +95,8 @@ class Test_solve(integration_data):
         tsave = np.linspace(0, endtime, nsol, endpoint=True)
         fsol = solver.solve(finit, cfl, tsave)
         fleg = solver.solve_legacy(finit, cfl, tsave)
+        assert len(fsol) == nsol
+        assert len(fleg) == nsol
         for fs, fl in zip(fsol, fleg):
             assert not fs.isnan()
             diff = fs.diff(fl)
@@ -102,6 +104,26 @@ class Test_solve(integration_data):
             for d in diff.data:
                 assert np.average(np.abs(d)) == pytest.approx(0., abs=1.e-6)
 
+    def test_restart(self):
+        tottime = 10.
+        breaktime = 5.
+        cfl     = .5
+        finit = field.fdata(self.convmodel, self.curmesh, [ self.init_sinperk(self.curmesh, k=4) ] )
+        rhs = modeldisc.fvm(self.convmodel, self.curmesh, self.xsch)
+        solver = tnum.rk4(self.curmesh, rhs)
+        nsol = 10+1 # every second
+        tsave = np.linspace(0, tottime, nsol, endpoint=True)
+        #
+        stop_directive = { 'tottime': breaktime }
+        fsol0 = solver.solve(finit, cfl, tsave, stop=stop_directive)
+        assert len(fsol0) == 6 # end before expected by tsave
+        assert not fsol0[-1].isnan()
+        assert fsol0[-1].time == breaktime
+        #
+        fsol = solver.restart(fsol0[-1], cfl, tsave)
+        assert len(fsol) == 6 # only last snapshots ; time 5. is saved again
+        assert not fsol[-1].isnan()
+        assert fsol[-1].time == tottime
 
 @pytest.mark.parametrize("tmeth", tnum.List_Explicit_Integrators + tnum.List_Implicit_Integrators)
 class Test_integrators(integration_data):
