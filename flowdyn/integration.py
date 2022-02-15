@@ -70,26 +70,56 @@ class fakedisc:
 # --------------------------------------------------------------------
 # generic model
 # --------------------------------------------------------------------
+class _coreiterative:
 
-class timemodel:
-    """ """
-    __default_monitor_freq = 10
-
-    def __init__(self, mesh, modeldisc, monitors={}):
-        self.mesh = mesh
-        self.modeldisc = modeldisc
-        self.monitors = monitors
+    def __init__(self):
         self.reset()
-        # define function for monitoring
-        self._monitordict = { 
-            'residual': self.mon_residual,
-            'data_average': self.mon_dataavg }
 
     def reset(self, itstart=0):
         """ """
         self._cputime = 0.0
         self._nit = 0
         self._itstart = itstart
+
+    def totnit(self):
+        """returns total number of computed iterations"""
+        return self._itstart+self._nit
+
+    def nit(self):
+        """returns number of computed iterations"""
+        return self._nit
+
+    def cputime(self):
+        """returns cputime"""
+        return self._cputime
+
+    def perf_micros(self):
+        """returns perf in µs"""
+        return self._cputime * 1.0e6 / self._nit / self.modeldisc.nelem
+
+    def show_perf(self):
+        """print performance"""
+        print(
+            "cpu time computation ({0:d} it) : {1:.3f}s\n  {2:.2f} µs/cell/it".format(
+                self._nit,
+                self._cputime,
+                self.perf_micros(),
+            )
+        )
+
+class timemodel(_coreiterative):
+    """ """
+    __default_monitor_freq = 10
+
+    def __init__(self, mesh, modeldisc, monitors={}):
+        _coreiterative.__init__(self)
+        self.mesh = mesh
+        self.modeldisc = modeldisc
+        self.monitors = monitors
+        # define function for monitoring
+        self._monitordict = { 
+            'residual': self.mon_residual,
+            'data_average': self.mon_dataavg }
 
     def calcrhs(self, field):
         """compute RHS with a call to modeldisc function
@@ -258,7 +288,7 @@ class timemodel:
                     Qnn.it = self._itstart + self._nit
                     results.append(Qnn)
                     if verbose:
-                        print("save state at it {:5i} and time {:6.2f}".format(self._nit, Qnn.time))
+                        print("save state at it {:5d} and time {:6.2e}".format(self._nit, Qnn.time))
                     isave += 1
                     # step back to self.Qn
                     Qnn = self.Qn.copy()
@@ -279,41 +309,19 @@ class timemodel:
             np.save(flush, alldata)
         return results
 
-    def nit(self):
-        """returns number of computed iterations"""
-        return self._nit
-
-    def cputime(self):
-        """returns cputime"""
-        return self._cputime
-
-    def perf_micros(self):
-        """returns perf in µs"""
-        return self._cputime * 1.0e6 / self._nit / self.modeldisc.nelem
-
-    def show_perf(self):
-        """print performance"""
-        print(
-            "cpu time computation ({0:d} it) : {1:.3f}s\n  {2:.2f} µs/cell/it".format(
-                self._nit,
-                self._cputime,
-                self.perf_micros(),
-            )
-        )
-
     def mon_residual(self, params: dict):
         """compute residual average and monitor it
 
         Args:
             params (dict): [description]
         """
-        if self._nit % params.get('frequency', self.__default_monitor_freq) == 0:
+        if self.totnit() % params.get('frequency', self.__default_monitor_freq) == 0:
             if 'output' not in params:
                 params['output'] = monitor('residual')
             mon = params['output']
             self.calcrhs(self.Qn)
             value = self.modeldisc.all_L2average(self.residual)
-            mon.append(it=self._nit, time=self._time, value=value)
+            mon.append(it=self.totnit(), time=self._time, value=value)
 
     def mon_dataavg(self, params: dict):
         """compute average of current field and monitor it
@@ -321,12 +329,12 @@ class timemodel:
         Args:
             params (dict): [description]
         """
-        if self._nit % params.get('frequency', self.__default_monitor_freq) == 0:
+        if self.totnit() % params.get('frequency', self.__default_monitor_freq) == 0:
             if 'output' not in params:
                 params['output'] = monitor('data_average')
             mon = params['output']
             value = self.Qn.average(params['data'])
-            mon.append(it=self._nit, time=self._time, value=value)
+            mon.append(it=self.totnit(), time=self._time, value=value)
 
     def propagator(self, z):
         """computes scalar complex propagator of one time step
