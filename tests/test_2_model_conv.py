@@ -59,6 +59,7 @@ def test_integrators(tnum):
     solver = tnum(curmesh, rhs)
     fsol = solver.solve(finit, cfl, [endtime])
     assert not fsol[-1].isnan()
+    assert fsol[-1].average('q') < 1.e-12
 
 def test_numscheme():
     curmesh = mesh50
@@ -69,5 +70,6 @@ def test_numscheme():
         finit = field.fdata(mymodel, curmesh, [ init_sinperk(curmesh, k=5) ] )
         rhs = modeldisc.fvm(mymodel, curmesh, xnum)
         solver = tnum(curmesh, rhs)
-        solver.solve(finit, cfl, [endtime])
-    assert 1
+        fsol = solver.solve(finit, cfl, [endtime])
+        assert not fsol[-1].isnan()
+        assert fsol[-1].average('q') < 1.e-12
