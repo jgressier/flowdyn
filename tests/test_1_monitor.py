@@ -9,7 +9,6 @@ import flowdyn.field as field
 import flowdyn.xnum  as xnum
 import flowdyn.integration as tnum
 
-
 class monitor_data():
 
     mesh50 = mesh.unimesh(ncell=50, length=1.)
