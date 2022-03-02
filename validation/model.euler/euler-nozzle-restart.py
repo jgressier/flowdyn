@@ -12,7 +12,7 @@ import aerokit.aero.Isentropic as Is
 # Euler/Nozzle simulations
 import flowdyn.mesh as mesh
 from flowdyn.xnum import *
-from flowdyn.integration import *
+from flowdyn.integration import rk3ssp
 import flowdyn.modelphy.euler as euler
 import flowdyn.modeldisc as modeldisc
 import flowdyn.solution.euler_nozzle as sol
@@ -58,7 +58,7 @@ fsol[-1].plot('mach', style='-', axes=ax2)
 fsol[-1].plot('ptot', style='-', axes=ax3)
 finit.plot('mach', style='--', axes=ax2)
 finit.plot('ptot', style='--', axes=ax3)
-plt.show()
+fig.show()
 
 # if verbose: solver.show_perf()
 res["init_residual"] = monitors["residual"]["output"]._value[-1]
@@ -74,7 +74,7 @@ try:
     res["simu_residual"] = monitors["residual"]["output"]._value[-1]
     res["simu_M9"] = fsol[-1].phydata("mach")[-1]
     # if verbose: print(res)
-except:
+except Exception:
     res["simu_residual"] = 1.0e9
     res["simu_M9"] = 0.0
 
@@ -83,4 +83,4 @@ fig, (ax1, ax2, ax3) = plt.subplots(1,3, figsize = (14,4))
 monitors["residual"]["output"].semilogplot_it(ax=ax1)
 fsol[-1].plot('mach', style='-', axes=ax2)
 fsol[-1].plot('ptot', style='-', axes=ax3)
-plt.show()
+fig.show()
