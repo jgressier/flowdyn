@@ -16,12 +16,13 @@ pip show flowdyn
 
 ## Versions
 
-### [1.x.x](https://pypi.org/project/flowdyn/) (2022-xx-xx)
+### [1.3.1](https://pypi.org/project/flowdyn/) (2022-03-03)
 
 #### new features
 
 - `integration.restart` function similar to `integration.solve` without initialization
 - solution lists `fieldlist` has new `.extend()` function
+- new `xtcontour` and `xtcontourf`plots from `fieldlist`
 
 #### changed
 
@@ -29,6 +30,7 @@ pip show flowdyn
 
 #### fixed
 
+- add support of python 3.10
 - fix outputs if (tsave) times before first solution time
 
 ### [1.3.0](https://pypi.org/project/flowdyn/) (2021-11-05)
