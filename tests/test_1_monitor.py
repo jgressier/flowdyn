@@ -1,5 +1,6 @@
 import numpy as np
 import pytest
+import matplotlib.pyplot as plt
 import flowdyn.mesh  as mesh
 import flowdyn.modelphy.convection as conv
 import flowdyn.modelphy.euler as euler
@@ -7,7 +8,6 @@ import flowdyn.modeldisc as modeldisc
 import flowdyn.field as field
 import flowdyn.xnum  as xnum
 import flowdyn.integration as tnum
-
 
 class monitor_data():
 
@@ -46,28 +46,56 @@ class Test_Monitor_Euler(monitor_data):
     bcL = { 'type': 'insub',  'ptot': 1.4, 'rttot': 1. }
     bcR = { 'type': 'outsub', 'p': 1. }
 
-    def test_residual(self):
+    def compute_sol(self, stop, monitors):
         rhs = modeldisc.fvm(self.eulermodel, self.mesh50, self.xsch, 
             bcL=self.bcL, bcR=self.bcR)
         finit = rhs.fdata_fromprim([ 1., 0., 1. ]) # rho, u, p
         solver = tnum.rk4(self.mesh50, rhs)
+        fsol = solver.solve(finit, self.cfl, stop=stop, monitors=monitors)
+        return fsol
+
+    def test_residual(self):
         stop_directive = { 'maxit': 800 }
         monitors = { 'res_euler': {'type': 'residual' ,'frequency': 5}}
-        fsol = solver.solve(finit, self.cfl, 
-                        stop=stop_directive, monitors=monitors)
+        fsol = self.compute_sol(stop=stop_directive, monitors=monitors)
         assert not fsol[-1].isnan()
         assert monitors['res_euler']['output'].lastratio() < 1.e-3
 
+    @pytest.mark.mpl_image_compare
+    def test_plotresidual(self):
+        stop_directive = { 'maxit': 800 }
+        monitors = { 'res_euler': {'type': 'residual' ,'frequency': 5}}
+        fsol = self.compute_sol(stop=stop_directive, monitors=monitors)
+        fig, ax = plt.subplots(1,1)
+        assert not fsol[-1].isnan()
+        monitors['res_euler']['output'].semilogplot_it(ax=ax)
+        return fig
+
     def test_datavg(self):
-        rhs = modeldisc.fvm(self.eulermodel, self.mesh50, self.xsch, 
-            bcL=self.bcL, bcR=self.bcR)
-        finit = rhs.fdata_fromprim([ 1., 0., 1. ]) # rho, u, p
-        solver = tnum.rk4(self.mesh50, rhs)
         stop_directive = { 'maxit': 800 }
         monitors = { 'Mach_avg': {'type': 'data_average' , 'data': 'mach', 'frequency': 5}}
-        fsol = solver.solve(finit, self.cfl, 
-                        stop=stop_directive, monitors=monitors)
+        fsol = self.compute_sol(stop=stop_directive, monitors=monitors)
         assert not fsol[-1].isnan()
         mach_th = np.sqrt(((self.bcL['ptot']/self.bcR['p'])**(1./3.5)-1.)/.2)
         error = abs(monitors['Mach_avg']['output']._value[-1]-mach_th)/mach_th 
         assert error < 1.e-2
+
+    @pytest.mark.mpl_image_compare
+    def test_plotavg_it(self):
+        stop_directive = { 'maxit': 800 }
+        monitors = { 'Mach_avg': {'type': 'data_average' , 'data': 'mach', 'frequency': 5}}
+        fsol = self.compute_sol(stop=stop_directive, monitors=monitors)
+        assert not fsol[-1].isnan()
+        fig, ax = plt.subplots(1,1)
+        monitors['Mach_avg']['output'].plot_it(ax=ax)
+        return fig
+
+    @pytest.mark.mpl_image_compare
+    def test_plotavg_time(self):
+        stop_directive = { 'maxit': 800 }
+        monitors = { 'Mach_avg': {'type': 'data_average' , 'data': 'mach', 'frequency': 5}}
+        fsol = self.compute_sol(stop=stop_directive, monitors=monitors)
+        assert not fsol[-1].isnan()
+        fig, ax = plt.subplots(1,1)
+        monitors['Mach_avg']['output'].plot_time(ax=ax)
+        return fig
