@@ -104,6 +104,7 @@ class Test_fieldlistclass():
         assert len(flist) == 2
         assert flist[0].time == 0.
         assert flist[-1].time == 10.
+        assert flist.time_array() == [0., 10.]
 
     def test_extend_scalararray(self):
         flist = field.fieldlist()
@@ -113,13 +114,15 @@ class Test_fieldlistclass():
         f2.set_time(10.)
         flist.append(f2)
         newlist = field.fieldlist()
-        newlist.append(f2)
+        f3 = f2.copy()
+        newlist.append(f3)
+        f3.set_time(20.)
         newlist.append(f2)
         flist.extend(newlist)
-        f2.set_time(100.)
-        assert len(flist) == 4
-        assert flist[0].time == 0.
-        assert flist[-1].time == 100.
+        f2.reset(t=100., it=5)
+        assert len(flist) == 4 # f1, f2, f3, f2
+        assert flist.time_array() == [0., 100., 20., 100.]
+        assert flist.it_array() == [-1, 5, -1, 5]
 
     @pytest.mark.mpl_image_compare
     def test_flist_plotxtcontour(self):
