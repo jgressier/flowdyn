@@ -89,29 +89,6 @@ class Test_fdataclass_vec():
         f.contourf('pressure', axes=ax, style='r-')
         return fig
 
-# class Test_scalar1d():
-
-#     xsch = xnum.extrapol3()
-#     curmesh = mesh.unimesh(ncell=50, length=1.)
-#     convmodel = conv.model(convcoef=1.)
-
-#     def init_sinperk(self, mesh, k):
-#         return np.sin(2*k*np.pi/mesh.length*mesh.centers())
-
-#     # def test_checkend_tottime(self):
-#     #     endtime = 5.
-#     #     cfl     = .5
-#     #     stop_directive = { 'tottime': endtime }
-#     #     finit = field.fdata(self.convmodel, self.curmesh, [ self.init_sinperk(self.curmesh, k=4) ] )
-#     #     rhs = modeldisc.fvm(self.convmodel, self.curmesh, self.xsch)
-#     #     solver = tnum.rk4(self.curmesh, rhs)
-#     #     nsol = 11
-#     #     tsave = np.linspace(0, 2*endtime, nsol, endpoint=True)
-#     #     fsol = solver.solve(finit, cfl, tsave, stop=stop_directive)
-#     #     assert len(fsol) < nsol # end before expected by tsave
-#     #     assert not fsol[-1].isnan()
-#     #     assert fsol[-1].time < 2*endtime
-
 class Test_fieldlistclass():
 
     convmodel = conv.model(convcoef=1.)
@@ -143,3 +120,33 @@ class Test_fieldlistclass():
         assert len(flist) == 4
         assert flist[0].time == 0.
         assert flist[-1].time == 100.
+
+    @pytest.mark.mpl_image_compare
+    def test_flist_plotxtcontour(self):
+        def fn(x, t):
+            return np.exp(-2*np.square(x-.5+.2*np.sin(10*t)))
+        times = np.linspace(0., 5., 11, endpoint=True)
+        flist = field.fieldlist()
+        for t in times:
+            f = field.fdata(self.convmodel, self.curmesh, 
+                [ fn(self.curmesh.centers(),t) ] )
+            f.set_time(t)
+            flist.append(f)
+        fig, ax = plt.subplots(1,1)
+        flist.xtcontour('q')
+        return fig
+
+    @pytest.mark.mpl_image_compare
+    def test_flist_plotxtcontourf(self):
+        def fn(x, t):
+            return np.exp(-2*np.square(x-.5+.2*np.sin(10*t)))
+        times = np.linspace(0., 5., 11, endpoint=True)
+        flist = field.fieldlist()
+        for t in times:
+            f = field.fdata(self.convmodel, self.curmesh, 
+                [ fn(self.curmesh.centers(),t) ] )
+            f.set_time(t)
+            flist.append(f)
+        fig, ax = plt.subplots(1,1)
+        flist.xtcontourf('q')
+        return fig
