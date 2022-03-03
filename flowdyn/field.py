@@ -260,7 +260,7 @@ class fieldlist():
 
     def __init__(self):
         self.solutions = list()
-        self._packed = False
+        self._packed = False # not yet used
 
     def __getitem__(self, i):
         return self.solutions[i]
@@ -275,3 +275,25 @@ class fieldlist():
     def extend(self, flist):
         self._packed = False
         self.solutions.extend(flist.solutions)
+
+    def time_array(self):
+        return [s.time for s in self.solutions]
+
+    def it_array(self):
+        return [s.it for s in self.solutions]
+
+    def xtcontour(self, varname, levels=20, axes=None, style={}):
+        xc = self.solutions[0].mesh.centers()
+        tt = self.time_array()
+        xx, xt = np.meshgrid(xc, tt)
+        solgrid = [ s.phydata(varname) for s in self.solutions ]
+        if axes is None: axes=plt.gca()
+        axes.contour(xx, xt, solgrid, levels=levels, **style)
+
+    def xtcontourf(self, varname, levels=20, axes=None, style={}):
+        xc = self.solutions[0].mesh.centers()
+        tt = self.time_array()
+        xx, xt = np.meshgrid(xc, tt)
+        solgrid = [ s.phydata(varname) for s in self.solutions ]
+        if axes is None: axes=plt.gca()
+        axes.contourf(xx, xt, solgrid, levels=levels, **style)
