@@ -61,7 +61,7 @@ class base():
     def all_L2average(self, qdata):
         """compute average of all fields """
         qavg = [ self.mesh.L2average(dd._vecsqrmag(q)) if q.ndim==2 else self.mesh.L2average(q) for q in qdata ]
-        return math.sqrt(np.average(qavg)**2)
+        return math.sqrt(np.average(np.square(qavg)))
 
     def rhs(self, field):
         #print("t=",field.time)

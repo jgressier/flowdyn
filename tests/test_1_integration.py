@@ -138,7 +138,7 @@ class Test_integrators(integration_data):
         fsol = solver.solve(finit, cfl, [endtime])
         assert solver.nit() > 300
         assert solver.nit() < 400
-        maxperf = 40. if tmeth in tnum.List_Explicit_Integrators else 100.
+        maxperf = 40. if tmeth in tnum.List_Explicit_Integrators else 1000.
         assert solver.perf_micros() < maxperf
         assert not fsol[-1].isnan()
 
