@@ -9,6 +9,9 @@ import flowdyn.field as field
 import flowdyn.xnum  as xnum
 import flowdyn.integration as tnum
 
+#plt.rcParams['text.usetex'] = True
+#plt.rcParams['axes.unicode_minus'] = False
+
 class monitor_data():
 
     mesh50 = mesh.unimesh(ncell=50, length=1.)
@@ -63,12 +66,15 @@ class Test_Monitor_Euler(monitor_data):
 
     @pytest.mark.mpl_image_compare
     def test_plotresidual(self):
+        import matplotlib.ticker as ticker
         stop_directive = { 'maxit': 800 }
         monitors = { 'res_euler': {'type': 'residual' ,'frequency': 5}}
         fsol = self.compute_sol(stop=stop_directive, monitors=monitors)
         fig, ax = plt.subplots(1,1)
         assert not fsol[-1].isnan()
         monitors['res_euler']['output'].semilogplot_it(ax=ax)
+        # trick to ensure compatibility of tick label between 3.7 and 3.8+
+        ax.yaxis.set_major_formatter(ticker.FuncFormatter(lambda y,pos: ('{{:.{:1d}f}}'.format(int(np.maximum(-np.log10(y),0)))).format(y)))
         return fig
 
     def test_datavg(self):
