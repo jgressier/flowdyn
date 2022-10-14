@@ -60,20 +60,18 @@ solver.show_perf()
 #     fig.savefig(name+'.png', bbox_inches='tight')
 # show()
 
+icut=-1
 varname='pressure' # mach, pressure, entropy
-ttime = [ fsol[i].time for i in range(nsol+1) ]
-xx, xt = np.meshgrid(xc, ttime)
-solgrid = [ fsol[i].phydata(varname) for i in range(nsol+1) ]
-vmin, vmax = np.min(solgrid), np.max(solgrid)
-#
+ttime = fsol[icut].time
+stats = fsol.stats_solutions(varname)
 # Figure / Plot of final results
 fig, (ax1,ax2) = plt.subplots(1, 2, figsize=(12,4))
-ax1.set_ylabel(varname) ; ax1.set_ylim(vmin, vmax)
+ax1.set_ylabel(varname) ; ax1.set_ylim(stats['min'], stats['max'])
 ax1.grid(linestyle='--', color='0.5')
 finit.plot(varname, 'k-', axes=ax1)
 line1, = fsol[-1].plot(varname, 'k-', axes=ax1)
 ax2.set_ylabel('t') ; ax2.set_xlim(0., 1.)
 #ax2.grid(linestyle='--', color='0.5')
-flood  = ax2.contour(xx, xt, solgrid, np.linspace(vmin, vmax, 50))
-line2, = ax2.plot([0., 10.], [ttime[-1], ttime[-1]], 'k--')
+fsol.xtcontour(varname, levels=np.linspace(stats['min'], stats['max'], 50), axes=ax2)
+line2, = ax2.plot([0., 10.], [ttime, ttime], 'k--')
 plt.show()

@@ -16,6 +16,12 @@ pip show flowdyn
 
 ## Versions
 
+### [1.3.x](https://pypi.org/project/flowdyn/) (2022-xx-xx)
+
+#### new features
+
+- `new stats_solutions()` function for solution lists (main and max)
+
 ### [1.3.1](https://pypi.org/project/flowdyn/) (2022-03-03)
 
 #### new features

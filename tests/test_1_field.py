@@ -124,8 +124,24 @@ class Test_fieldlistclass():
         assert flist.time_array() == [0., 100., 20., 100.]
         assert flist.it_array() == [-1, 5, -1, 5]
 
+    def test_flist_stats(self):
+        # set a x,t field
+        def fn(x, t):
+            return np.exp(-2*np.square(x-.5+.2*np.sin(10*t)))
+        times = np.linspace(0., 5., 11, endpoint=True)
+        flist = field.fieldlist()
+        for t in times:
+            f = field.fdata(self.convmodel, self.curmesh, 
+                [ fn(self.curmesh.centers(),t) ] )
+            f.set_time(t)
+            flist.append(f)
+        stats = flist.stats_solutions('q')
+        assert stats['min'] == pytest.approx(0.38844452356356357)
+        assert stats['max'] == pytest.approx(1.)
+ 
     @pytest.mark.mpl_image_compare
     def test_flist_plotxtcontour(self):
+        # set a x,t field
         def fn(x, t):
             return np.exp(-2*np.square(x-.5+.2*np.sin(10*t)))
         times = np.linspace(0., 5., 11, endpoint=True)

@@ -257,10 +257,12 @@ class fieldlist():
     Returns:
 
     """
+    statsfuncs = {'min': np.min, 'max': np.max }
 
     def __init__(self):
         self.solutions = list()
         self._packed = False # not yet used
+        self._stats = {}
 
     def __getitem__(self, i):
         return self.solutions[i]
@@ -282,11 +284,21 @@ class fieldlist():
     def it_array(self):
         return [s.it for s in self.solutions]
 
+    def stack_solution(self, varname):
+        return [ s.phydata(varname) for s in self.solutions ]
+
+    def stats_solutions(self, varname):
+        self._stats[varname] = {}
+        sols = self.stack_solution(varname)
+        for key,func in self.statsfuncs.items():
+            self._stats[varname][key] = func(sols)
+        return self._stats[varname]
+
     def xtcontour(self, varname, levels=20, axes=None, style={}):
         xc = self.solutions[0].mesh.centers()
         tt = self.time_array()
         xx, xt = np.meshgrid(xc, tt)
-        solgrid = [ s.phydata(varname) for s in self.solutions ]
+        solgrid = self.stack_solution(varname)
         if axes is None: axes=plt.gca()
         axes.contour(xx, xt, solgrid, levels=levels, **style)
 
