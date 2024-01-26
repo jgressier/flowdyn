@@ -1,45 +1,76 @@
-[tool.poetry]
+[project]
 name = "flowdyn"
 version = "1.3.1"
 description = "Model of discretization of hyperbolic model, base is Finite Volume method"
 authors = ["j.gressier <jeremie.gressier@isae-supaero.fr>"]
-license = "MIT"
+license = { file = "LICENSE" }
 repository = "https://github.com/jgressier/flowdyn"
 readme = "README.md"
 documentation = "https://flowdyn.readthedocs.io/en/latest/"
 classifiers = [
     "Development Status :: 5 - Production/Stable",
     "Intended Audience :: Science/Research",
+    "Natural Language :: English",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python",
+    "Programming Language :: Python :: 3.7",
+    "Programming Language :: Python :: 3.8",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
     "Topic :: Scientific/Engineering :: Physics",
     "Topic :: Software Development :: Libraries :: Python Modules" ]
-exclude = [ "examples", "lessons" ]
+requires-python = ">=3.7"
+dependencies = [
+    "numpy >= 1.19.4",
+    "scipy >= 1.5.4",
+    "matplotlib >= 3.2",
+    "aerokit >= 1.1" ]
 
-[tool.poetry.dependencies]
-python = "^3.7"
-numpy = "^1.15"
-matplotlib = { version="^3.1", optional = true }
-aerokit = { version="^1.0", optional = true }
-pytest = "^6.0"
+[project.urls]
+Homepage = "https://github.com/jgressier/flowdyn"
+Documentation = "https://flowdyn.readthedocs.io/en/latest/"
 
-[tool.poetry.dev-dependencies]
-matplotlib = "^3.1"
-aerokit = "^1.0.1"
-pytest-cov = "^2.11.1"
-mkdocs = "^1.1"
-mkdocs-material = "^6.2.5"
-mkdocs-jupyter = "^0.15"
-mkdocs-include-markdown-plugin = ""
-mkdocs-exclude = ""
-mkdocstrings = ""
+[tool.setuptools.packages.find] # to help find aerokit folder as a package
+include = ["flowdyn*"]
+exclude = [ "lessons", "validation" ]
+
+[project.optional-dependencies]
+dev = [ 
+    "pytest >= 6.0", 
+    "pytest-cov >= 2.11.1",
+    "pylint >= 2.6.0" ]
+doc = [ 
+    "mkdocs >= 1.1",
+    "mkdocs-material >= 6.2.5", 
+    "mkdocs-jupyter >= 0.15",
+    "markdown-include >= 0.6.0",
+    "mkdocs-include-markdown-plugin",
+    "mkdocs-exclude",
+    "mkdocstrings" ]
+
+[build-system]
+requires      = ["setuptools>=61.0.0", "wheel"]
+build-backend = "setuptools.build_meta"
 
 [tools.flake8]
 
 [tools.black]
+line-length = 110
 skip-string-normalization = true
 
-[build-system]
-requires = ["poetry-core>=1.0.0"]
-build-backend = "poetry.core.masonry.api"
+[tool.bumpver]
+current_version = "v1.3.1"
+version_pattern = "vMAJOR.MINOR.PATCH"
+commit_message = "bump version {old_version} to {new_version}"
+commit = true
+tag = true
+push = true
+
+[tool.bumpver.file_patterns]
+"pyproject.toml" = ['current_version = "{version}"', 'version = "{pep440_version}"']
+"flowdyn/__init__.py" = ['__version__ = "{pep440_version}"']
 
 [tool.pytest.ini_options]
 minversion = "6.0"

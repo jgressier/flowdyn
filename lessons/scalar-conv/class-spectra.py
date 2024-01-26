@@ -4,35 +4,35 @@ test integration methods
 """
 
 import time
-#import numpy      as np
-#import matplotlib as mp
-from pylab import *
-#from math import *
+import numpy      as np
+import matplotlib.pyplot as plt
 
 import flowdyn.mesh  as mesh
-import flowdyn.model as model
+import flowdyn.modelphy.convection as cmodel
 from flowdyn.field import *
 from flowdyn.xnum  import *
 from flowdyn.integration import *
+import flowdyn.modeldisc as modeldisc
+
 
 mesh100  = mesh.unimesh(ncell=100,  length=1.)
 mgmesh   = mesh.refinedmesh(ncell=100, length=1., ratio=2.)
 
-mymodel     = model.convmodel(1.)
+mymodel     = cmodel.model(1.)
 
 # TODO : make init method for scafield 
 # sinus packet
 def init_sinpack(mesh):
-    return sin(2*2*pi/mesh.length*mesh.centers())*(1+sign(-(mesh.centers()/mesh.length-.25)*(mesh.centers()/mesh.length-.75)))/2        
+    return np.sin(2*2*np.pi/mesh.length*mesh.centers())*(1+np.sign(-(mesh.centers()/mesh.length-.25)*(mesh.centers()/mesh.length-.75)))/2        
     
 # periodic wave
 def init_sinper(mesh, k):
     #k = 2 # nombre d'onde
-    return sin(2*k*pi/mesh.length*mesh.centers())
+    return np.sin(2*k*np.pi/mesh.length*mesh.centers())
     
 # square signal
 def init_square(mesh):
-    return (1+sign(-(mesh.centers()/mesh.length-.25)*(mesh.centers()/mesh.length-.75)))/2
+    return (1+np.sign(-(mesh.centers()/mesh.length-.25)*(mesh.centers()/mesh.length-.75)))/2
 
 def my_init(mesh):
     return init_sinper(mesh, k=2) 
@@ -53,24 +53,25 @@ labels  = []
 nbcalc  = max(len(xmeths), len(meshs))
 
 for i in range(nbcalc):
-    lmesh = (meshs*nbcalc)[i]
-    field0 = scafield(mymodel, bc, lmesh.ncell)
-    field0.qdata[0] = my_init(lmesh)
-    solver = implicit(lmesh, (xmeths*nbcalc)[i])
-    jac    = solver.calc_jacobian(numfield(field0))
-    val, vec = eig(jac)
-    results.append(val/lmesh.ncell)
+    thismesh = (meshs*nbcalc)[i]
+    thisnum = (xmeths*nbcalc)[i]
+    rhs = modeldisc.fvm(mymodel, thismesh, thisnum)
+    field0 = rhs.fdata_fromprim([my_init(thismesh)])
+    solver = implicit(thismesh, rhs)
+    jac    = solver.calc_jacobian(field0)
+    val, vec = np.linalg.eig(jac)
+    results.append(val/thismesh.ncell)
 
 # display and save results to png file
 style=['o', 'x', 'D', '*', 'o', 'o']
-fig=figure(1, figsize=(10,8))
-clf()
+fig=plt.figure(1, figsize=(10,8))
+plt.clf()
 for i in range(nbcalc):
-    scatter(results[i].real, results[i].imag, marker=style[i])
+    plt.scatter(results[i].real, results[i].imag, marker=style[i])
     labels.append(legends[i])
-legend(labels, loc='upper left',prop={'size':10})  
+plt.legend(labels, loc='upper left',prop={'size':10})  
 fig.savefig('res-spectra-xnum.png', bbox_inches='tight')
-show()
+plt.show()
 
 # -----------------------------------------------------
 
@@ -87,21 +88,22 @@ labels  = []
 nbcalc  = max(len(xmeths), len(meshs))
 
 for i in range(nbcalc):
-    lmesh = (meshs*nbcalc)[i]
-    field0 = scafield(mymodel, bc, lmesh.ncell)
-    field0.qdata[0] = my_init(lmesh)
-    solver = implicit(lmesh, (xmeths*nbcalc)[i])
-    jac    = solver.calc_jacobian(numfield(field0))
-    val, vec = eig(jac)
-    results.append(val/lmesh.ncell)
+    thismesh = (meshs*nbcalc)[i]
+    thisnum = (xmeths*nbcalc)[i]
+    rhs = modeldisc.fvm(mymodel, thismesh, thisnum)
+    field0 = rhs.fdata_fromprim([my_init(thismesh)])
+    solver = implicit(thismesh, rhs)
+    jac    = solver.calc_jacobian(field0)
+    val, vec = np.linalg.eig(jac)
+    results.append(val/thismesh.ncell)
 
 # display and save results to png file
 style=['o', 'x', 'D', '*', 'o', 'o']
-fig=figure(2, figsize=(10,8))
-clf()
+fig=plt.figure(2, figsize=(10,8))
+plt.clf()
 for i in range(nbcalc):
-    scatter(results[i].real, results[i].imag, marker=style[i])
+    plt.scatter(results[i].real, results[i].imag, marker=style[i])
     labels.append(legends[i])
-legend(labels, loc='upper left',prop={'size':10})  
+plt.legend(labels, loc='upper left',prop={'size':10})  
 fig.savefig('res-spectra-mesh.png', bbox_inches='tight')
-show()
+plt.show()
