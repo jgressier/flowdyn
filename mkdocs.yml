@@ -28,6 +28,7 @@ nav:
     - Numerical methods: userguide/num.md
   - Examples: 
     - Examples: examples.md
+    - Convergence: examples/euler-convergence.ipynb
     - Nozzle: examples/euler-nozzle.ipynb
     - Rayleigh flow: examples/euler-rayleigh-flow.ipynb
     - Acoustics/Interface: examples/acoustics-impedance.ipynb
