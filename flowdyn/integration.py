@@ -254,6 +254,9 @@ class timemodel(_coreiterative):
         self._time = f.time
         # directives
         verbose = 'verbose' in directives.keys()
+        dtlocal = 'dtlocal' in directives.keys()
+        if verbose and dtlocal:
+            print("- dtlocal on")
         #
         self.condition = condition
         # default stopping criterion
@@ -279,7 +282,7 @@ class timemodel(_coreiterative):
         # MAIN LOOP
         while not checkend:
             dtloc = self.modeldisc.calc_timestep(self.Qn, condition)
-            mindtloc = min(dtloc)
+            mindtloc = min(dtloc) # mindtloc = dtloc
             Qnn = self.Qn.copy()
             if isave < nsave: # specific step to save result and go back to Qn
                 if self.Qn.time+mindtloc >= tsave[isave]:
@@ -292,7 +295,7 @@ class timemodel(_coreiterative):
                     isave += 1
                     # step back to self.Qn
                     Qnn = self.Qn.copy()
-            self.step(Qnn, mindtloc)
+            self.step(Qnn, dtloc if dtlocal else mindtloc)
             self.Qn = Qnn
             self._nit += 1
             self._time = self.Qn.time

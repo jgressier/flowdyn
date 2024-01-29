@@ -53,7 +53,7 @@ class Test_solve(integration_data):
         assert len(fsol) < nsol # end before expected by tsave
         assert not fsol[-1].isnan()
         assert fsol[-1].time < endtime
-        assert solver.nit() == 100
+        assert solver.nit() == maxit
 
     def test_checkend_maxit_noendtime(self):
         endtime = 5.
@@ -66,7 +66,7 @@ class Test_solve(integration_data):
         fsol = solver.solve(finit, cfl, stop=stop_directive)
         assert len(fsol) == 1 # end before expected by tsave
         assert not fsol[-1].isnan()
-        assert solver.nit() == 100
+        assert solver.nit() == maxit
 
     def test_interpol_t(self):
         endtime = 1./self.curmesh.ncell
@@ -124,6 +124,27 @@ class Test_solve(integration_data):
         assert len(fsol) == 6 # only last snapshots ; time 5. is saved again
         assert not fsol[-1].isnan()
         assert fsol[-1].time == tottime
+
+class Test_solve_directives(integration_data):
+
+    xsch = xnum.extrapol3()
+
+    def test_dtlocal(self):
+        endtime = 5.
+        cfl     = .5
+        maxit   = 100
+        stop_directive = { 'maxit': maxit }
+        directives = { 'verbose': True, 'dtlocal': True }
+        finit = field.fdata(self.convmodel, self.curmesh, [ self.init_sinperk(self.curmesh, k=4) ] )
+        rhs = modeldisc.fvm(self.convmodel, self.curmesh, self.xsch)
+        solver = tnum.rk4(self.curmesh, rhs)
+        fsol_dtglob = solver.solve(finit, cfl, stop=stop_directive)
+        fsol_dtloc = solver.solve(finit, cfl, stop=stop_directive, directives=directives)
+        assert not fsol_dtglob[-1].isnan()
+        assert not fsol_dtloc[-1].isnan()
+        assert solver.nit() == maxit
+        # solutions sould be the same for a linear problem
+        assert np.allclose(fsol_dtglob[-1].phydata('q'), fsol_dtloc[-1].phydata('q'))
 
 @pytest.mark.parametrize("tmeth", tnum.List_Explicit_Integrators + tnum.List_Implicit_Integrators)
 class Test_integrators(integration_data):
