@@ -9,6 +9,7 @@ __pycache__/
 .python-version
 
 # build
+build
 dist
 site
 poetry.lock
