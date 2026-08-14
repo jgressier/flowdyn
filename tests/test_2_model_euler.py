@@ -8,6 +8,51 @@ import flowdyn.field as field
 from flowdyn.xnum  import *
 import flowdyn.integration as integ
 
+EULER_FLUXES = tuple(sorted(euler.euler1d()._numfluxdict.dict))
+UPWIND_FLUXES = ("hlle", "hllc", "stegerwarming", "vanleer", "ausm")
+
+
+class TestEulerFlux:
+    model = euler.euler1d()
+
+    def physical_flux(self, pdata):
+        rho, velocity, pressure = pdata
+        enthalpy = (self.model.gamma*pressure
+                    / (rho*(self.model.gamma-1.)) + .5*velocity**2)
+        return np.array([
+            rho*velocity,
+            rho*velocity**2 + pressure,
+            rho*velocity*enthalpy,
+        ])
+
+    @pytest.mark.parametrize("flux", EULER_FLUXES)
+    def test_consistency_with_physical_flux(self, flux):
+        """Every numerical flux recovers the physical flux for equal states."""
+        pdata = [
+            np.ones(5),
+            np.array([-2., -.5, 0., .5, 2.]),
+            np.ones(5),
+        ]
+
+        result = np.asarray(self.model.numflux(flux, pdata, pdata))
+
+        np.testing.assert_allclose(result, self.physical_flux(pdata),
+                                   atol=1.e-12)
+
+    @pytest.mark.parametrize("flux", UPWIND_FLUXES)
+    @pytest.mark.parametrize("velocity", [-3., 3.])
+    def test_full_upwinding_for_supersonic_flow(self, flux, velocity):
+        """A fully supersonic flux depends only on the upstream state."""
+        left = [np.array([1.]), np.array([velocity]), np.array([1.])]
+        right = [np.array([.5]), np.array([velocity]), np.array([.7])]
+        upstream = left if velocity > 0. else right
+
+        result = np.asarray(self.model.numflux(flux, left, right))
+
+        # Steger-Warming applies an epsilon=1e-2 eigenvalue smoothing.
+        np.testing.assert_allclose(result, self.physical_flux(upstream),
+                                   rtol=1.e-5, atol=1.e-5)
+
 class euler_w_mesh():
     mesh100 = mesh.unimesh(ncell=100, length=1.)
     mesh50  = mesh.unimesh(ncell=50, length=1.)

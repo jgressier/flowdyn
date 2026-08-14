@@ -400,27 +400,33 @@ class euler(base.model):
         machL = uL / cL
         machR = uR / cR
 
-        Fminus = np.zeros_like(pdataL)
-        Fplus = np.zeros_like(pdataR)
+        physicalL = np.array([
+            rhoL*uL,
+            rhoL*uL**2 + pL,
+            rhoL*uL*(0.5*uL**2 + cL**2/G8),
+        ])
+        physicalR = np.array([
+            rhoR*uR,
+            rhoR*uR**2 + pR,
+            rhoR*uR*(0.5*uR**2 + cR**2/G8),
+        ])
+        subplus = np.array([
+            0.25*rhoL*cL*(1. + machL)**2,
+            0.25*rhoL*cL*(1. + machL)**2 * 2*cL/gamma*(G7*machL + 1.),
+            0.25*rhoL*cL*(1. + machL)**2 * 2*cL**2/(gamma**2 - 1.)*(G7*machL + 1.)**2,
+        ])
+        subminus = np.array([
+            -0.25*rhoR*cR*(1. - machR)**2,
+            -0.25*rhoR*cR*(1. - machR)**2 * 2*cR/gamma*(G7*machR - 1.),
+            -0.25*rhoR*cR*(1. - machR)**2 * 2*cR**2/(gamma**2 - 1.)*(G7*machR - 1.)**2,
+        ])
 
-        # Supersonic fluxes for left and right states
-        Fminus = np.where(abs(machL) >= 1.0, 
-                         np.array([-0.25*rhoL * cL*(1. - machL)**2, -0.25*rhoL * cL*(1. - machL)**2 * 2*cL/gamma*(G7* machL - 1.), -0.25*rhoL * cL*(1. - machL)**2 * 2*cL**2/(gamma**2 - 1.) *(G7* machL - 1.)**2]), 
-                        Fminus)
-
-        Fplus = np.where(abs(machR) >= 1.0, 
-                        np.array([0.25*rhoR * cR*(1. + machR)**2, 0.25*rhoR * cR*(1. + machR)**2 * 2*cR/gamma*(G7* machR + 1.), 0.25*rhoR * cR*(1. + machR)**2 * 2*cR**2/(gamma**2 - 1.) *(G7* machR +1.)**2]), 
-                      Fplus)
-        
-        # Apply subsonic flux conditions for right state
-        Fminus = np.where(abs(machR) <= 1.0, 
-                          np.array([-0.25*rhoR * cR*(1. - machR)**2, -0.25*rhoR * cR*(1. - machR)**2 * 2*cR/gamma*(G7* machR - 1.), -0.25*rhoR * cR*(1. - machR)**2 * 2*cR**2/(gamma**2 - 1.) *(G7* machR -1.)**2]), 
-                          Fminus)
-    
-        # Apply subsonic flux conditions for left state
-        Fplus = np.where(abs(machL) <= 1.0, 
-                         np.array([0.25*rhoL * cL*(1. + machL)**2, 0.25*rhoL * cL*(1. + machL)**2 * 2*cL/gamma*(G7* machL + 1.), 0.25*rhoL * cL*(1. + machL)**2 * 2*cL**2/(gamma**2 - 1.) *(G7* machL + 1.)**2]), 
-                         Fplus)
+        # Each split flux becomes the full physical flux when all
+        # characteristics point in its upwind direction.
+        Fplus = np.where(machL >= 1., physicalL,
+                         np.where(machL <= -1., 0., subplus))
+        Fminus = np.where(machR <= -1., physicalR,
+                          np.where(machR >= 1., 0., subminus))
 
         Frho = Fplus[0] + Fminus[0]
         Frhou = Fplus[1] + Fminus[1]
@@ -465,13 +471,13 @@ class euler(base.model):
 
         machL_plus = np.where(abs(machL) <= 1.0, 0.25 * (machL + 1.0) ** 2, 0.5 * (machL + abs(machL)))
         machL_minus = np.where(abs(machL) <= 1.0, -0.25 * (machL - 1.0) ** 2, 0.5 * (machL - abs(machL)))
-        presL_plus = np.where(abs(machL) <= 1.0, 0.5 * pL * (1.0 + machL), 0.5 * pL * (machL + abs(machL)) / machL)
-        presL_minus = np.where(abs(machL) <= 1.0, 0.5 * pL * (1.0 - machL), 0.5 * pL * (machL - abs(machL)) / machL)
+        presL_plus = np.where(abs(machL) <= 1.0, 0.5 * pL * (1.0 + machL), np.where(machL > 0., pL, 0.))
+        presL_minus = np.where(abs(machL) <= 1.0, 0.5 * pL * (1.0 - machL), np.where(machL < 0., pL, 0.))
 
         machR_plus = np.where(abs(machR) <= 1.0, 0.25 * (machR + 1.0) ** 2, 0.5 * (machR + abs(machR)))
         machR_minus = np.where(abs(machR) <= 1.0, -0.25 * (machR - 1.0) ** 2, 0.5 * (machR - abs(machR)))
-        presR_plus = np.where(abs(machR) <= 1.0, 0.5 * pR * (1.0 + machR), 0.5 * pR * (machR + abs(machR)) / machR)
-        presR_minus = np.where(abs(machR) <= 1.0, 0.5 * pR * (1.0 - machR), 0.5 * pR * (machR - abs(machR)) / machR)
+        presR_plus = np.where(abs(machR) <= 1.0, 0.5 * pR * (1.0 + machR), np.where(machR > 0., pR, 0.))
+        presR_minus = np.where(abs(machR) <= 1.0, 0.5 * pR * (1.0 - machR), np.where(machR < 0., pR, 0.))
 
         mach_interface = machL_plus + machR_minus
         pres_interface = presL_plus + presR_minus
@@ -800,4 +806,3 @@ class euler2d(euler):
 if __name__ == "__main__":
     import doctest
     doctest.testmod()
-
