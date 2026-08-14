@@ -37,3 +37,6 @@ Untitled*.ipynb
 # Visual Studio Code
 .vscode
 .DS_Store
+
+# other
+*.h5
