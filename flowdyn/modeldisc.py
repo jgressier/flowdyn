@@ -62,27 +62,69 @@ class base():
         return math.sqrt(np.average(np.square(qavg)))
 
     def rhs(self, field):
+        """Compute the spatial residual through an explicit data pipeline."""
         if field.model is not self.model or field.mesh is not self.mesh:
             raise ValueError("field, model and mesh must match the discretization")
-        #print("t=",field.time)
+        qdata = [data.copy() for data in field.data]
+        pdata = self.model.cons2prim(qdata)
+        gradients = self._calc_grad(pdata, field)
+        gradients = self._apply_bc_grad(pdata, gradients)
+        pleft, pright = self._interp_face(pdata, gradients, field)
+        pleft, pright = self._apply_bc(pleft, pright)
+        flux = self._calc_flux(pleft, pright)
+        residual = self._calc_residual(flux, qdata)
+        if self.model.source:
+            residual = self._add_source(residual, qdata)
+
+        # Retain the latest intermediates for diagnostics and compatibility only.
         self.field = field
-        self.qdata = [ d.copy() for d in field.data ] # wonder if copy is necessary
-        self.cons2prim()
-        self.calc_grad()
-        self.calc_bc_grad()
-        self.interp_face()
-        self.calc_bc()
-        self.calc_flux()
-        self.calc_res()
-        if self.model.source: 
-            self.add_source()
-        return self.residual
+        self.qdata = qdata
+        self.pdata = pdata
+        self._store_gradients(gradients)
+        self.pL, self.pR = pleft, pright
+        self.flux = flux
+        self.residual = residual
+        return residual
 
     def cons2prim(self):
         self.pdata = self.model.cons2prim(self.qdata)
+        return self.pdata
     
     def prim2cons(self):
-        self.qdata = self.model.prim2cons(self.pdata) 
+        self.qdata = self.model.prim2cons(self.pdata)
+        return self.qdata
+
+    def _store_gradients(self, gradients):
+        """Store dimension-specific gradients for backward compatibility."""
+        raise NotImplementedError
+
+    def _calc_grad(self, pdata, field):
+        """Return dimension-specific gradients for primitive data."""
+        raise NotImplementedError
+
+    def _apply_bc_grad(self, pdata, gradients):
+        """Apply boundary conditions to dimension-specific gradients."""
+        raise NotImplementedError
+
+    def _interp_face(self, pdata, gradients, field):
+        """Return reconstructed left and right face states."""
+        raise NotImplementedError
+
+    def _apply_bc(self, pleft, pright):
+        """Apply boundary conditions to reconstructed face states."""
+        raise NotImplementedError
+
+    def _calc_flux(self, pleft, pright):
+        """Return numerical fluxes for reconstructed face states."""
+        raise NotImplementedError
+
+    def _calc_residual(self, flux, qdata):
+        """Return conservative residuals derived from numerical fluxes."""
+        raise NotImplementedError
+
+    def _add_source(self, residual, qdata):
+        """Return residuals augmented with physical source terms."""
+        raise NotImplementedError
                 
 # -----------------------------------------------------------------------------------
 class fvm1d(base):
@@ -90,68 +132,94 @@ class fvm1d(base):
     def __init__(self, model, mesh, num, numflux=None, bcL=None, bcR=None):
         base.__init__(self, model, mesh, num, numflux, bcL, bcR)
             
-    def calc_grad(self):
-        """
-        Computes face-based gradients of each primitive data
-        """
-        self.grad = []
-        for d in self.pdata:
+    def _calc_grad(self, pdata, field):
+        """Return face-based gradients of primitive data."""
+        gradients = []
+        for d in pdata:
             g = np.zeros(self.mesh.ncell+1)
             g[1:-1] = (d[1:]-d[0:-1]) / (self.mesh.xc[1:]-self.mesh.xc[0:-1])
-            self.grad.append(g)
+            gradients.append(g)
+        return gradients
+
+    def _store_gradients(self, gradients):
+        self.grad = gradients
+
+    def calc_grad(self):
+        self.grad = self._calc_grad(self.pdata, self.field)
+        return self.grad
     
+    def _interp_face(self, pdata, gradients, field):
+        return self.num.interp_face(self.mesh, pdata, gradients)
+
     def interp_face(self):
-        """
-        Computes left and right interpolation to a face, using self (cell) primitive data and (face) gradients
-        """
-        self.pL, self.pR = self.num.interp_face(self.mesh, self.pdata, self.grad)             
+        self.pL, self.pR = self._interp_face(self.pdata, self.grad, self.field)
+        return self.pL, self.pR
     
-    def calc_bc(self):
+    def _apply_bc(self, pleft, pright):
         if (self.bcL['type'] == 'per') and (self.bcR['type'] == 'per'):     #periodic boundary conditions
             for i in range(self.neq):
-                self.pL[i][0]          = self.pL[i][self.nelem] 
-                self.pR[i][self.nelem] = self.pR[i][0] 
+                pleft[i][0] = pleft[i][self.nelem]
+                pright[i][self.nelem] = pright[i][0]
         elif (self.bcL['type'] == 'per') or (self.bcR['type'] == 'per'):     # inconsistent periodic boundary conditions:
             raise ValueError("both conditions should be periodic")
         else:
             q_bcL  = self.model.namedBC(self.bcL['type'],
-                                        -1, [self.pR[i][0] for i in range(self.neq)], self.bcL)
+                                        -1, [pright[i][0] for i in range(self.neq)], self.bcL)
             q_bcR  = self.model.namedBC(self.bcR['type'],
-                                        1, [self.pL[i][self.nelem] for i in range(self.neq)], self.bcR)
+                                        1, [pleft[i][self.nelem] for i in range(self.neq)], self.bcR)
             for i in range(self.neq):
-                self.pL[i][0]          = q_bcL[i]
-                self.pR[i][self.nelem] = q_bcR[i]
+                pleft[i][0] = q_bcL[i]
+                pright[i][self.nelem] = q_bcR[i]
+        return pleft, pright
+
+    def calc_bc(self):
+        self.pL, self.pR = self._apply_bc(self.pL, self.pR)
+        return self.pL, self.pR
     
-    def calc_bc_grad(self):
+    def _apply_bc_grad(self, pdata, gradients):
         if (self.bcL['type'] == 'per') and (self.bcR['type'] == 'per'):     #periodic boundary conditions
             for i in range(self.neq):
-                self.grad[i][0]  = 0.
-                self.grad[i][-1] = 0.
-                self.grad[i][0] = self.grad[i][-1] = (self.pdata[i][0]-self.pdata[i][-1]) / (self.mesh.xc[0]+self.mesh.length-self.mesh.xc[-1])
+                gradients[i][0] = gradients[i][-1] = (pdata[i][0]-pdata[i][-1]) / (self.mesh.xc[0]+self.mesh.length-self.mesh.xc[-1])
         elif (self.bcL['type'] == 'per') or (self.bcR['type'] == 'per'):     # inconsistent periodic boundary conditions:
             raise ValueError("both conditions should be periodic")
         else:
             for i in range(self.neq):
-                self.grad[i][0]  = 0.
-                self.grad[i][-1] = 0.
+                gradients[i][0] = 0.
+                gradients[i][-1] = 0.
+        return gradients
+
+    def calc_bc_grad(self):
+        self.grad = self._apply_bc_grad(self.pdata, self.grad)
+        return self.grad
     
+    def _calc_flux(self, pleft, pright):
+        return self.model.numflux(self.numflux, pleft, pright)
+
     def calc_flux(self):
-            self.flux = self.model.numflux(self.numflux, self.pL, self.pR) # get numerical flux from model object, self.numflux is here only a tag
+        self.flux = self._calc_flux(self.pL, self.pR)
+        return self.flux
 
     def calc_timestep(self, f, condition):
         return self.model.timestep(f.data, self.mesh.xf[1:self.nelem+1]-self.mesh.xf[0:self.nelem], condition)
         
-    def calc_res(self):
-        self.residual = []
+    def _calc_residual(self, flux, qdata):
+        residual = []
         for i in range(self.neq):
-            self.residual.append(-(self.flux[i][1:self.nelem+1]-self.flux[i][0:self.nelem]) \
-                                  /(self.mesh.dx()))
+            residual.append(-(flux[i][1:self.nelem+1]-flux[i][0:self.nelem]) / self.mesh.dx())
+        return residual
+
+    def calc_res(self):
+        self.residual = self._calc_residual(self.flux, self.qdata)
         return self.residual
 
-    def add_source(self):
+    def _add_source(self, residual, qdata):
         for i in range(self.neq):
             if self.model.source[i]:
-                self.residual[i] += self.model.source[i](self.mesh.centers(), self.qdata)
+                residual[i] += self.model.source[i](self.mesh.centers(), qdata)
+        return residual
+
+    def add_source(self):
+        self.residual = self._add_source(self.residual, self.qdata)
         return self.residual
 
 # -----------------------------------------------------------------------------------
@@ -190,46 +258,50 @@ class fvm2dcart(base):
     def is_per(self, name):
         return self._bclist[name]['type'] == 'per'
 
-    def calc_grad(self):
-        """
-        Computes face-based gradients of each primitive data
-        """
-        self.xgrad=[]
-        self.ygrad=[]
+    def _calc_grad(self, pdata, field):
+        """Return face-based differences of primitive data in both directions."""
         nx = self.mesh.nx
         ny = self.mesh.ny
-        self.xgrad = self.field.zero_datalist(newdim=ny*(nx+1))
-        self.ygrad = self.field.zero_datalist(newdim=nx*(ny+1))
+        xgrad = field.zero_datalist(newdim=ny*(nx+1))
+        ygrad = field.zero_datalist(newdim=nx*(ny+1))
         for p in range(self.neq):
-            if self.pdata[p].ndim == 2:
+            if pdata[p].ndim == 2:
                 for j in range(ny):
-                    self.xgrad[p][:,j*(nx+1)+1:j*(nx+1)+nx]= self.pdata[p][:,j*nx+1:(j+1)*nx]-self.pdata[p][:,j*nx:(j+1)*nx-1]
+                    xgrad[p][:,j*(nx+1)+1:j*(nx+1)+nx]= pdata[p][:,j*nx+1:(j+1)*nx]-pdata[p][:,j*nx:(j+1)*nx-1]
                 for j in range(1,ny):
-                    self.ygrad[p][:,j*nx:(j+1)*nx] = self.pdata[p][:,j*nx:(j+1)*nx]-self.pdata[p][:,(j-1)*nx:j*nx]
+                    ygrad[p][:,j*nx:(j+1)*nx] = pdata[p][:,j*nx:(j+1)*nx]-pdata[p][:,(j-1)*nx:j*nx]
             else:
                 for j in range(ny):
-                    self.xgrad[p][j*(nx+1)+1:j*(nx+1)+nx]= self.pdata[p][j*nx+1:(j+1)*nx]-self.pdata[p][nx*j:(j+1)*nx-1]
+                    xgrad[p][j*(nx+1)+1:j*(nx+1)+nx]= pdata[p][j*nx+1:(j+1)*nx]-pdata[p][nx*j:(j+1)*nx-1]
                 for j in range(1,ny):
-                    self.ygrad[p][j*nx:(j+1)*nx] = self.pdata[p][j*nx:(j+1)*nx]-self.pdata[p][(j-1)*nx:j*nx]
+                    ygrad[p][j*nx:(j+1)*nx] = pdata[p][j*nx:(j+1)*nx]-pdata[p][(j-1)*nx:j*nx]
+        return xgrad, ygrad
+
+    def _store_gradients(self, gradients):
+        self.xgrad, self.ygrad = gradients
+
+    def calc_grad(self):
+        self.xgrad, self.ygrad = self._calc_grad(self.pdata, self.field)
+        return self.xgrad, self.ygrad
     
+    def _interp_face(self, pdata, gradients, field):
+        xgrad, ygrad = gradients
+        return self.num.interp_face(self.mesh, pdata, field, self.neq, xgrad, ygrad)
+
     def interp_face(self):
-        """
-        Computes left and right interpolation to a face, using self (cell) primitive data and (face) gradients
-        """ 
-        self.pL, self.pR = self.num.interp_face(self.mesh, self.pdata,self.field,self.neq, self.xgrad, self.ygrad)    
+        self.pL, self.pR = self._interp_face(self.pdata, (self.xgrad, self.ygrad), self.field)
+        return self.pL, self.pR
     
-    def calc_bc(self):
-        """
-        loop on all bc tags and apply BC from model and list and index 
-        """
+    def _apply_bc(self, pleft, pright):
+        """Apply tagged boundary conditions to reconstructed face states."""
         _connect = { 'top': 'bottom', 'bottom': 'top', 'right': 'left', 'left': 'right'}
         for bctag, bcvalue in self._bclist.items():
             if self.mesh.bcface_orientation(bctag) == 'inward': # inward faces, L data must be computed
-                data_in = self.pR
-                data_bc = self.pL
+                data_in = pright
+                data_bc = pleft
             elif self.mesh.bcface_orientation(bctag) == 'outward': # outward faces, L data must be computed
-                data_in = self.pL
-                data_bc = self.pR
+                data_in = pleft
+                data_bc = pright
             else:
                 raise ValueError("unknown face orientation")
             if bcvalue['type'] == 'per':
@@ -257,56 +329,64 @@ class fvm2dcart(base):
                             data_bc[i][iofaces] = p
                         elif self.model.shape[i] == 2:
                             data_bc[i][:,iofaces] = p
+        return pleft, pright
+
+    def calc_bc(self):
+        self.pL, self.pR = self._apply_bc(self.pL, self.pR)
+        return self.pL, self.pR
     
-    def calc_bc_grad(self):
-        #bclist = self._bclist
+    def _apply_bc_grad(self, pdata, gradients):
+        xgrad, ygrad = gradients
         nx = self.mesh.nx
         ny = self.mesh.ny
         if self.is_per('left') and self.is_per('right'):
             for p in range(self.neq):
-                if self.pdata[p].ndim == 2:
-                    grad = self.pdata[p][:,::nx]-self.pdata[p][:,nx-1::nx]
-                    self.xgrad[p][:,::nx+1] = grad
-                    self.xgrad[p][:,nx::nx+1] = grad
+                if pdata[p].ndim == 2:
+                    grad = pdata[p][:,::nx]-pdata[p][:,nx-1::nx]
+                    xgrad[p][:,::nx+1] = grad
+                    xgrad[p][:,nx::nx+1] = grad
                 else:
-                    grad = self.pdata[p][::nx]-self.pdata[p][nx-1::nx]
-                    self.xgrad[p][::nx+1] = grad
-                    self.xgrad[p][nx::nx+1] = grad
+                    grad = pdata[p][::nx]-pdata[p][nx-1::nx]
+                    xgrad[p][::nx+1] = grad
+                    xgrad[p][nx::nx+1] = grad
         elif self.is_per('left') or self.is_per('right'):     # inconsistent periodic boundary conditions:
             raise ValueError("both conditions should be periodic")
         else:
             for p in range(self.neq):
-                if self.pdata[p].ndim == 2:
-                    self.xgrad[p][:,::nx+1] = 0.
-                    self.xgrad[p][:,nx::nx+1] = 0.
+                if pdata[p].ndim == 2:
+                    xgrad[p][:,::nx+1] = 0.
+                    xgrad[p][:,nx::nx+1] = 0.
                 else:
-                    self.xgrad[p][::nx+1] = 0.
-                    self.xgrad[p][nx::nx+1] = 0.
+                    xgrad[p][::nx+1] = 0.
+                    xgrad[p][nx::nx+1] = 0.
 
         if self.is_per('top') and self.is_per('bottom'):
             for p in range(self.neq):
-                if self.pdata[p].ndim == 2:
-                    grad = self.pdata[p][:,0:nx]-self.pdata[p][:,(ny-1)*nx:]
-                    self.ygrad[p][:,0:nx] = grad
-                    self.ygrad[p][:,ny*nx:] = grad
+                if pdata[p].ndim == 2:
+                    grad = pdata[p][:,0:nx]-pdata[p][:,(ny-1)*nx:]
+                    ygrad[p][:,0:nx] = grad
+                    ygrad[p][:,ny*nx:] = grad
                 else:
-                    grad = self.pdata[p][0:nx]-self.pdata[p][(ny-1)*nx:]
-                    self.ygrad[p][0:nx] = grad
-                    self.ygrad[p][ny*nx:] = grad
+                    grad = pdata[p][0:nx]-pdata[p][(ny-1)*nx:]
+                    ygrad[p][0:nx] = grad
+                    ygrad[p][ny*nx:] = grad
         elif self.is_per('top') or self.is_per('bottom'):     # inconsistent periodic boundary conditions:
             raise ValueError("both conditions should be periodic")
         else:
             for p in range(self.neq):
-                if self.pdata[p].ndim == 2:
-                    self.ygrad[p][:,0:nx] = 0.
-                    self.ygrad[p][:,ny*nx:] = 0.
+                if pdata[p].ndim == 2:
+                    ygrad[p][:,0:nx] = 0.
+                    ygrad[p][:,ny*nx:] = 0.
                 else:
-                    self.ygrad[p][0:nx] = 0.
-                    self.ygrad[p][ny*nx:] = 0.
+                    ygrad[p][0:nx] = 0.
+                    ygrad[p][ny*nx:] = 0.
+        return xgrad, ygrad
 
-        return
+    def calc_bc_grad(self):
+        self.xgrad, self.ygrad = self._apply_bc_grad(self.pdata, (self.xgrad, self.ygrad))
+        return self.xgrad, self.ygrad
 
-    def calc_flux(self):
+    def _calc_flux(self, pleft, pright):
         """
           computes array of fluxes, calls model numerical flux using self.numflux tag
           first (nx+1)*ny are X oriented flux, then nx*(ny+1) are Y oriented flux
@@ -319,7 +399,11 @@ class fvm2dcart(base):
         direction = np.zeros((2,nxface+nyface),dtype=np.int8)
         direction[0,:nxface] = 1
         direction[1,nxface:] = 1
-        self.flux = self.model.numflux(self.numflux, self.pL, self.pR, direction)
+        return self.model.numflux(self.numflux, pleft, pright, direction)
+
+    def calc_flux(self):
+        self.flux = self._calc_flux(self.pL, self.pR)
+        return self.flux
 
     def calc_timestep(self, f, condition):
         # cell characteristic length is constant for cartesian mesh
@@ -328,14 +412,14 @@ class fvm2dcart(base):
         ldim = dx*dy / (dx+dy)
         return self.model.timestep(f.data, ldim, condition)
         
-    def calc_res(self):
-        self.residual = [ np.zeros_like(d) for d in self.qdata ]
+    def _calc_residual(self, fluxes, qdata):
+        residual = [np.zeros_like(d) for d in qdata]
         dx = self.mesh.dx()
         dy = self.mesh.dy()
         nx = self.mesh.nx
         ny = self.mesh.ny
         fshift = ny*(nx+1)
-        for flux, res in zip(self.flux, self.residual):
+        for flux, res in zip(fluxes, residual):
             if flux.ndim == 2:
                 # flux balance by j row
                 for j in range(ny):
@@ -346,12 +430,20 @@ class fvm2dcart(base):
                 for j in range(ny):
                     res[j*nx:(j+1)*nx] -= (flux[j*(nx+1)+1:(j+1)*(nx+1)] - flux[j*(nx+1):(j+1)*(nx+1)-1] ) /dx + \
                             (flux[fshift+(j+1)*nx:fshift+(j+2)*nx] - flux[fshift+j*nx:fshift+(j+1)*nx] ) /dy
+        return residual
+
+    def calc_res(self):
+        self.residual = self._calc_residual(self.flux, self.qdata)
         return self.residual
 
-    def add_source(self):
+    def _add_source(self, residual, qdata):
         for i in range(self.neq):
             if self.model.source[i]:
-                self.residual[i] += self.model.source[i](self.mesh.centers(), self.qdata)
+                residual[i] += self.model.source[i](self.mesh.centers(), qdata)
+        return residual
+
+    def add_source(self):
+        self.residual = self._add_source(self.residual, self.qdata)
         return self.residual
 
 # -----------------------------------------------------------------------------------

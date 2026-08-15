@@ -46,10 +46,13 @@ class Test_densitypulse():
 
     def test_invalid_face_orientation(self):
         solver, finit = self.case_solver(2, 2, xn.extrapol2d1(), 'hlle')
+        previous_residual = solver.modeldisc.rhs(finit)
         solver.modeldisc.mesh._bcfaces_orientation['left'] = 'invalid'
 
         with pytest.raises(ValueError, match="unknown face orientation"):
             solver.modeldisc.rhs(finit)
+
+        assert solver.modeldisc.residual is previous_residual
 
     def test_centered(self):
         solver, finit = self.case_solver(50, 50, xn.extrapol2d1(), 'centered')
