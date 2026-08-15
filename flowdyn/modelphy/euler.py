@@ -296,7 +296,7 @@ class euler(base.model):
 
         return [Frho, Frhou, FrhoE]
     
-    ###########################################################################
+
     ###########################################################################
     @_numfluxdict.register()
     def numflux_stegerwarming(self, pdataL, pdataR, dir):
@@ -330,9 +330,6 @@ class euler(base.model):
         sL = np.sqrt(cL2)
         sR = np.sqrt(cR2)
         
-        # Roe's averaging
-        Rrho, uRoe, cRoe = self._Roe_average(rhoL, uL, HL, rhoR, uR, HR)
-       
         epsilon = 1e-2  # to smooth the eigenvalues
 
         # Calculate left and right eigenvalues
@@ -371,7 +368,6 @@ class euler(base.model):
     
         return [Frho, Frhou, FrhoE]
 
-    ###########################################################################
     ###########################################################################
     @_numfluxdict.register()
     def numflux_vanleer(self, pdataL, pdataR, dir=None):
@@ -435,7 +431,6 @@ class euler(base.model):
         return [Frho, Frhou, FrhoE]
 
     ###########################################################################
-    ###########################################################################
     @_numfluxdict.register()
     def numflux_ausm(self, pdataL, pdataR, dir=None):
         """
@@ -455,28 +450,16 @@ class euler(base.model):
         rhoR, uR, pR = pdataR
 
         g8 = gam - 1.
-        g7 = g8 / 2.
 
         cL = np.sqrt(gam * pL / rhoL)
         cR = np.sqrt(gam * pR / rhoR)
-
-        machL = uL / cL
-        machR = uR / cR
-
-        Fminus = np.zeros_like(pdataL)
-        Fplus = np.zeros_like(pdataR)
-    
         machL = uL / cL
         machR = uR / cR
 
         machL_plus = np.where(abs(machL) <= 1.0, 0.25 * (machL + 1.0) ** 2, 0.5 * (machL + abs(machL)))
-        machL_minus = np.where(abs(machL) <= 1.0, -0.25 * (machL - 1.0) ** 2, 0.5 * (machL - abs(machL)))
         presL_plus = np.where(abs(machL) <= 1.0, 0.5 * pL * (1.0 + machL), np.where(machL > 0., pL, 0.))
-        presL_minus = np.where(abs(machL) <= 1.0, 0.5 * pL * (1.0 - machL), np.where(machL < 0., pL, 0.))
 
-        machR_plus = np.where(abs(machR) <= 1.0, 0.25 * (machR + 1.0) ** 2, 0.5 * (machR + abs(machR)))
         machR_minus = np.where(abs(machR) <= 1.0, -0.25 * (machR - 1.0) ** 2, 0.5 * (machR - abs(machR)))
-        presR_plus = np.where(abs(machR) <= 1.0, 0.5 * pR * (1.0 + machR), np.where(machR > 0., pR, 0.))
         presR_minus = np.where(abs(machR) <= 1.0, 0.5 * pR * (1.0 - machR), np.where(machR < 0., pR, 0.))
 
         mach_interface = machL_plus + machR_minus
@@ -491,7 +474,6 @@ class euler(base.model):
     
         return [Frho, Frhou, FrhoE]
 
-###############################################################################
 ###############################################################################
     def timestep(self, data, dx, condition):
         "computation of timestep with conservative data"
