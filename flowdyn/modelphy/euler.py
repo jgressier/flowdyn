@@ -627,11 +627,12 @@ class nozzle(euler1d):
 
     def __init__(self, sectionlaw, gamma=1.4, source=None):
         nozsrc = [ self.src_mass, self.src_mom, self.src_energy ]
-        allsrc = nozsrc # init all sources to nozzle sources
+        allsrc = nozsrc.copy() # init all sources to nozzle sources
         if source: # additional sources ?
             for i,isrc in enumerate(source):
                 if isrc:
-                    allsrc[i] = lambda x,q: isrc(x,q)+nozsrc[i](x,q)
+                    nozzle_source = nozsrc[i]
+                    allsrc[i] = lambda x, q, extra=isrc, base=nozzle_source: extra(x, q) + base(x, q)
         euler1d.__init__(self, gamma=gamma, source=allsrc)
         self.sectionlaw = sectionlaw
         self._bcdict.merge(nozzle._bcdict)
