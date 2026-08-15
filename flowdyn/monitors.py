@@ -17,12 +17,13 @@ except ImportError:
 # class monitor
 
 
-class monitor():
+class monitor:
     """Store sampled values and their iteration and time coordinates."""
+
     def __init__(self, name):
         self._name = name
         self.reset()
-        
+
     def name(self):
         """get monitor name"""
         return self._name
@@ -45,7 +46,7 @@ class monitor():
         self._value.append(value)
 
     def lastratio(self):
-        return self._value[-1]/self._value[0]
+        return self._value[-1] / self._value[0]
 
     def plot_it(self, ax=plt, **kwargs):
         ax.plot(self._it, self._value, **kwargs)

@@ -9,6 +9,7 @@ rk4
 implicit or backwardeuler
 trapezoidal or cranknicolson
 """
+
 import math
 import sys
 import time
@@ -29,7 +30,7 @@ from flowdyn.monitors import monitor
 #     myclock = time.process_time
 # else:
 #     myclock = time.clock
-myclock = time.process_time # remove test since minimum version is 3.7
+myclock = time.process_time  # remove test since minimum version is 3.7
 
 # --------------------------------------------------------------------
 
@@ -83,7 +84,7 @@ class _coreiterative:
 
     def totnit(self):
         """returns total number of computed iterations"""
-        return self._itstart+self._nit
+        return self._itstart + self._nit
 
     def nit(self):
         """returns number of computed iterations"""
@@ -107,8 +108,10 @@ class _coreiterative:
             )
         )
 
+
 class timemodel(_coreiterative):
     """Provide common services for explicit and implicit time integrators."""
+
     __default_monitor_freq = 10
 
     def __init__(self, mesh, modeldisc, monitors=None):
@@ -117,9 +120,7 @@ class timemodel(_coreiterative):
         self.modeldisc = modeldisc
         self.monitors = {} if monitors is None else monitors
         # define function for monitoring
-        self._monitordict = { 
-            'residual': self.mon_residual,
-            'data_average': self.mon_dataavg }
+        self._monitordict = {'residual': self.mon_residual, 'data_average': self.mon_dataavg}
 
     def calcrhs(self, field):
         """Compute and store the spatial residual.
@@ -157,30 +158,27 @@ class timemodel(_coreiterative):
         """Return whether any configured stopping criterion has been reached."""
         check_end = {}
         for key, value in stop.items():
-            if key=='tottime':
+            if key == 'tottime':
                 check_end[key] = self._time >= value
-            if key=='maxit':
+            if key == 'maxit':
                 check_end[key] = self._nit >= value
         return any(check_end.values())
 
     def _parse_monitors(self, monitors):
-        """ Parse dictionnary of monitors and apply associated function
-        """
+        """Parse dictionnary of monitors and apply associated function"""
         for name, monval in monitors.items():
-            montype = monval.get('type', name) # if type not set, name can be the type
+            montype = monval.get('type', name)  # if type not set, name can be the type
             if montype in self._monitordict.keys():
                 self._monitordict[montype](monval)
             else:
-                raise ValueError("unknown monitor type: "+montype)
+                raise ValueError("unknown monitor type: " + montype)
 
     def _remove_monitor_output(self, monitors):
-        """ Parse dictionnary of monitors and apply associated function
-        """
+        """Parse dictionnary of monitors and apply associated function"""
         for key in monitors.keys():
-            monitors[key].pop("output", None) # None is needed to prevent missing key error
+            monitors[key].pop("output", None)  # None is needed to prevent missing key error
 
-    def solve_legacy(self, f, condition, tsave, 
-            stop=None, flush=None, monitors=None):
+    def solve_legacy(self, f, condition, tsave, stop=None, flush=None, monitors=None):
         """Integrate a field using the legacy solver loop.
 
         Args:
@@ -195,7 +193,7 @@ class timemodel(_coreiterative):
             Solution fields corresponding to ``tsave``.
         """
         monitors = {} if monitors is None else monitors
-        self.reset() # reset cputime and nit
+        self.reset()  # reset cputime and nit
         self.condition = condition
         # initialization before loop
         itfield = f.copy()
@@ -223,23 +221,21 @@ class timemodel(_coreiterative):
             np.save(flush, alldata)
         return results
 
-    def solve(self, f, condition, tsave=None,
-            stop=None, flush=None, monitors=None, directives=None):
+    def solve(self, f, condition, tsave=None, stop=None, flush=None, monitors=None, directives=None):
         """Integrate a field and return solutions at the requested times."""
         tsave = [] if tsave is None else tsave
         monitors = {} if monitors is None else monitors
         directives = {} if directives is None else directives
-        self.reset(itstart=0) # reset cputime and nit
+        self.reset(itstart=0)  # reset cputime and nit
         self._remove_monitor_output(monitors)
         return self._solve(f, condition, tsave, stop, flush, monitors, directives)
 
-    def restart(self, f, condition, tsave=None,
-            stop=None, flush=None, monitors=None, directives=None):
+    def restart(self, f, condition, tsave=None, stop=None, flush=None, monitors=None, directives=None):
         """Restart integration from an existing field."""
         tsave = [] if tsave is None else tsave
         monitors = {} if monitors is None else monitors
         directives = {} if directives is None else directives
-        self.reset(itstart=max(f.it, 0)) # reset cputime and nit
+        self.reset(itstart=max(f.it, 0))  # reset cputime and nit
         return self._solve(f, condition, tsave, stop, flush, monitors, directives)
 
     def _solve(self, f, condition, tsave, stop, flush, monitors, directives):
@@ -257,10 +253,10 @@ class timemodel(_coreiterative):
         Returns:
             Solution fields corresponding to ``tsave``.
         """
-        if not np.isscalar(condition) or not np.isfinite(condition) or condition <= 0.:
+        if not np.isscalar(condition) or not np.isfinite(condition) or condition <= 0.0:
             raise ValueError("condition must be a positive finite scalar")
         tsave = np.asarray(tsave, dtype=float)
-        if np.any(~np.isfinite(tsave)) or np.any(np.diff(tsave) < 0.):
+        if np.any(~np.isfinite(tsave)) or np.any(np.diff(tsave) < 0.0):
             raise ValueError("tsave must contain finite, non-decreasing times")
         if stop is not None:
             unknown = set(stop) - {'tottime', 'maxit'}
@@ -275,12 +271,13 @@ class timemodel(_coreiterative):
         #
         self.condition = condition
         # default stopping criterion
-        stopcrit = { 'tottime': tsave[-1] } if len(tsave)>0 else {}
-        if stop is not None: stopcrit.update(stop)
+        stopcrit = {'tottime': tsave[-1]} if len(tsave) > 0 else {}
+        if stop is not None:
+            stopcrit.update(stop)
         if not stopcrit:
             raise ValueError("missing stopping criteria")
         # default monitors
-        monitors = { **self.monitors, **monitors }
+        monitors = {**self.monitors, **monitors}
         # initialization before loop
         self.Qn = f.copy()
         if flush:
@@ -297,12 +294,12 @@ class timemodel(_coreiterative):
         # MAIN LOOP
         while not checkend:
             dtloc = self.modeldisc.calc_timestep(self.Qn, condition)
-            mindtloc = min(dtloc) # mindtloc = dtloc
+            mindtloc = min(dtloc)  # mindtloc = dtloc
             Qnn = self.Qn.copy()
-            if isave < nsave: # specific step to save result and go back to Qn
-                if self.Qn.time+mindtloc >= tsave[isave]:
+            if isave < nsave:  # specific step to save result and go back to Qn
+                if self.Qn.time + mindtloc >= tsave[isave]:
                     # compute smaller step with same integrator
-                    self.step(Qnn, tsave[isave]-self.Qn.time)
+                    self.step(Qnn, tsave[isave] - self.Qn.time)
                     Qnn.it = self._itstart + self._nit
                     results.append(Qnn)
                     if verbose:
@@ -320,7 +317,7 @@ class timemodel(_coreiterative):
                     alldata[i] = np.vstack((alldata[i], q))
             checkend = self._check_end(stopcrit)
             # save at least current state
-            if checkend and len(results)==0:
+            if checkend and len(results) == 0:
                 results.append(self.Qn)
         self._cputime = myclock() - start
         if flush:
@@ -368,19 +365,22 @@ class timemodel(_coreiterative):
         self.modeldisc = fakedisc(z)
         # make virtual field
         f = field.fdata(fakemodel(), fakemesh(), [0 * z + 1.0])
-        self.step(f, dtloc=1.0) # one step with normalized time step
+        self.step(f, dtloc=1.0)  # one step with normalized time step
         # get back actual modeldisc
         self.modeldisc = saved_model
         return f.data[0]
 
     def cflmax(self):
-        """estimation of maximum cfl, may not converge
-        """
+        """estimation of maximum cfl, may not converge"""
+
         def _gain_imag(sigma):
-            return abs(self.propagator(1j*sigma))-1.
-        return newton(_gain_imag, 10.)
+            return abs(self.propagator(1j * sigma)) - 1.0
+
+        return newton(_gain_imag, 10.0)
+
 
 # --------------------------------------------------------------------
+
 
 class explicit(timemodel):
     """Implement the forward-Euler time integrator."""
@@ -413,6 +413,7 @@ class rkmodel(timemodel):
 
     Derived classes must define a Butcher array.
     """
+
     def __init__(self, mesh, modeldisc, monitors=None):
         timemodel.__init__(self, mesh, modeldisc, monitors)
         self.check()
@@ -425,7 +426,9 @@ class rkmodel(timemodel):
             for s, pcoef in enumerate(self._butcher):
                 self._subtimecoef[s] = np.sum(pcoef)
         else:
-            raise TypeError("bad implementation of RK model in "+self.__class__.__name__+": Butcher array is missing")
+            raise TypeError(
+                "bad implementation of RK model in " + self.__class__.__name__ + ": Butcher array is missing"
+            )
 
     def step(self, field, dtloc):
         """Advance a field by one Runge-Kutta time step.
@@ -443,11 +446,11 @@ class rkmodel(timemodel):
             # revert to initial step
             pfield = field.copy()
             # aggregate residuals
-            for qf in self.residual: # multiply last residual first ...
+            for qf in self.residual:  # multiply last residual first ...
                 qf *= pcoef[-1]
             for i in range(pcoef.size - 1):
                 for q in range(pfield.neq):
-                    self.residual[q] += pcoef[i] * prhs[i][q] # ... and add previous RHS
+                    self.residual[q] += pcoef[i] * prhs[i][q]  # ... and add previous RHS
             # substep
             self.add_res(pfield, dtloc, self._subtimecoef[s])
         field.set(pfield)
@@ -475,41 +478,44 @@ class rk2(timemodel):
 
 class rk3ssp(rkmodel):
     """3rd order RK model with (SSP) Strong Stability Preserving"""
-    _butcher = [
-        np.array([1.0]),
-        np.array([0.25, 0.25]),
-        np.array([1.0, 1.0, 4.0]) / 6.0  ]
+
+    _butcher = [np.array([1.0]), np.array([0.25, 0.25]), np.array([1.0, 1.0, 4.0]) / 6.0]
 
 
 class rk4(rkmodel):
     """Classical 4th order RK"""
+
     _butcher = [
-            np.array([0.5]),
-            np.array([0.0, 0.5]),
-            np.array([0.0, 0.0, 1.0]),
-            np.array([1.0, 2.0, 2.0, 1.0]) / 6.0  ]
+        np.array([0.5]),
+        np.array([0.0, 0.5]),
+        np.array([0.0, 0.0, 1.0]),
+        np.array([1.0, 2.0, 2.0, 1.0]) / 6.0,
+    ]
+
 
 class rk2_heun(rkmodel):
     """RK 2nd order Heun's method (or trapezoidal)"""
+
     _butcher = [np.array([1.0]), np.array([0.5, 0.5])]
 
+
 class rk3_heun(rkmodel):
-    """RK 3rd order Heun's method """
-    _butcher = [
-            np.array([1.0 / 3.0]),
-            np.array([0, 2.0 / 3.0]),
-            np.array([0.25, 0, 0.75])     ]
+    """RK 3rd order Heun's method"""
+
+    _butcher = [np.array([1.0 / 3.0]), np.array([0, 2.0 / 3.0]), np.array([0.25, 0, 0.75])]
 
 
 # --------------------------------------------------------------------
 # LOW STORAGE RUNGE KUTTA MODELS
 # --------------------------------------------------------------------
 
+
 class LSrkmodelHH(timemodel):
     """Implement the Hu-Hussaini low-storage Runge-Kutta method.
 
     Derived classes must provide the ``_beta`` coefficients.
     """
+
     def __init__(self, mesh, modeldisc, monitors=None):
         timemodel.__init__(self, mesh, modeldisc, monitors)
         self.check()
@@ -520,7 +526,9 @@ class LSrkmodelHH(timemodel):
             self.nstage = len(self._beta)
             self._subtimecoef = self._beta
         else:
-            raise TypeError("bad implementation of RK model in "+self.__class__.__name__+": LSRK array is missing")
+            raise TypeError(
+                "bad implementation of RK model in " + self.__class__.__name__ + ": LSRK array is missing"
+            )
 
     def step(self, field, dtloc):
         """Advance a field by one low-storage Runge-Kutta step.
@@ -535,21 +543,28 @@ class LSrkmodelHH(timemodel):
             self.calcrhs(pfield)  # result in self.residual
             # substep
             pfield = field.copy()
-            self.add_res(pfield, dtloc*beta, beta) # beta is the subtimecoef
+            self.add_res(pfield, dtloc * beta, beta)  # beta is the subtimecoef
         field.set(pfield)
         return
 
+
 class lsrk25bb(LSrkmodelHH):
-    """Low Storage implementation of Bogey Bailly (JCP 2004) 2nd order 5 stages Runge Kutta """
-    _beta = [ 0.1815754863270908, 0.238260222208392, 0.330500707328, 0.5, 1. ]
+    """Low Storage implementation of Bogey Bailly (JCP 2004) 2nd order 5 stages Runge Kutta"""
+
+    _beta = [0.1815754863270908, 0.238260222208392, 0.330500707328, 0.5, 1.0]
+
 
 class lsrk26bb(LSrkmodelHH):
-    """Low Storage implementation of Bogey Bailly (JCP 2004) 2nd order 6 stages Runge Kutta """
-    _beta = [  0.11797990162882 , 0.18464696649448 , 0.24662360430959 , 0.33183954253762 , 0.5, 1. ]
+    """Low Storage implementation of Bogey Bailly (JCP 2004) 2nd order 6 stages Runge Kutta"""
+
+    _beta = [0.11797990162882, 0.18464696649448, 0.24662360430959, 0.33183954253762, 0.5, 1.0]
+
 
 class lsrk4(LSrkmodelHH):
     """RK4 to check"""
-    _beta = [ 1./4. , 1./3. , 0.5, 1. ]
+
+    _beta = [1.0 / 4.0, 1.0 / 3.0, 0.5, 1.0]
+
 
 # --------------------------------------------------------------------
 # IMPLICIT MODELS
@@ -589,10 +604,7 @@ class implicitmodel(timemodel):
         self.neq = field.neq
         self.dim = self.neq * field.nelem
         self.jacobian = np.zeros([self.dim, self.dim])
-        eps = [
-            epsdiff * math.sqrt(np.spacing(1.0)) * np.sum(np.abs(q)) / field.nelem
-            for q in field.data
-        ]
+        eps = [epsdiff * math.sqrt(np.spacing(1.0)) * np.sum(np.abs(q)) / field.nelem for q in field.data]
         self.calcrhs(field)
         refrhs = [qf.copy() for qf in self.residual]
         for i in range(field.nelem):  # for all variables (nelem*neq)
@@ -602,9 +614,7 @@ class implicitmodel(timemodel):
                 self.calcrhs(dfield)
                 drhs = [qf.copy() for qf in self.residual]
                 for qq in range(self.neq):
-                    self.jacobian[qq :: self.neq, i * self.neq + q] = (
-                        drhs[qq] - refrhs[qq]
-                    ) / eps[q]
+                    self.jacobian[qq :: self.neq, i * self.neq + q] = (drhs[qq] - refrhs[qq]) / eps[q]
         self.jacobian_use = 0
         return self.jacobian
 
@@ -676,6 +686,7 @@ class trapezoidal(implicitmodel):
 
 class cranknicolson(trapezoidal):
     """Provide a descriptive alias for the trapezoidal integrator."""
+
     pass
 
 
@@ -706,8 +717,6 @@ class gear(trapezoidal):
         return
 
 
-
-
 # class LSrk3lsw(LowStorageRKmodel):
 #     """ """
 
@@ -727,7 +736,7 @@ class gear(trapezoidal):
 # --------------------------------------------------------------------
 # for tests
 
-List_LSRK_Integrators = [ lsrk25bb, lsrk26bb ]
-List_RK_Integrators = [ rk2, rk2_heun, rk3_heun, rk3ssp, rk4 ] + List_LSRK_Integrators
-List_Explicit_Integrators = [ explicit ] + List_RK_Integrators
-List_Implicit_Integrators = [ implicit, cranknicolson, gear ]
+List_LSRK_Integrators = [lsrk25bb, lsrk26bb]
+List_RK_Integrators = [rk2, rk2_heun, rk3_heun, rk3ssp, rk4] + List_LSRK_Integrators
+List_Explicit_Integrators = [explicit] + List_RK_Integrators
+List_Implicit_Integrators = [implicit, cranknicolson, gear]

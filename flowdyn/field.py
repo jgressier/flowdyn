@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 """Provide field containers for spatial and time-dependent solution data."""
+
 __all__ = ["fdata"]
 
 import numpy as np
@@ -11,6 +12,7 @@ except ImportError:
 
 # import model
 # import mesh
+
 
 class fdata:
     """Store the equation data associated with a mesh and physical model.
@@ -29,7 +31,7 @@ class fdata:
         self.mesh = mesh
         self.nelem = mesh.ncell
         self.time = t
-        self.it   = it
+        self.it = it
         if data is not None:
             if len(data) != self.neq:
                 raise ValueError(f"expected {self.neq} data components, got {len(data)}")
@@ -37,17 +39,14 @@ class fdata:
             # and check
             for i, d in enumerate(data):
                 if np.ndim(d) < self.model.shape[i]:
-                    self.data[i] = np.repeat(
-                        np.expand_dims(d, axis=0), self.nelem, axis=0
-                    ).T
+                    self.data[i] = np.repeat(np.expand_dims(d, axis=0), self.nelem, axis=0).T
                 else:
                     self.data[i] = d.copy()
                 if self.data[i].shape[-1] == 1 and self.nelem != 1:
                     self.data[i] = np.repeat(self.data[i], self.nelem, axis=-1)
                 if self.data[i].shape[-1] != self.nelem:
                     raise ValueError(
-                        f"component {i} has {self.data[i].shape[-1]} cells; "
-                        f"mesh has {self.nelem}"
+                        f"component {i} has {self.data[i].shape[-1]} cells; " f"mesh has {self.nelem}"
                     )
             # self.data = [ np.array(d).T*np.ones(self.nelem) for d in data ] # old version only working for scalars
         else:
@@ -58,8 +57,7 @@ class fdata:
 
     def copy(self):
         """Return an independent copy of the field data."""
-        new = fdata(self.model, self.mesh, self.data, 
-                t=self.time, it=self.it)
+        new = fdata(self.model, self.mesh, self.data, t=self.time, it=self.it)
         return new
 
     def set(self, f):
@@ -68,15 +66,14 @@ class fdata:
         Args:
             f: Field whose values should be copied.
         """
-        self.__init__(f.model, f.mesh, f.data,
-                     t=f.time, it=f.it)
+        self.__init__(f.model, f.mesh, f.data, t=f.time, it=f.it)
 
     def set_time(self, time):
         self.time = time
 
-    def reset(self, t=0., it=-1):
-        self.time=t
-        self.it=it
+    def reset(self, t=0.0, it=-1):
+        self.time = t
+        self.it = it
 
     def interpol_t(self, f, t):
         """Interpolate a new field between this field and another one.
@@ -89,11 +86,11 @@ class fdata:
             The interpolated field.
         """
         new = self.copy()
-        new.it = -1 # don't know how to define
-        k = (t-self.time)/(f.time-self.time)
+        new.it = -1  # don't know how to define
+        k = (t - self.time) / (f.time - self.time)
         new.time = t
         for i in range(f.neq):
-            new.data[i] += k * (f.data[i]-self.data[i])
+            new.data[i] += k * (f.data[i] - self.data[i])
         return new
 
     def diff(self, f):
@@ -158,10 +155,12 @@ class fdata:
             Matplotlib line objects created by the plot operation.
         """
         return axes.plot(self.mesh.centers(), self.phydata(name), style)
-    
-    def plot2dcart(self, name, style='o', axes=plt): #basic idea on how to get a plot based on 2D FVM while using a 1D case.
-        xx,yy = self.mesh.centers()
-        return axes.plot(xx[0:self.mesh.nx], self.phydata(name)[0:self.mesh.nx], style)    
+
+    def plot2dcart(
+        self, name, style='o', axes=plt
+    ):  # basic idea on how to get a plot based on 2D FVM while using a 1D case.
+        xx, yy = self.mesh.centers()
+        return axes.plot(xx[0 : self.mesh.nx], self.phydata(name)[0 : self.mesh.nx], style)
 
     def semilogy(self, name, style="o", axes=plt):
         """Plot a physical variable with a logarithmic y-axis.
@@ -186,7 +185,7 @@ class fdata:
             The cell-volume-weighted average.
         """
         return self.mesh.average(self.phydata(name))
-           
+
     def stats(self, name):
         """Compute the average and variance of a physical variable.
 
@@ -199,7 +198,7 @@ class fdata:
         avg = self.mesh.average(self.phydata(name))
         var = self.mesh.average((self.phydata(name) - avg) ** 2)
         return avg, var
-        
+
     def contour(self, name, style=None, axes=None):
         """Draw contour lines for two-dimensional physical data.
 
@@ -211,13 +210,15 @@ class fdata:
         Returns:
             The generated Matplotlib contour set.
         """
-        if axes is None: axes=plt.gca()
+        if axes is None:
+            axes = plt.gca()
         xx, yy = self.mesh.centers()
         axes.set_aspect('equal')
         return axes.contour(
             xx.reshape((self.mesh.ny, self.mesh.nx)),
-            yy.reshape((self.mesh.ny, self.mesh.nx)), 
-            self.phydata(name).reshape((self.mesh.ny, self.mesh.nx)))
+            yy.reshape((self.mesh.ny, self.mesh.nx)),
+            self.phydata(name).reshape((self.mesh.ny, self.mesh.nx)),
+        )
 
     def contourf(self, name, style=None, axes=None):
         """Draw filled contours for two-dimensional physical data.
@@ -230,13 +231,14 @@ class fdata:
         Returns:
             The generated Matplotlib contour set.
         """
-        if axes is None: axes=plt.gca()
+        if axes is None:
+            axes = plt.gca()
         # TODO must check this is a 2D mesh
         xx, yy = self.mesh.centers()
         axes.set_aspect("equal")
         return axes.contourf(
             xx.reshape((self.mesh.ny, self.mesh.nx)),
-            yy.reshape((self.mesh.ny, self.mesh.nx)), 
+            yy.reshape((self.mesh.ny, self.mesh.nx)),
             self.phydata(name).reshape((self.mesh.ny, self.mesh.nx)),
         )
 
@@ -250,13 +252,15 @@ class fdata:
         line.set_data(self.mesh.centers(), self.phydata(name))
         return
 
-class fieldlist():
+
+class fieldlist:
     """Store an ordered collection of fields produced by time integration."""
-    statsfuncs = {'min': np.min, 'max': np.max }
+
+    statsfuncs = {'min': np.min, 'max': np.max}
 
     def __init__(self):
         self.solutions = list()
-        self._packed = False # not yet used
+        self._packed = False  # not yet used
         self._stats = {}
 
     def __getitem__(self, i):
@@ -280,12 +284,12 @@ class fieldlist():
         return [s.it for s in self.solutions]
 
     def stack_solution(self, varname):
-        return [ s.phydata(varname) for s in self.solutions ]
+        return [s.phydata(varname) for s in self.solutions]
 
     def stats_solutions(self, varname):
         self._stats[varname] = {}
         sols = self.stack_solution(varname)
-        for key,func in self.statsfuncs.items():
+        for key, func in self.statsfuncs.items():
             self._stats[varname][key] = func(sols)
         return self._stats[varname]
 
@@ -294,7 +298,8 @@ class fieldlist():
         tt = self.time_array()
         xx, xt = np.meshgrid(xc, tt)
         solgrid = self.stack_solution(varname)
-        if axes is None: axes=plt.gca()
+        if axes is None:
+            axes = plt.gca()
         style = {} if style is None else style
         axes.contour(xx, xt, solgrid, levels=levels, **style)
 
@@ -302,7 +307,8 @@ class fieldlist():
         xc = self.solutions[0].mesh.centers()
         tt = self.time_array()
         xx, xt = np.meshgrid(xc, tt)
-        solgrid = [ s.phydata(varname) for s in self.solutions ]
-        if axes is None: axes=plt.gca()
+        solgrid = [s.phydata(varname) for s in self.solutions]
+        if axes is None:
+            axes = plt.gca()
         style = {} if style is None else style
         axes.contourf(xx, xt, solgrid, levels=levels, **style)

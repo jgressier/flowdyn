@@ -8,6 +8,7 @@ Created on Fri May 10 15:42:29 2013
 import numpy as np
 import flowdyn.meshbase as meshbase
 
+
 class mesh2d(meshbase.virtualmesh):
     """
     cartesian uniform 2D mesh
@@ -15,37 +16,44 @@ class mesh2d(meshbase.virtualmesh):
     faces are ordered as i/x varying vertical faces ny*(nx+1) followed by j/y (ny+1)*nx faces
         index of related cell has the same order (i fast index, as rows)
     """
-    def __init__(self, nx, ny, lx=1., ly=1.):
+
+    def __init__(self, nx, ny, lx=1.0, ly=1.0):
         if not isinstance(nx, (int, np.integer)) or nx <= 0:
             raise ValueError("nx must be a positive integer")
         if not isinstance(ny, (int, np.integer)) or ny <= 0:
             raise ValueError("ny must be a positive integer")
-        if not np.isfinite(lx) or lx <= 0.:
+        if not np.isfinite(lx) or lx <= 0.0:
             raise ValueError("lx must be a positive finite number")
-        if not np.isfinite(ly) or ly <= 0.:
+        if not np.isfinite(ly) or ly <= 0.0:
             raise ValueError("ly must be a positive finite number")
         meshbase.virtualmesh.__init__(self, mesh_type='2D')
-        self.nx    = nx
-        self.ny    = ny
-        self.ncell = nx*ny
-        self.lx    = lx
-        self.ly    = ly
-        self._bctags = ['top', 'bottom', 'left', 'right' ]
-        self._bcfaces_orientation = {'top':'outward', 'bottom':'inward', 'left':'inward', 'right':'outward' }
+        self.nx = nx
+        self.ny = ny
+        self.ncell = nx * ny
+        self.lx = lx
+        self.ly = ly
+        self._bctags = ['top', 'bottom', 'left', 'right']
+        self._bcfaces_orientation = {
+            'top': 'outward',
+            'bottom': 'inward',
+            'left': 'inward',
+            'right': 'outward',
+        }
         self._io_bcfaces = {
-            'left'   :  np.arange(ny)*(nx+1),
-            'right'  : (np.arange(ny)+1)*(nx+1)-1,
-            'top'    : ny*(nx+1) + ny*nx + np.arange(nx),
-            'bottom' : ny*(nx+1) + np.arange(nx) }
+            'left': np.arange(ny) * (nx + 1),
+            'right': (np.arange(ny) + 1) * (nx + 1) - 1,
+            'top': ny * (nx + 1) + ny * nx + np.arange(nx),
+            'bottom': ny * (nx + 1) + np.arange(nx),
+        }
 
     def nbfaces(self):
         "returns number of faces"
-        return (self.nx+1)*self.ny + self.nx*(self.ny+1)
+        return (self.nx + 1) * self.ny + self.nx * (self.ny + 1)
 
     def centers(self):
         "compute centers of cells in a mesh"
-        x = np.linspace(0., self.lx, self.nx, endpoint=False)+ .5*self.dx()
-        y = np.linspace(0., self.ly, self.ny, endpoint=False)+ .5*self.dy()
+        x = np.linspace(0.0, self.lx, self.nx, endpoint=False) + 0.5 * self.dx()
+        y = np.linspace(0.0, self.ly, self.ny, endpoint=False) + 0.5 * self.dy()
         xx, yy = np.meshgrid(x, y)
         return xx.flatten(), yy.flatten()
 
@@ -62,7 +70,7 @@ class mesh2d(meshbase.virtualmesh):
         # dx = np.zeros(self.ncell)
         # for i in np.arange(self.ncell):
         #     dx[i] = (self.xf[i+1]-self.xf[i])
-        return np.repeat(self.dx()*self.dy(), self.ncell)
+        return np.repeat(self.dx() * self.dy(), self.ncell)
 
     def __repr__(self):
         return (
@@ -94,17 +102,18 @@ class mesh2d(meshbase.virtualmesh):
         """
         return normal array for all faces of tag BC
         """
-        if tag in ['top','bottom']:
-            direction = np.zeros((2,self.nx))
-            direction[1,:] = 1.
-        elif tag in ['left','right']:
-            direction = np.zeros((2,self.ny))
-            direction[0,:] = 1.
+        if tag in ['top', 'bottom']:
+            direction = np.zeros((2, self.nx))
+            direction[1, :] = 1.0
+        elif tag in ['left', 'right']:
+            direction = np.zeros((2, self.ny))
+            direction[0, :] = 1.0
         else:
             raise ValueError(f"unknown boundary tag {tag!r}")
         if self._bcfaces_orientation[tag] == 'inward':
             direction = -direction
         return direction
 
-class unimesh(mesh2d): # alias
+
+class unimesh(mesh2d):  # alias
     pass

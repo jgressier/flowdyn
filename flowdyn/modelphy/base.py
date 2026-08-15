@@ -9,28 +9,30 @@ Example:
     1 test
 """
 
-class methoddict():
-    """decorator to register decorated method as specific and tagged in the class model
-    """
-    def __init__(self, items=None, pref=""): # pref = prefix to be stripped off the method's name
-        if isinstance(items, str): # if only the prefix is given as argument
+
+class methoddict:
+    """decorator to register decorated method as specific and tagged in the class model"""
+
+    def __init__(self, items=None, pref=""):  # pref = prefix to be stripped off the method's name
+        if isinstance(items, str):  # if only the prefix is given as argument
             pref = items
             items = {}
         self.dict = dict(items or {})
         self.pref = pref
 
-    def register(self, pref=None, name=None): # name = alternate name for the method in the dict
+    def register(self, pref=None, name=None):  # name = alternate name for the method in the dict
         def decorator(classmeth):
             rpref = self.pref if pref is None else pref
             if name is None:
                 rname = classmeth.__name__
-                if not rname[:len(rpref)] == rpref:
-                    raise(LookupError("Prefix "+repr(rpref)+" not found in name "+repr(rname)))
-                rname = rname[len(rpref):]
+                if not rname[: len(rpref)] == rpref:
+                    raise (LookupError("Prefix " + repr(rpref) + " not found in name " + repr(rname)))
+                rname = rname[len(rpref) :]
             else:
                 rname = name
             self.dict[rname] = classmeth
             return classmeth
+
         return decorator
 
     def merge(self, mdict):
@@ -42,10 +44,12 @@ class methoddict():
     def copy(self):
         return methoddict(self.dict)
 
+
 # ===============================================================
 # implementation of MODEL class
 
-class model():
+
+class model:
     """
     Class model (as virtual class)
 
@@ -57,7 +61,8 @@ class model():
         has_source_terms
 
     """
-    _bcdict = methoddict('bc_')   # dict and associated decorator method to register BC
+
+    _bcdict = methoddict('bc_')  # dict and associated decorator method to register BC
     _vardict = methoddict()
     _numfluxdict = methoddict('numflux_')
 
@@ -65,21 +70,21 @@ class model():
         if not isinstance(neq, int) or neq < 0:
             raise ValueError("neq must be a non-negative integer")
         self.equation = name
-        self.neq      = neq
-        self.source   = None
+        self.neq = neq
+        self.source = None
         self.islinear = 0
-        self.has_firstorder_terms  = 0
+        self.has_firstorder_terms = 0
         self.has_secondorder_terms = 0
-        self.has_source_terms      = 0
-        self._bcdict  = model._bcdict.copy()
-        self._vardict  = model._vardict.copy()
-        self._numfluxdict  = model._numfluxdict.copy()
+        self.has_source_terms = 0
+        self._bcdict = model._bcdict.copy()
+        self._vardict = model._vardict.copy()
+        self._numfluxdict = model._numfluxdict.copy()
 
     def __repr__(self):
         return f"model: {self.equation}\nnb eq: {self.neq}"
 
     def list_bc(self):
-        return ['per']+list(self._bcdict.dict.keys())
+        return ['per'] + list(self._bcdict.dict.keys())
 
     def list_var(self):
         return self._vardict.dict.keys()
@@ -93,7 +98,7 @@ class model():
     def initdisc(self, mesh):
         return
 
-    def numflux(self, name, pL, pR): # NEEDS definition by derived model
+    def numflux(self, name, pL, pR):  # NEEDS definition by derived model
         raise NotImplementedError("numflux must be implemented in a derived model")
 
     def timestep(self, data, dx, condition):  # NEEDS definition by derived model
@@ -111,16 +116,18 @@ class model():
             raise ValueError(f"unknown boundary condition {name!r}; available conditions: {available}")
         return self._bcdict.dict[name](self, direction, data, param)
 
-    #------------------------------------
+    # ------------------------------------
     # definition of boundary conditions with name bc_*
 
     @_bcdict.register()
     def bc_dirichlet(self, direction, data, param):
         return param['prim']
 
+
 # ===============================================================
 # automatic testing
 
 if __name__ == "__main__":
     import doctest
+
     doctest.testmod()
