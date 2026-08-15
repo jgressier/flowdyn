@@ -5,7 +5,7 @@ import flowdyn.mesh  as mesh
 import flowdyn.modelphy.euler as euler
 import flowdyn.modeldisc as modeldisc
 import flowdyn.field as field
-from flowdyn.xnum  import *
+from flowdyn.xnum import extrapol1, minmod, muscl
 import flowdyn.integration as integ
 
 EULER_FLUXES = tuple(sorted(euler.euler1d()._numfluxdict.dict))

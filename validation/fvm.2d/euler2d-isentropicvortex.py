@@ -8,7 +8,6 @@ import matplotlib.pyplot as plt
 import numpy as np 
 
 import flowdyn.mesh2d as mesh2d
-from flowdyn.field import *
 import flowdyn.xnum as xn 
 import flowdyn.integration as tn
 import flowdyn.modelphy.euler as euler

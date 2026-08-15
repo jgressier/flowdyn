@@ -4,8 +4,8 @@ import flowdyn.mesh2d as mesh2d
 import flowdyn.modelphy.convection as conv
 import flowdyn.modeldisc as modeldisc
 import flowdyn.field as field
-from flowdyn.xnum  import *
-from flowdyn.integration import *
+from flowdyn.xnum import extrapol1, extrapol3
+from flowdyn.integration import rk3ssp
 import pytest
 
 mymodel = conv.model(1.)

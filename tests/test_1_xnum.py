@@ -4,8 +4,8 @@ import flowdyn.mesh  as mesh
 import flowdyn.modelphy.convection as conv
 import flowdyn.modeldisc as modeldisc
 import flowdyn.field as field
-from flowdyn.xnum  import *
-from flowdyn.integration import *
+from flowdyn.xnum import extrapol1, minmod, muscl, superbee, vanalbada, vanleer
+from flowdyn.integration import rk3ssp
 
 
 def test_reconstruction_rejects_mesh_data_size_mismatch():

@@ -9,8 +9,7 @@ import matplotlib.pyplot as plt
 import aerokit.aero.unsteady1D as uq
 
 from flowdyn.mesh  import unimesh
-from flowdyn.field import *
-from flowdyn.xnum  import *
+from flowdyn.xnum import minmod, muscl, vanalbada
 from flowdyn.integration import rk3ssp
 import flowdyn.modelphy.euler as euler
 import flowdyn.modeldisc      as modeldisc

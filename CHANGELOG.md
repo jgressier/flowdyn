@@ -16,7 +16,12 @@ pip show flowdyn
 
 ## Versions
 
-### [2.0.0] - Unreleased
+### [2.0.0](https://pypi.org/project/flowdyn/) (2022-xx-xx) - Unreleased
+
+#### new features
+
+- local time step through `directives` option in `integration.solve`
+- `new stats_solutions()` function for solution lists (main and max)
 
 #### Changed
 
@@ -29,13 +34,6 @@ pip show flowdyn
 
 #### Fixed
 
-
-### [1.3.x](https://pypi.org/project/flowdyn/) (2022-xx-xx)
-
-#### new features
-
-- local time step through `directives` option in `integration.solve`
-- `new stats_solutions()` function for solution lists (main and max)
 
 ### [1.3.1](https://pypi.org/project/flowdyn/) (2022-03-03)
 

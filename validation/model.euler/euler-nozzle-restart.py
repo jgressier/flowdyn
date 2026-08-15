@@ -11,7 +11,7 @@ import aerokit.aero.ShockWave as sw
 import aerokit.aero.Isentropic as Is
 # Euler/Nozzle simulations
 import flowdyn.mesh as mesh
-from flowdyn.xnum import *
+from flowdyn.xnum import muscl, vanleer
 from flowdyn.integration import rk3ssp
 import flowdyn.modelphy.euler as euler
 import flowdyn.modeldisc as modeldisc

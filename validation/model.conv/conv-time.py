@@ -4,14 +4,15 @@ test integration methods
 """
 
 import time
-from pylab import *
+from matplotlib.pyplot import figure, grid, legend, plot, show
+from numpy import linspace, pi, sign, sin
 
-from flowdyn.mesh  import *
+from flowdyn.mesh import unimesh
 import flowdyn.modelphy.convection as convection
 import flowdyn.modeldisc as modeldisc
-from flowdyn.field import *
-from flowdyn.xnum  import *
-from flowdyn.integration import *
+from flowdyn.field import fdata
+from flowdyn.xnum import extrapol2, extrapol3
+from flowdyn.integration import explicit, gear, implicit, rk2, rk3ssp, rk4, trapezoidal
 
 mesh100 = unimesh(ncell=100, length=1.)
 mesh50  = unimesh(ncell=50, length=1.)

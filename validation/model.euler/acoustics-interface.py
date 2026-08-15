@@ -8,7 +8,7 @@ import matplotlib.pyplot as plt
 import numpy as np 
 
 from flowdyn.mesh import unimesh
-from flowdyn.xnum import *
+from flowdyn.xnum import muscl, vanalbada
 import flowdyn.integration as tnum
 import flowdyn.modelphy.euler as euler
 import flowdyn.modeldisc      as modeldisc

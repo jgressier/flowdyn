@@ -5,13 +5,12 @@ test integration methods
 
 import time
 import cProfile
-from pylab import *
+from matplotlib.pyplot import show, subplots
 import numpy as np 
 
-from flowdyn.mesh  import *
-from flowdyn.field import *
-from flowdyn.xnum  import *
-from flowdyn.integration import *
+from flowdyn.mesh import unimesh
+from flowdyn.xnum import minmod, muscl
+from flowdyn.integration import rk2
 import flowdyn.modelphy.euler as euler
 import flowdyn.modeldisc      as modeldisc
 #import flowdyn.solution.euler_riemann as sol

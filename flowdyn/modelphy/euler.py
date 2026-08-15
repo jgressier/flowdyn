@@ -22,7 +22,7 @@ import numpy as np
 #import math
 #from numpy.lib.function_base import _angle_dispatcher
 import flowdyn.modelphy.base as base
-from flowdyn._data import *
+from flowdyn._data import datavector, _sca_mult_vec, _vec_dot_vec, _vecmag, _vecsqrmag
 
 # ===============================================================
 # implementation of MODEL class

@@ -5,8 +5,8 @@ import flowdyn.mesh  as mesh
 import flowdyn.modelphy.convection as conv
 import flowdyn.modeldisc as modeldisc
 import flowdyn.field as field
-from flowdyn.xnum  import *
-from flowdyn.integration import *
+from flowdyn.xnum import extrapol1, extrapol2, extrapol3, minmod, muscl, vanalbada
+from flowdyn.integration import cranknicolson, explicit, implicit, rk2, rk3ssp
 
 mesh100 = mesh.unimesh(ncell=100, length=1.)
 mesh50  = mesh.unimesh(ncell=50, length=1.)
