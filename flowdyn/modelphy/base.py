@@ -20,11 +20,11 @@
 class methoddict():
     """decorator to register decorated method as specific and tagged in the class model
     """
-    def __init__(self, items={}, pref=""): # pref = prefix to be stripped off the method's name
-        if type(items) == type(""): # if only the prefix is given as argument
+    def __init__(self, items=None, pref=""): # pref = prefix to be stripped off the method's name
+        if isinstance(items, str): # if only the prefix is given as argument
             pref = items
             items = {}
-        self.dict = dict(items)
+        self.dict = dict(items or {})
         self.pref = pref
 
     def register(self, pref=None, name=None): # name = alternate name for the method in the dict
@@ -70,6 +70,8 @@ class model():
     _numfluxdict = methoddict('numflux_')
 
     def __init__(self, name='not defined', neq=0):
+        if not isinstance(neq, int) or neq < 0:
+            raise ValueError("neq must be a non-negative integer")
         self.equation = name
         self.neq      = neq
         self.source   = None
@@ -82,8 +84,7 @@ class model():
         self._numfluxdict  = model._numfluxdict.copy()
 
     def __repr__(self):
-        print("model: ", self.equation)
-        print("nb eq: ", self.neq)
+        return f"model: {self.equation}\nnb eq: {self.neq}"
 
     def list_bc(self):
         return ['per']+list(self._bcdict.dict.keys())
@@ -92,25 +93,31 @@ class model():
         return self._vardict.dict.keys()
 
     def cons2prim(self, qdata):  # NEEDS definition by derived model
-        raise NameError("must be implemented in derived class")
+        raise NotImplementedError("cons2prim must be implemented in a derived model")
 
     def prim2cons(self, pdata):  # NEEDS definition by derived model
-        raise NameError("must be implemented in derived class")
+        raise NotImplementedError("prim2cons must be implemented in a derived model")
 
     def initdisc(self, mesh):
         return
 
     def numflux(self, name, pL, pR): # NEEDS definition by derived model
-        raise NameError("must be implemented in derived class")
+        raise NotImplementedError("numflux must be implemented in a derived model")
 
     def timestep(self, data, dx, condition):  # NEEDS definition by derived model
-        raise NameError("must be implemented in derived class")
+        raise NotImplementedError("timestep must be implemented in a derived model")
 
     def nameddata(self, name, data):
-        return (self._vardict.dict[name])(self, data)
+        if name not in self._vardict.dict:
+            available = ", ".join(sorted(self._vardict.dict))
+            raise ValueError(f"unknown variable {name!r}; available variables: {available}")
+        return self._vardict.dict[name](self, data)
 
     def namedBC(self, name, dir, data, param):
-        return (self._bcdict.dict[name])(self, dir, data, param)
+        if name not in self._bcdict.dict:
+            available = ", ".join(self.list_bc())
+            raise ValueError(f"unknown boundary condition {name!r}; available conditions: {available}")
+        return self._bcdict.dict[name](self, dir, data, param)
 
     #------------------------------------
     # definition of boundary conditions with name bc_*
@@ -125,4 +132,3 @@ class model():
 if __name__ == "__main__":
     import doctest
     doctest.testmod()
-

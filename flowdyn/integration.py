@@ -111,11 +111,11 @@ class timemodel(_coreiterative):
     """ """
     __default_monitor_freq = 10
 
-    def __init__(self, mesh, modeldisc, monitors={}):
+    def __init__(self, mesh, modeldisc, monitors=None):
         _coreiterative.__init__(self)
         self.mesh = mesh
         self.modeldisc = modeldisc
-        self.monitors = monitors
+        self.monitors = {} if monitors is None else monitors
         # define function for monitoring
         self._monitordict = { 
             'residual': self.mon_residual,
@@ -141,7 +141,7 @@ class timemodel(_coreiterative):
         Returns:
             returns dQ/dt 
         """
-        pass #raise NameError("not implemented for virtual class")
+        raise NotImplementedError("step must be implemented by a time integrator")
 
     def add_res(self, f, dt, subtimecoef=1.0):
         """
@@ -177,7 +177,7 @@ class timemodel(_coreiterative):
             if montype in self._monitordict.keys():
                 self._monitordict[montype](monval)
             else:
-                raise NameError("unknown monitor key: "+montype)
+                raise ValueError("unknown monitor type: "+montype)
 
     def _remove_monitor_output(self, monitors):
         """ Parse dictionnary of monitors and apply associated function
@@ -186,7 +186,7 @@ class timemodel(_coreiterative):
             monitors[key].pop("output", None) # None is needed to prevent missing key error
 
     def solve_legacy(self, f, condition, tsave, 
-            stop=None, flush=None, monitors={}):
+            stop=None, flush=None, monitors=None):
         """Solve dQ/dt=RHS(Q,t)
 
         Args:
@@ -198,6 +198,7 @@ class timemodel(_coreiterative):
         Returns:
           list of solution fields (size of tsave)
         """
+        monitors = {} if monitors is None else monitors
         self.reset() # reset cputime and nit
         self.condition = condition
         # initialization before loop
@@ -226,16 +227,22 @@ class timemodel(_coreiterative):
             np.save(flush, alldata)
         return results
 
-    def solve(self, f, condition, tsave=[], 
-            stop=None, flush=None, monitors={}, directives={}):
+    def solve(self, f, condition, tsave=None,
+            stop=None, flush=None, monitors=None, directives=None):
         """ """
+        tsave = [] if tsave is None else tsave
+        monitors = {} if monitors is None else monitors
+        directives = {} if directives is None else directives
         self.reset(itstart=0) # reset cputime and nit
         self._remove_monitor_output(monitors)
         return self._solve(f, condition, tsave, stop, flush, monitors, directives)
 
-    def restart(self, f, condition, tsave=[], 
-            stop=None, flush=None, monitors={}, directives={}):
+    def restart(self, f, condition, tsave=None,
+            stop=None, flush=None, monitors=None, directives=None):
         """ """
+        tsave = [] if tsave is None else tsave
+        monitors = {} if monitors is None else monitors
+        directives = {} if directives is None else directives
         self.reset(itstart=max(f.it, 0)) # reset cputime and nit
         return self._solve(f, condition, tsave, stop, flush, monitors, directives)
 
@@ -251,6 +258,15 @@ class timemodel(_coreiterative):
         Returns:
           list of solution fields (size of tsave)
         """
+        if not np.isscalar(condition) or not np.isfinite(condition) or condition <= 0.:
+            raise ValueError("condition must be a positive finite scalar")
+        tsave = np.asarray(tsave, dtype=float)
+        if np.any(~np.isfinite(tsave)) or np.any(np.diff(tsave) < 0.):
+            raise ValueError("tsave must contain finite, non-decreasing times")
+        if stop is not None:
+            unknown = set(stop) - {'tottime', 'maxit'}
+            if unknown:
+                raise ValueError(f"unknown stopping criteria: {', '.join(sorted(unknown))}")
         self._time = f.time
         # directives
         verbose = 'verbose' in directives.keys()
@@ -405,7 +421,7 @@ class rkmodel(timemodel):
     Returns:
 
     """
-    def __init__(self, mesh, modeldisc, monitors={}):
+    def __init__(self, mesh, modeldisc, monitors=None):
         timemodel.__init__(self, mesh, modeldisc, monitors)
         self.check()
 
@@ -417,7 +433,7 @@ class rkmodel(timemodel):
             for s, pcoef in enumerate(self._butcher):
                 self._subtimecoef[s] = np.sum(pcoef)
         else:
-            raise NameError("bad implementation of RK model in "+self.__class__.__name__+": Butcher array is missing")
+            raise TypeError("bad implementation of RK model in "+self.__class__.__name__+": Butcher array is missing")
 
     def step(self, field, dtloc):
         """
@@ -514,7 +530,7 @@ class LSrkmodelHH(timemodel):
     Returns:
 
     """
-    def __init__(self, mesh, modeldisc, monitors={}):
+    def __init__(self, mesh, modeldisc, monitors=None):
         timemodel.__init__(self, mesh, modeldisc, monitors)
         self.check()
 
@@ -524,7 +540,7 @@ class LSrkmodelHH(timemodel):
             self.nstage = len(self._beta)
             self._subtimecoef = self._beta
         else:
-            raise NameError("bad implementation of RK model in "+self.__class__.__name__+": LSRK array is missing")
+            raise TypeError("bad implementation of RK model in "+self.__class__.__name__+": LSRK array is missing")
 
     def step(self, field, dtloc):
         """

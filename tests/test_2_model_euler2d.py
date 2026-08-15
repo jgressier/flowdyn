@@ -44,6 +44,13 @@ class Test_densitypulse():
         error = np.sum(np.abs(data))
         assert error < 1.e-12
 
+    def test_invalid_face_orientation(self):
+        solver, finit = self.case_solver(2, 2, xn.extrapol2d1(), 'hlle')
+        solver.modeldisc.mesh._bcfaces_orientation['left'] = 'invalid'
+
+        with pytest.raises(ValueError, match="unknown face orientation"):
+            solver.modeldisc.rhs(finit)
+
     def test_centered(self):
         solver, finit = self.case_solver(50, 50, xn.extrapol2d1(), 'centered')
         endtime = 5.

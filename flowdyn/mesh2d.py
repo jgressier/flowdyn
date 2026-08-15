@@ -16,6 +16,14 @@ class mesh2d(meshbase.virtualmesh):
         index of related cell has the same order (i fast index, as rows)
     """
     def __init__(self, nx, ny, lx=1., ly=1.):
+        if not isinstance(nx, (int, np.integer)) or nx <= 0:
+            raise ValueError("nx must be a positive integer")
+        if not isinstance(ny, (int, np.integer)) or ny <= 0:
+            raise ValueError("ny must be a positive integer")
+        if not np.isfinite(lx) or lx <= 0.:
+            raise ValueError("lx must be a positive finite number")
+        if not np.isfinite(ly) or ly <= 0.:
+            raise ValueError("ly must be a positive finite number")
         meshbase.virtualmesh.__init__(self, type='2D')
         self.nx    = nx
         self.ny    = ny
@@ -57,14 +65,12 @@ class mesh2d(meshbase.virtualmesh):
         return np.repeat(self.dx()*self.dy(), self.ncell)
 
     def __repr__(self):
-        print("mesh object: mesh2d")
-        # print("length : ", self.length)
-        # print("ncell  : ", self.ncell)
-        # dx = self.dx()
-        # print("min dx : ", dx.min())
-        # print("max dx : ", dx.max())
-        # print("min dy : ", dy.min())
-        # print("max dy : ", dy.max())        
+        return (
+            f"mesh object: mesh2d\n"
+            f"dimensions : {self.nx} x {self.ny}\n"
+            f"lengths : {self.lx} x {self.ly}\n"
+            f"cell sizes : {self.dx()} x {self.dy()}"
+        )
 
     def list_of_bctags(self):
         """
@@ -95,7 +101,7 @@ class mesh2d(meshbase.virtualmesh):
             dir = np.zeros((2,self.ny))
             dir[0,:] = 1.
         else:
-            raise NameError("unexpected tag "+tag)
+            raise ValueError(f"unknown boundary tag {tag!r}")
         if self._bcfaces_orientation[tag] == 'inward':
             dir = -dir
         return dir

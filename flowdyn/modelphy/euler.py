@@ -135,7 +135,10 @@ class euler(base.model):
 
     def numflux(self, name, pdataL, pdataR, dir=None):
         if name is None: name='hllc'
-        return (self._numfluxdict.dict[name])(self, pdataL, pdataR, dir)
+        if name not in self._numfluxdict.dict:
+            available = ", ".join(sorted(self._numfluxdict.dict))
+            raise ValueError(f"unknown numerical flux {name!r}; available fluxes: {available}")
+        return self._numfluxdict.dict[name](self, pdataL, pdataR, dir)
 
     @_numfluxdict.register(name='centered')
     @_numfluxdict.register()
@@ -609,4 +612,3 @@ class euler2d(euler):
 if __name__ == "__main__":
     import doctest
     doctest.testmod()
-

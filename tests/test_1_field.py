@@ -19,15 +19,15 @@ class Test_fdataclass_scalar():
     curmesh = mesh.unimesh(ncell=50, length=1.)
 
     def test_init_empty(self):
-        f = field.fdata(self.convmodel, self.curmesh, [])
-        assert f.time == 0. # default value
-        assert f.it == -1 # default value
-        assert f.data == []
-        f.set_time(10.)
-        assert f.time == 10.
+        with pytest.raises(ValueError, match="expected 1 data components"):
+            field.fdata(self.convmodel, self.curmesh, [])
+
+    def test_init_rejects_wrong_cell_count(self):
+        with pytest.raises(ValueError, match="mesh has 50"):
+            field.fdata(self.convmodel, self.curmesh, [np.ones(49)])
 
     def test_reset(self):
-        f = field.fdata(self.convmodel, self.curmesh, [])
+        f = field.fdata(self.convmodel, self.curmesh, [0.])
         f.set_time(10.)
         f.reset(t=5.)
         assert f.time == 5.

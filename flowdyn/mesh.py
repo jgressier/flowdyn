@@ -11,6 +11,12 @@ import flowdyn.meshbase as meshbase
 class mesh1d(meshbase.virtualmesh):
     " class defining a uniform mesh: ncell and length"
     def __init__(self, ncell=100, length=1., x0=0.):
+        if not isinstance(ncell, (int, np.integer)) or ncell <= 0:
+            raise ValueError("ncell must be a positive integer")
+        if not np.isfinite(length) or length <= 0.:
+            raise ValueError("length must be a positive finite number")
+        if not np.isfinite(x0):
+            raise ValueError("x0 must be finite")
         meshbase.virtualmesh.__init__(self, '1D')
         self.ncell  = ncell
         self.length = length
@@ -40,11 +46,12 @@ class mesh1d(meshbase.virtualmesh):
         return (self.xf[1:self.ncell+1]-self.xf[0:self.ncell])
 
     def __repr__(self):
-        print("length : ", self.length)
-        print("ncell  : ", self.ncell)
+        message = f"length : {self.length}\n"
+        message += f"ncell  : {self.ncell}\n"
         dx = self.dx()
-        print("min dx : ", dx.min())
-        print("max dx : ", dx.max())
+        message += f"min dx : {dx.min()}\n"
+        message += f"max dx : {dx.max()}"
+        return message
 
     def dx(self): # for backward compatibility, should use generic self.vol()
         return self.vol()

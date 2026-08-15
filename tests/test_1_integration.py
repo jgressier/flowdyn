@@ -25,6 +25,18 @@ class Test_solve(integration_data):
 
     xsch = xnum.extrapol3()
 
+    def test_rejects_invalid_solve_inputs(self):
+        finit = field.fdata(self.convmodel, self.curmesh, [np.ones(self.curmesh.ncell)])
+        rhs = modeldisc.fvm(self.convmodel, self.curmesh, self.xsch)
+        solver = tnum.explicit(self.curmesh, rhs)
+
+        with pytest.raises(ValueError, match="positive finite"):
+            solver.solve(finit, 0., [1.])
+        with pytest.raises(ValueError, match="non-decreasing"):
+            solver.solve(finit, .5, [1., .5])
+        with pytest.raises(ValueError, match="unknown stopping criteria"):
+            solver.solve(finit, .5, stop={'iterations': 1})
+
     def test_checkend_tottime(self):
         endtime = 5.
         cfl     = .5
@@ -169,4 +181,3 @@ class Test_integrators_explicit(integration_data):
     def test_cflmax(self, tmeth):
         solver = tmeth(None, None)
         assert solver.cflmax() > 3.
-

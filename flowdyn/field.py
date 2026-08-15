@@ -34,6 +34,8 @@ class fdata:
         self.time = t
         self.it   = it
         if data is not None:
+            if len(data) != self.neq:
+                raise ValueError(f"expected {self.neq} data components, got {len(data)}")
             self.data = data[:]  # copy shape
             # and check
             for i, d in enumerate(data):
@@ -43,6 +45,13 @@ class fdata:
                     ).T
                 else:
                     self.data[i] = d.copy()
+                if self.data[i].shape[-1] == 1 and self.nelem != 1:
+                    self.data[i] = np.repeat(self.data[i], self.nelem, axis=-1)
+                if self.data[i].shape[-1] != self.nelem:
+                    raise ValueError(
+                        f"component {i} has {self.data[i].shape[-1]} cells; "
+                        f"mesh has {self.nelem}"
+                    )
             # self.data = [ np.array(d).T*np.ones(self.nelem) for d in data ] # old version only working for scalars
         else:
             raise NotImplementedError("no more possible to get data signature")
@@ -196,7 +205,7 @@ class fdata:
         var = self.mesh.average((self.phydata(name) - avg) ** 2)
         return avg, var
         
-    def contour(self, name, style={}, axes=None):
+    def contour(self, name, style=None, axes=None):
         """draw contour lines from 2d data
 
         Args:
@@ -215,7 +224,7 @@ class fdata:
             yy.reshape((self.mesh.ny, self.mesh.nx)), 
             self.phydata(name).reshape((self.mesh.ny, self.mesh.nx)))
 
-    def contourf(self, name, style={}, axes=None):
+    def contourf(self, name, style=None, axes=None):
         """draw flooded contour from 2d data
 
         Args:
@@ -294,18 +303,20 @@ class fieldlist():
             self._stats[varname][key] = func(sols)
         return self._stats[varname]
 
-    def xtcontour(self, varname, levels=20, axes=None, style={}):
+    def xtcontour(self, varname, levels=20, axes=None, style=None):
         xc = self.solutions[0].mesh.centers()
         tt = self.time_array()
         xx, xt = np.meshgrid(xc, tt)
         solgrid = self.stack_solution(varname)
         if axes is None: axes=plt.gca()
+        style = {} if style is None else style
         axes.contour(xx, xt, solgrid, levels=levels, **style)
 
-    def xtcontourf(self, varname, levels=20, axes=None, style={}):
+    def xtcontourf(self, varname, levels=20, axes=None, style=None):
         xc = self.solutions[0].mesh.centers()
         tt = self.time_array()
         xx, xt = np.meshgrid(xc, tt)
         solgrid = [ s.phydata(varname) for s in self.solutions ]
         if axes is None: axes=plt.gca()
+        style = {} if style is None else style
         axes.contourf(xx, xt, solgrid, levels=levels, **style)

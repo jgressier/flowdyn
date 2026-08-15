@@ -3,7 +3,7 @@
     The ``_data`` module 
     =========================
 
-    Provides scalar and vector computations
+    Provides scalar and vector computations from qdata as a multi component ndarray
 
     :Example:
 
@@ -23,12 +23,12 @@ def _vecmag(qdata):
 def _vecsqrmag(qdata):
     return np.sum(qdata**2, axis=0)
 
-def _sca_mult_vec(r, v):
+def _sca_mult_vec(r: float, v: np.ndarray):
     return r*v # direct multiplication thanks to shape (:)*(2,:)
 
-def _vec_dot_vec(v1, v2):
+def _vec_dot_vec(v1: np.ndarray, v2: np.ndarray):
     return np.einsum('ij,ij->j', v1, v2)
 
-def datavector(ux, uy, uz=None):
-    return np.vstack([ux, uy]) if not uz else np.vstack([ux, uy, uz])
+def datavector(ux: np.ndarray, uy: np.ndarray, uz: np.ndarray = None) -> np.ndarray:
+    return np.vstack([ux, uy]) if uz is None else np.vstack([ux, uy, uz])
 

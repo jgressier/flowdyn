@@ -11,7 +11,6 @@ classifiers = [
     "Natural Language :: English",
     "Operating System :: OS Independent",
     "Programming Language :: Python",
-    "Programming Language :: Python :: 3.7",
     "Programming Language :: Python :: 3.8",
     "Programming Language :: Python :: 3.9",
     "Programming Language :: Python :: 3.10",
@@ -20,7 +19,7 @@ classifiers = [
     "Programming Language :: Python :: 3.13",
     "Topic :: Scientific/Engineering :: Physics",
     "Topic :: Software Development :: Libraries :: Python Modules" ]
-requires-python = ">=3.7"
+requires-python = ">=3.8"
 dependencies = [
     "numpy >= 1.19.4",
     "scipy >= 1.5.4",
@@ -40,6 +39,8 @@ dev = [
     "pytest >= 6.0", 
     "pytest-cov >= 2.11.1",
     "pytest-mpl >= 0.12.0",
+    "black >= 22.0",
+    "flake8 >= 5.0",
     "pylint >= 2.6.0" ]
 doc = [ 
     "mkdocs >= 1.1",
@@ -54,9 +55,7 @@ doc = [
 requires      = ["setuptools>=61.0.0", "wheel"]
 build-backend = "setuptools.build_meta"
 
-[tools.flake8]
-
-[tools.black]
+[tool.black]
 line-length = 110
 skip-string-normalization = true
 
@@ -74,7 +73,7 @@ push = true
 
 [tool.pytest.ini_options]
 minversion = "6.0"
-addopts = "--cov -v"
+addopts = "-v"
 testpaths = [
     "tests"
 ]

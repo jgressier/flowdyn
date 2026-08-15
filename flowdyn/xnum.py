@@ -12,6 +12,12 @@ __all__ = ['extrapol1', 'extrapol2', 'extrapol3', 'extrapolk', 'extrapol2d1',
 import numpy as np
 #import mesh
 
+def _check_ncell(mesh, data):
+    nc = data[0].size
+    if mesh.ncell != nc:
+        raise ValueError(f"mesh has {mesh.ncell} cells but reconstruction data has {nc}")
+    return nc
+
 class virtualmeth():
     def __init__(self):
         self.gradmeth = 'none'
@@ -26,8 +32,7 @@ class extrapol1(virtualmeth):
 
     def interp_face(self, mesh, data, grad='none'):
         "returns 2x (L/R) neq list of (ncell+1) nparray"
-        nc = data[0].size
-        if (mesh.ncell != nc): print(self.__class__+"/interp_face error: mismatch sizes")
+        nc = _check_ncell(mesh, data)
         Ldata = []
         Rdata = []
         for i in range(len(data)):
@@ -46,8 +51,7 @@ class extrapol2(virtualmeth):
         
     def interp_face(self, mesh, data, grad):
         "returns 2x (L/R) neq list of (ncell+1) nparray / except bound"
-        nc = data[0].size
-        if (mesh.ncell != nc): print(self.__class__+"/interp_face error: mismatch sizes")
+        nc = _check_ncell(mesh, data)
         Ldata = []
         Rdata = []
         for i in range(len(data)):
@@ -66,8 +70,7 @@ class extrapolk(virtualmeth):
         
     def interp_face(self, mesh, data, grad):
         "returns 2x (L/R) neq list of (ncell+1) nparray / except bound"
-        nc = data[0].size
-        if (mesh.ncell != nc): print(self.__class__+"/interp_face error: mismatch sizes")
+        nc = _check_ncell(mesh, data)
         Ldata = []
         Rdata = []
         for i in range(len(data)):
@@ -208,8 +211,7 @@ class muscl(virtualmeth):
         
     def interp_face(self, mesh, data, grad):
         "returns 2x (L/R) neq list of (ncell+1) nparray / except bound"
-        nc = data[0].size
-        if (mesh.ncell != nc): print (self.__class__+"/interp_face error: mismatch sizes")
+        nc = _check_ncell(mesh, data)
         Ldata = []
         Rdata = []
         for i in range(len(data)):
@@ -219,4 +221,3 @@ class muscl(virtualmeth):
             Ldata[i][1:]   = data[i][:] + self.limiter( grad[i][1:],   grad[i][0:-1] ) *(mesh.xf[1:]  -mesh.xc[:])
             Rdata[i][0:-1] = data[i][:] + self.limiter( grad[i][0:-1], grad[i][1:]   ) *(mesh.xf[0:-1]-mesh.xc[:])
         return Ldata, Rdata
-

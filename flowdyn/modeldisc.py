@@ -15,13 +15,12 @@
  """
 
 import math
+from copy import copy as shallow_copy
 import numpy               as np
 #import flowdyn.modelphy.base as model
 #import flowdyn.mesh          as mesh
 import flowdyn.field         as field
 import flowdyn._data as dd
-
-_default_bc = { 'type': 'per' }
 
 class base():
     """
@@ -32,7 +31,9 @@ class base():
       pdata : list of neq nparray - primitive    data
       bc    : type of boundary condition - "p"=periodic / "d"=Dirichlet 
     """
-    def __init__(self, model, mesh, num, numflux=None, bcL=_default_bc, bcR=_default_bc):
+    def __init__(self, model, mesh, num, numflux=None, bcL=None, bcR=None):
+        if not hasattr(num, 'interp_face'):
+            raise TypeError("num must provide an interp_face method")
         self.model = model
         self.mesh  = mesh
         self.neq   = model.neq
@@ -40,12 +41,23 @@ class base():
         self.numflux = numflux
         self.nelem = mesh.ncell
         self.time  = 0.
-        self.bcL   = bcL
-        self.bcR   = bcR
+        self.bcL   = self._validated_bc(bcL)
+        self.bcR   = self._validated_bc(bcR)
         self.model.initdisc(mesh)
 
+    @staticmethod
+    def _validated_bc(bc):
+        bc = {'type': 'per'} if bc is None else dict(bc)
+        if 'type' not in bc or not isinstance(bc['type'], str):
+            raise ValueError("a boundary condition must define a string 'type'")
+        return bc
+
     def copy(self):
-        return base(self.model, self.mesh, self.num, self.bcL, self.bcR)
+        """Create a shallow copy with independent boundary dictionaries."""
+        new = shallow_copy(self)
+        new.bcL = self.bcL.copy()
+        new.bcR = self.bcR.copy()
+        return new
 
     def fdata(self, data):
         return field.fdata(self.model, self.mesh, data)
@@ -64,6 +76,8 @@ class base():
         return math.sqrt(np.average(np.square(qavg)))
 
     def rhs(self, field):
+        if field.model is not self.model or field.mesh is not self.mesh:
+            raise ValueError("field, model and mesh must match the discretization")
         #print("t=",field.time)
         self.field = field
         self.qdata = [ d.copy() for d in field.data ] # wonder if copy is necessary
@@ -88,10 +102,8 @@ class base():
 class fvm1d(base):
     """
     """
-    def __init__(self, model, mesh, num, numflux=None, bcL=_default_bc, bcR=_default_bc):
-        base.__init__(self, model, mesh, num, numflux)
-        self.bcL   = bcL
-        self.bcR   = bcR
+    def __init__(self, model, mesh, num, numflux=None, bcL=None, bcR=None):
+        base.__init__(self, model, mesh, num, numflux, bcL, bcR)
             
     def calc_grad(self):
         """
@@ -115,7 +127,7 @@ class fvm1d(base):
                 self.pL[i][0]          = self.pL[i][self.nelem] 
                 self.pR[i][self.nelem] = self.pR[i][0] 
         elif (self.bcL['type'] == 'per') or (self.bcR['type'] == 'per'):     # inconsistent periodic boundary conditions:
-            raise NameError("both conditions should be periodic")
+            raise ValueError("both conditions should be periodic")
         else:
             q_bcL  = self.model.namedBC(self.bcL['type'],
                                         -1, [self.pR[i][0] for i in range(self.neq)], self.bcL)
@@ -132,7 +144,7 @@ class fvm1d(base):
                 self.grad[i][-1] = 0.
                 self.grad[i][0] = self.grad[i][-1] = (self.pdata[i][0]-self.pdata[i][-1]) / (self.mesh.xc[0]+self.mesh.length-self.mesh.xc[-1])
         elif (self.bcL['type'] == 'per') or (self.bcR['type'] == 'per'):     # inconsistent periodic boundary conditions:
-            raise NameError("both conditions should be periodic")
+            raise ValueError("both conditions should be periodic")
         else:
             for i in range(self.neq):
                 self.grad[i][0]  = 0.
@@ -188,7 +200,7 @@ class fvm2dcart(base):
         
         for tag in self.mesh.list_of_bctags():
             if tag not in bclist:
-                raise NameError("missing BC tag '"+tag+"' in bclist argument")
+                raise ValueError("missing BC tag '"+tag+"' in bclist argument")
 
     def is_per(self, name):
         return self._bclist[name]['type'] == 'per'
@@ -234,12 +246,12 @@ class fvm2dcart(base):
                 data_in = self.pL
                 data_bc = self.pR
             else:
-                NameError("unknown face orientation")
+                raise ValueError("unknown face orientation")
             if bcvalue['type'] == 'per':
                 conbctag = _connect[bctag]
                 # check connected BC is type 'per' too
                 if self._bclist[conbctag]['type'] != 'per':
-                    raise NameError("both conditions "+bctag+" and "+conbctag+" should be periodic")
+                    raise ValueError("both conditions "+bctag+" and "+conbctag+" should be periodic")
                 for i in range(self.neq):
                     if self.model.shape[i] == 2: # if i-th data is a vector
                         data_bc[i][:,self.mesh.index_of_bc(bctag)] = data_bc[i][:,self.mesh.index_of_bc(conbctag)]
@@ -276,7 +288,7 @@ class fvm2dcart(base):
                     self.xgrad[p][::nx+1] = grad
                     self.xgrad[p][nx::nx+1] = grad
         elif self.is_per('left') or self.is_per('right'):     # inconsistent periodic boundary conditions:
-            raise NameError("both conditions should be periodic")
+            raise ValueError("both conditions should be periodic")
         else:
             for p in range(self.neq):
                 if self.pdata[p].ndim == 2:
@@ -297,7 +309,7 @@ class fvm2dcart(base):
                     self.ygrad[p][0:nx] = grad
                     self.ygrad[p][ny*nx:] = grad
         elif self.is_per('top') or self.is_per('bottom'):     # inconsistent periodic boundary conditions:
-            raise NameError("both conditions should be periodic")
+            raise ValueError("both conditions should be periodic")
         else:
             for p in range(self.neq):
                 if self.pdata[p].ndim == 2:

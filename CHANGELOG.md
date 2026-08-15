@@ -16,6 +16,20 @@ pip show flowdyn
 
 ## Versions
 
+### [2.0.0] - Unreleased
+
+#### Changed
+
+- require Python 3.8 or newer; Python 3.7 is no longer supported
+- make API-boundary validation fail early with descriptive `ValueError` or
+  `TypeError` exceptions for invalid meshes, fields, solver inputs,
+  reconstruction sizes, boundary conditions, and registered method names
+- collect coverage once in the canonical Python 3.12 Matplotlib comparison
+  job while retaining functional testing across all supported Python versions
+
+#### Fixed
+
+
 ### [1.3.x](https://pypi.org/project/flowdyn/) (2022-xx-xx)
 
 #### new features
