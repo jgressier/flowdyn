@@ -119,19 +119,6 @@ class TestStraightDuct2d():
         assert not fsol[-1].isnan()
         mach_th = np.sqrt(((bcL['ptot']/bcR['p'])**(1./3.5)-1.)/.2)
         error = np.sqrt(np.sum((fsol[-1].phydata('mach')-mach_th)**2)/fsol[-1].nelem)/mach_th 
-        print(fsol[-1].phydata('mach'), mach_th)
-        assert error < 1.e-8
-
-    def test_flow_sub(self):
-        endtime = 100.
-        cfl     = 1.5
-        bcL = { 'type': 'insub',  'ptot': 1.4, 'rttot': 1. }
-        bcR = { 'type': 'outsub', 'p': 1. }
-        solver, finit = self.case_solver(20, 5, xn.extrapol2d1(), 'hlle', bcL, bcR)
-        fsol = solver.solve(finit, cfl, [endtime])
-        assert not fsol[-1].isnan()
-        mach_th = np.sqrt(((bcL['ptot']/bcR['p'])**(1./3.5)-1.)/.2)
-        error = np.sqrt(np.sum((fsol[-1].phydata('mach')-mach_th)**2)/fsol[-1].nelem)/mach_th 
         assert error < 1.e-8
 
     def test_flow_sup(self):

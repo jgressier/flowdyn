@@ -77,3 +77,7 @@ addopts = "-v"
 testpaths = [
     "tests"
 ]
+
+[tool.bandit]
+# Assertions are the intended verification mechanism in pytest and validation cases.
+skips = ["B101"]

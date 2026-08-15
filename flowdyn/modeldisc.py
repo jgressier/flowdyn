@@ -258,7 +258,7 @@ class fvm2dcart(base):
                     else: # if i-th data is a scalar
                         data_bc[i][self.mesh.index_of_bc(bctag)] = data_bc[i][self.mesh.index_of_bc(conbctag)]
             else: # all other boundary conditions
-                dir = self.mesh.normal_of_bc(bctag)
+                direction = self.mesh.normal_of_bc(bctag)
                 bcdata_in = [None]*len(data_in)
                 iofaces   = self.mesh.index_of_bc(bctag)
                 for i,p in enumerate(data_in):
@@ -266,7 +266,7 @@ class fvm2dcart(base):
                         bcdata_in[i] = p[iofaces]
                     elif self.model.shape[i] == 2:
                         bcdata_in[i] = p[:,iofaces]
-                bcdata_bc = self.model.namedBC(bcvalue['type'], dir, bcdata_in, bcvalue)
+                bcdata_bc = self.model.namedBC(bcvalue['type'], direction, bcdata_in, bcvalue)
                 for i,p in enumerate(bcdata_bc):
                         if self.model.shape[i] == 1:
                             data_bc[i][iofaces] = p
@@ -331,10 +331,10 @@ class fvm2dcart(base):
         nxface = ny*(nx+1)
         nyface = nx*(ny+1)
         # get numerical flux from model object, self.numflux is here only a tag
-        dir = np.zeros((2,nxface+nyface),dtype=np.int8)
-        dir[0,:nxface] = 1
-        dir[1,nxface:] = 1  
-        self.flux = self.model.numflux(self.numflux, self.pL, self.pR, dir) 
+        direction = np.zeros((2,nxface+nyface),dtype=np.int8)
+        direction[0,:nxface] = 1
+        direction[1,nxface:] = 1
+        self.flux = self.model.numflux(self.numflux, self.pL, self.pR, direction)
 
     def calc_timestep(self, f, condition):
         # cell characteristic length is constant for cartesian mesh

@@ -133,16 +133,16 @@ class euler(base.model):
         cRoe  = np.sqrt((hRoe - 0.5*uRoe**2)*(self.gamma-1.))
         return Rrho, uRoe, cRoe
 
-    def numflux(self, name, pdataL, pdataR, dir=None):
+    def numflux(self, name, pdataL, pdataR, direction=None):
         if name is None: name='hllc'
         if name not in self._numfluxdict.dict:
             available = ", ".join(sorted(self._numfluxdict.dict))
             raise ValueError(f"unknown numerical flux {name!r}; available fluxes: {available}")
-        return self._numfluxdict.dict[name](self, pdataL, pdataR, dir)
+        return self._numfluxdict.dict[name](self, pdataL, pdataR, direction)
 
     @_numfluxdict.register(name='centered')
     @_numfluxdict.register()
-    def numflux_centeredflux(self, pdataL, pdataR, dir=None): # centered flux ; pL[ieq][face]
+    def numflux_centeredflux(self, pdataL, pdataR, direction=None): # centered flux ; pL[ieq][face]
         gam  = self.gamma
         gam1 = gam-1.
 
@@ -166,7 +166,7 @@ class euler(base.model):
         return [Frho, Frhou, FrhoE]
 
     @_numfluxdict.register()
-    def numflux_centeredmassflow(self, pdataL, pdataR, dir=None): # centered flux ; pL[ieq][face]
+    def numflux_centeredmassflow(self, pdataL, pdataR, direction=None): # centered flux ; pL[ieq][face]
         gam  = self.gamma
         gam1 = gam-1.
 
@@ -190,7 +190,7 @@ class euler(base.model):
         return [Frho, Frhou, FrhoE]
 
     @_numfluxdict.register()
-    def numflux_hlle(self, pdataL, pdataR, dir=None): # HLLE Riemann solver ; pL[ieq][face]
+    def numflux_hlle(self, pdataL, pdataR, direction=None): # HLLE Riemann solver ; pL[ieq][face]
 
         gam  = self.gamma
         gam1 = gam-1.
@@ -227,7 +227,7 @@ class euler(base.model):
         return [Frho, Frhou, FrhoE]
 
     @_numfluxdict.register()
-    def numflux_hllc(self, pdataL, pdataR, dir=None): # HLLC Riemann solver ; pL[ieq][face]
+    def numflux_hllc(self, pdataL, pdataR, direction=None): # HLLC Riemann solver ; pL[ieq][face]
 
         gam  = self.gamma
         gam1 = gam-1.
@@ -302,14 +302,14 @@ class euler(base.model):
 
     ###########################################################################
     @_numfluxdict.register()
-    def numflux_stegerwarming(self, pdataL, pdataR, dir):
+    def numflux_stegerwarming(self, pdataL, pdataR, direction=None):
         """
         Compute intercell flux according to the Steger-Warming method.
         Stability: 0 < CFL Coefficient < 1.0
         Parameters:
         - pdataL: Left state data [rhoL, uL, pL].
         - pdataR: Right state data [rhoR, uR, pR].
-        - dir: Direction (not used in this implementation).
+        - direction: Direction (not used in this implementation).
     
         Returns:
         - [Frho, Frhou, FrhoE]: Flux components for density, momentum, and energy.
@@ -373,14 +373,14 @@ class euler(base.model):
 
     ###########################################################################
     @_numfluxdict.register()
-    def numflux_vanleer(self, pdataL, pdataR, dir=None):
+    def numflux_vanleer(self, pdataL, pdataR, direction=None):
         """
         Computes intercell fluxes using the Van Leer method.
     
         Parameters:
             pdataL: tuple of left cell state variables (rhoL, uL, pL, cL)
             pdataR: tuple of right cell state variables (rhoR, uR, pR, cR)
-            dir: Direction (optional, placeholder for multi-dimensional cases)
+            direction: Direction (optional, placeholder for multi-dimensional cases)
     
         Returns:
             Frho, Frhou, FrhoE: Flux components
@@ -435,14 +435,14 @@ class euler(base.model):
 
     ###########################################################################
     @_numfluxdict.register()
-    def numflux_ausm(self, pdataL, pdataR, dir=None):
+    def numflux_ausm(self, pdataL, pdataR, direction=None):
         """
         Computes the intercell flux using the Liou-Steffen scheme.
         Stability: 0 < CFL Coefficient < 1.0
         Parameters:
             pdataL: List containing left state variables [rho, u, p]
             pdataR: List containing right state variables [rho, u, p]
-            dir: Direction (optional, not used in 1D implementation)
+            direction: Direction (optional, not used in 1D implementation)
     
         Returns:
             List containing fluxes for mass, momentum, and energy [Frho, Frhou, FrhoE]
@@ -505,10 +505,10 @@ class euler1d(euler):
         self._vardict.merge(euler1d._vardict)
         self._numfluxdict.merge(euler1d._numfluxdict)
 
-    def _derived_fromprim(self, pdata, dir):
+    def _derived_fromprim(self, pdata, direction):
         """
         returns rho, un, V, c2, H
-        'dir' is ignored
+        'direction' is ignored
         """
         c2 = self.gamma * pdata[2] / pdata[0]
         H  = c2/(self.gamma-1.) + .5*pdata[1]**2
@@ -519,50 +519,50 @@ class euler1d(euler):
         return qdata[1].copy()
 
     @_bcdict.register()
-    def bc_sym(self, dir, data, param):
+    def bc_sym(self, direction, data, param):
         "symmetry boundary condition, for inviscid equations, it is equivalent to a wall, do not need user parameters"
         return [ data[0], -data[1], data[2] ]
 
     @_bcdict.register()
-    def bc_insub(self, dir, data, param):
+    def bc_insub(self, direction, data, param):
         g   = self.gamma
         gmu = g-1.
         p  = data[2]
         m2 = np.maximum(0., ((param['ptot']/p)**(gmu/g)-1.)*2./gmu)
         rh = param['ptot']/param['rttot']/(1.+.5*gmu*m2)**(1./gmu)
-        return [ rh, -dir*np.sqrt(g*m2*p/rh), p ]
+        return [ rh, -direction*np.sqrt(g*m2*p/rh), p ]
 
     @_bcdict.register()
-    def bc_insub_cbc(self, dir, data, param):
+    def bc_insub_cbc(self, direction, data, param):
         g   = self.gamma
         gmu = g-1.
         p  = data[2]
-        invcm = data[1]+dir*2*np.sqrt(g*p/data[0])/gmu
+        invcm = data[1]+direction*2*np.sqrt(g*p/data[0])/gmu
         adiscri = g*(g+1)/gmu*param['rttot']-.5*gmu*invcm**2
-        a1 = (dir*invcm+np.sqrt(adiscri))*gmu/(g+1.)
-        u1 = invcm-dir*2*a1/gmu
+        a1 = (direction*invcm+np.sqrt(adiscri))*gmu/(g+1.)
+        u1 = invcm-direction*2*a1/gmu
         f_m1sqr= 1.+.5*gmu*(u1/a1)**2
         rh1 = param['ptot']/param['rttot']/f_m1sqr**(1./gmu)
         p1 = param['ptot']/f_m1sqr**(g/gmu)
         return [ rh1, u1, p1 ]
 
     @_bcdict.register()
-    def bc_insup(self, dir, data, param):
+    def bc_insup(self, direction, data, param):
         # expected parameters are 'ptot', 'rttot' and 'p'
         g   = self.gamma
         gmu = g-1.
         p=param['p']
         m2 = np.maximum(0., ((param['ptot']/p)**(gmu/g)-1.)*2./gmu)
         rh = param['ptot']/param['rttot']/(1.+.5*gmu*m2)**(1./gmu)
-        return [rh, -dir*np.sqrt(g*m2*p/rh), p]
+        return [rh, -direction*np.sqrt(g*m2*p/rh), p]
 
     @_bcdict.register(name='outsub')
     @_bcdict.register()
-    def bc_outsub_prim(self, dir, data, param):
+    def bc_outsub_prim(self, direction, data, param):
         return [ data[0], data[1], param['p'] ]
 
     @_bcdict.register()
-    def bc_outsub_qtot(self, dir, data, param):
+    def bc_outsub_qtot(self, direction, data, param):
         g   = self.gamma
         gmu = g-1.
         m2  = data[1]**2/(g*data[2]/data[0])
@@ -573,10 +573,10 @@ class euler1d(euler):
         p  = param['p']
         m2 = np.maximum(0., ((ptot/p)**(gmu/g)-1.)*2./gmu)
         rho = ptot/rttot/(1.+.5*gmu*m2)**(1./gmu)
-        return [ rho, dir*np.sqrt(g*m2*p/rho), p ]
+        return [ rho, direction*np.sqrt(g*m2*p/rho), p ]
 
     @_bcdict.register()
-    def bc_outsub_rh(self, dir, data, param):
+    def bc_outsub_rh(self, direction, data, param):
         g   = self.gamma
         gmu = g-1.
         # pratio > Ms > Ws/a0
@@ -586,7 +586,7 @@ class euler1d(euler):
         # relative shock Mach number Ms=(u0-Ws)/a0
         Ms2 = 1.+(pratio-1.)*(g+1.)/(2.*g)
         rhoratio = ((g+1.)*Ms2)/(2.+gmu*Ms2)
-        Ws = u0 - dir*np.sqrt(g*p0/data[0]*Ms2)
+        Ws = u0 - direction*np.sqrt(g*p0/data[0]*Ms2)
         # right (external) state
         p1  = param['p']
         u1 = Ws + (u0-Ws)/rhoratio
@@ -594,21 +594,21 @@ class euler1d(euler):
         return [ rho1, u1, p1 ]
 
     @_bcdict.register()
-    def bc_outsub_nrcbc(self, dir, data, param):
+    def bc_outsub_nrcbc(self, direction, data, param):
         g   = self.gamma
         gmu = g-1.
         # 0 and 1 stand for internal/external
         p1 = param['p']
         # isentropic invariant p/rho**gam = cst
         rho1 = data[0]*(p1/data[2])**(1./g)
-        # C- invariant (or C+ according to dir)
+        # C- invariant (or C+ according to direction)
         a0 = np.sqrt(g*data[2]/data[0])
         a1 = np.sqrt(g*p1/rho1)
-        u1 = data[1] + dir*2/gmu*(a1-a0)
+        u1 = data[1] + direction*2/gmu*(a1-a0)
         return [ rho1, u1, p1 ]
 
     @_bcdict.register()
-    def bc_outsup(self, dir, data, param):
+    def bc_outsup(self, direction, data, param):
         return data
 
 class model(euler1d): # backward compatibility
@@ -682,12 +682,12 @@ class euler2d(euler):
         self._vardict.merge(euler2d._vardict)
         self._numfluxdict.merge(euler2d._numfluxdict)
 
-    def _derived_fromprim(self, pdata, dir):
+    def _derived_fromprim(self, pdata, direction):
         """
         returns rho, un, V, p, H, c2
         """
         c2 = self.gamma * pdata[2] / pdata[0]
-        un = _vec_dot_vec(pdata[1], dir)
+        un = _vec_dot_vec(pdata[1], direction)
         H  = c2/(self.gamma-1.) + .5*_vecsqrmag(pdata[1])
         return pdata[0], un, pdata[1], pdata[2], H, c2
 
@@ -704,7 +704,7 @@ class euler2d(euler):
         rhoUmag = _vecmag(qdata[1])
         return rhoUmag/np.sqrt(self.gamma*((self.gamma-1.0)*(qdata[0]*qdata[2]-0.5*rhoUmag**2)))
 
-    def _Roe_average(self, rhoL, unL, UL, HL, rhoR, unR, UR, HR):
+    def _Roe_average_2d(self, rhoL, unL, UL, HL, rhoR, unR, UR, HR):
         """returns Roe averaged rho, u, usound"""
         # Roe's averaging
         Rrho = np.sqrt(rhoR/rhoL)
@@ -717,72 +717,72 @@ class euler2d(euler):
 
     @_numfluxdict.register(name='centered')
     @_numfluxdict.register()
-    def numflux_centeredflux(self, pdataL, pdataR, dir): # centered flux ; pL[ieq][face]
-        rhoL, unL, VL, pL, HL, cL2 = self._derived_fromprim(pdataL, dir)
-        rhoR, unR, VR, pR, HR, cR2 = self._derived_fromprim(pdataR, dir)
+    def numflux_centeredflux(self, pdataL, pdataR, direction=None): # centered flux ; pL[ieq][face]
+        rhoL, unL, VL, pL, HL, cL2 = self._derived_fromprim(pdataL, direction)
+        rhoR, unR, VR, pR, HR, cR2 = self._derived_fromprim(pdataR, direction)
         # final flux
         Frho  = .5*( rhoL*unL + rhoR*unR )
-        Frhou = .5*( (rhoL*unL)*VL + pL*dir + (rhoR*unR)*VR + pR*dir)
+        Frhou = .5*( (rhoL*unL)*VL + pL*direction + (rhoR*unR)*VR + pR*direction)
         FrhoE = .5*( (rhoL*unL*HL) + (rhoR*unR*HR))
         return [Frho, Frhou, FrhoE]
 
     @_numfluxdict.register(name='hlle')
-    def numflux_hlle(self, pdataL, pdataR, dir): # HLLE Riemann solver ; pL[ieq][face]
-        rhoL, unL, VL, pL, HL, cL2 = self._derived_fromprim(pdataL, dir)
-        rhoR, unR, VR, pR, HR, cR2 = self._derived_fromprim(pdataR, dir)    
+    def numflux_hlle(self, pdataL, pdataR, direction=None): # HLLE Riemann solver ; pL[ieq][face]
+        rhoL, unL, VL, pL, HL, cL2 = self._derived_fromprim(pdataL, direction)
+        rhoR, unR, VR, pR, HR, cR2 = self._derived_fromprim(pdataR, direction)
         # The HLLE Riemann solver
         etL   = HL-pL/rhoL
         etR   = HR-pR/rhoR
         # Roe's averaging
-        Rrho, uRoe, cRoe = self._Roe_average(rhoL, unL, VL, HL, rhoR, unR, VR, HR)
+        Rrho, uRoe, cRoe = self._Roe_average_2d(rhoL, unL, VL, HL, rhoR, unR, VR, HR)
         # max HLL 2 waves "velocities"
         sL = np.minimum(0., np.minimum(uRoe-cRoe, unL-np.sqrt(cL2)))
         sR = np.maximum(0., np.maximum(uRoe+cRoe, unR+np.sqrt(cR2)))
         # final flux
         Frho  = (sR*rhoL*unL - sL*rhoR*unR + sL*sR*(rhoR-rhoL))/(sR-sL)
-        Frhou = (sR*((rhoL*unL)*VL + pL*dir) - sL*((rhoR*unR)*VR + pR*dir) + sL*sR*(rhoR*VR-rhoL*VL))/(sR-sL)
+        Frhou = (sR*((rhoL*unL)*VL + pL*direction) - sL*((rhoR*unR)*VR + pR*direction) + sL*sR*(rhoR*VR-rhoL*VL))/(sR-sL)
         FrhoE = (sR*(rhoL*unL*HL) - sL*(rhoR*unR*HR) + sL*sR*(rhoR*etR-rhoL*etL))/(sR-sL)
         return [Frho, Frhou, FrhoE]
 
     @_bcdict.register()
-    def bc_sym(self, dir, data, param):
+    def bc_sym(self, direction, data, param):
         "symmetry boundary condition, for inviscid equations, it is equivalent to a wall, do not need user parameters"
         VL=data[1]
-        Vn=_vec_dot_vec(VL,dir)
-        VR=VL-2.0*(Vn*dir)
+        Vn=_vec_dot_vec(VL,direction)
+        VR=VL-2.0*(Vn*direction)
         return [ data[0], VR, data[2] ]
 
     @_bcdict.register()
-    def bc_insub(self, dir, data, param):
+    def bc_insub(self, direction, data, param):
         #needed parameters : ptot, rttot
         g   = self.gamma
         gmu = g-1.
         p  = data[2]
         m2 = np.maximum(0., ((param['ptot']/p)**(gmu/g)-1.)*2./gmu)
         rh = param['ptot']/param['rttot']/(1.+.5*gmu*m2)**(1./gmu)
-        return [ rh, _sca_mult_vec(-np.sqrt(g*p*m2/rh),dir), p ] 
+        return [ rh, _sca_mult_vec(-np.sqrt(g*p*m2/rh),direction), p ]
 
     @_bcdict.register()
-    def bc_insup(self, dir, data, param):
+    def bc_insup(self, direction, data, param):
         # needed parameters : ptot, rttot
         g   = self.gamma
         gmu = g-1.
         p  = param['p']
         if 'angle' in param:
             ang = np.deg2rad(param['angle'])
-            dir_in = np.full_like(dir, [[np.cos(ang)],[np.sin(ang)]])
+            dir_in = np.full_like(direction, [[np.cos(ang)],[np.sin(ang)]])
         else:
-            dir_in = -dir
+            dir_in = -direction
         m2 = np.maximum(0., ((param['ptot']/p)**(gmu/g)-1.)*2./gmu)
         rh = param['ptot']/param['rttot']/(1.+.5*gmu*m2)**(1./gmu)
         return [rh, _sca_mult_vec(np.sqrt(g*p*m2/rh),dir_in), p]
 
     @_bcdict.register()
-    def bc_outsub(self, dir, data, param):
+    def bc_outsub(self, direction, data, param):
         return [ data[0], data[1], param['p'] ] 
 
     @_bcdict.register()
-    def bc_outsup(self, dir, data, param):
+    def bc_outsup(self, direction, data, param):
         return data
 
 

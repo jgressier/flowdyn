@@ -81,16 +81,16 @@ class shallowwater1d(base.model):
     def velocity(self, qdata):
         return qdata[1]/qdata[0]
 
-    def numflux(self, name, pdataL, pdataR, dir=None):
+    def numflux(self, name, pdataL, pdataR, direction=None):
         if name is None: name='rusanov'
         if name not in self._numfluxdict.dict:
             available = ", ".join(sorted(self._numfluxdict.dict))
             raise ValueError(f"unknown numerical flux {name!r}; available fluxes: {available}")
-        return self._numfluxdict.dict[name](self, pdataL, pdataR, dir)
+        return self._numfluxdict.dict[name](self, pdataL, pdataR, direction)
 
     @_numfluxdict.register(name='centered')
     @_numfluxdict.register()
-    def numflux_centeredflux(self, pdataL, pdataR, dir=None): # centered flux ; pL[ieq][face] : in primitive variables (h,u) !
+    def numflux_centeredflux(self, pdataL, pdataR, direction=None): # centered flux ; pL[ieq][face] : in primitive variables (h,u) !
         g  = self.g
 
         hL = pdataL[0]
@@ -105,7 +105,7 @@ class shallowwater1d(base.model):
         return [Fh, Fq]
 
     @_numfluxdict.register()
-    def numflux_rusanov(self, pdataL, pdataR, dir=None): # Rusanov flux ; pL[ieq][face]
+    def numflux_rusanov(self, pdataL, pdataR, direction=None): # Rusanov flux ; pL[ieq][face]
         g  = self.g
         #
         hL = pdataL[0]
@@ -125,7 +125,7 @@ class shallowwater1d(base.model):
         return [Fh, Fq]
 
     @_numfluxdict.register()
-    def numflux_hll(self, pdataL, pdataR, dir=None): # HLL flux ; pL[ieq][face]
+    def numflux_hll(self, pdataL, pdataR, direction=None): # HLL flux ; pL[ieq][face]
         g  = self.g
 
         hL = pdataL[0]
@@ -154,12 +154,12 @@ class shallowwater1d(base.model):
         return dt
 
     @_bcdict.register()
-    def bc_sym(self, dir, data, param): # In primitive values here
+    def bc_sym(self, direction, data, param): # In primitive values here
         "symmetry boundary condition, for inviscid equations, it is equivalent to a wall, do not need user parameters"
         return [ data[0], -data[1] ]
 
     @_bcdict.register()
-    def bc_inf(self, dir, data, param): # Simulate infinite plane : not sure...
+    def bc_inf(self, direction, data, param): # Simulate infinite plane : not sure...
         #zeros_h = np.zeros( np.shape(data[0]))
         #zeros_u = np.zeros( np.shape(data[1]))
         return [ data[0], data[1]]

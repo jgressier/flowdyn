@@ -113,17 +113,17 @@ class model():
             raise ValueError(f"unknown variable {name!r}; available variables: {available}")
         return self._vardict.dict[name](self, data)
 
-    def namedBC(self, name, dir, data, param):
+    def namedBC(self, name, direction, data, param):
         if name not in self._bcdict.dict:
             available = ", ".join(self.list_bc())
             raise ValueError(f"unknown boundary condition {name!r}; available conditions: {available}")
-        return self._bcdict.dict[name](self, dir, data, param)
+        return self._bcdict.dict[name](self, direction, data, param)
 
     #------------------------------------
     # definition of boundary conditions with name bc_*
 
     @_bcdict.register()
-    def bc_dirichlet(self, dir, data, param):
+    def bc_dirichlet(self, direction, data, param):
         return param['prim']
 
 # ===============================================================

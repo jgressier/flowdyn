@@ -57,11 +57,11 @@ fsol = solver.solve(finit, cfl, [endtime])
 solver.show_perf()
 
 # Figure / Plot
-vars = ['density', 'pressure', 'velocity_x']
-nvars = len(vars)
+plot_variables = ['density', 'pressure', 'velocity_x']
+nvars = len(plot_variables)
 fig, ax = plt.subplots(ncols=nvars, figsize=(8*nvars-2,6))
 fig.suptitle('density pulse: ')
-for i, varname in enumerate(vars):
+for i, varname in enumerate(plot_variables):
 	ax[i].set_title(varname)
 	#grid(linestyle='--', color='0.5')
 	#finit.plot(name, 'k-.')

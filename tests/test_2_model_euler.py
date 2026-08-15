@@ -59,7 +59,7 @@ class TestEulerHelpers:
         pdata = [np.array([2.]), np.array([3.]), np.array([5.])]
 
         rho, normal_velocity, velocity, sound_speed_squared, enthalpy = (
-            model._derived_fromprim(pdata, dir=None)
+            model._derived_fromprim(pdata, direction=None)
         )
 
         np.testing.assert_allclose(rho, pdata[0])

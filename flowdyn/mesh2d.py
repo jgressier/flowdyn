@@ -24,7 +24,7 @@ class mesh2d(meshbase.virtualmesh):
             raise ValueError("lx must be a positive finite number")
         if not np.isfinite(ly) or ly <= 0.:
             raise ValueError("ly must be a positive finite number")
-        meshbase.virtualmesh.__init__(self, type='2D')
+        meshbase.virtualmesh.__init__(self, mesh_type='2D')
         self.nx    = nx
         self.ny    = ny
         self.ncell = nx*ny
@@ -95,16 +95,16 @@ class mesh2d(meshbase.virtualmesh):
         return normal array for all faces of tag BC
         """
         if tag in ['top','bottom']:
-            dir = np.zeros((2,self.nx))
-            dir[1,:] = 1.
+            direction = np.zeros((2,self.nx))
+            direction[1,:] = 1.
         elif tag in ['left','right']:
-            dir = np.zeros((2,self.ny))
-            dir[0,:] = 1.
+            direction = np.zeros((2,self.ny))
+            direction[0,:] = 1.
         else:
             raise ValueError(f"unknown boundary tag {tag!r}")
         if self._bcfaces_orientation[tag] == 'inward':
-            dir = -dir
-        return dir
+            direction = -direction
+        return direction
 
 class unimesh(mesh2d): # alias
     pass
