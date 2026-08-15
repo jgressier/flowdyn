@@ -295,7 +295,186 @@ class euler(base.model):
                     Frho*eR + (pStar*sM-pR*unR)*SmoSSm + pStar*sM))
 
         return [Frho, Frhou, FrhoE]
+    
 
+    ###########################################################################
+    @_numfluxdict.register()
+    def numflux_stegerwarming(self, pdataL, pdataR, dir):
+        """
+        Compute intercell flux according to the Steger-Warming method.
+        Stability: 0 < CFL Coefficient < 1.0
+        Parameters:
+        - pdataL: Left state data [rhoL, uL, pL].
+        - pdataR: Right state data [rhoR, uR, pR].
+        - dir: Direction (not used in this implementation).
+    
+        Returns:
+        - [Frho, Frhou, FrhoE]: Flux components for density, momentum, and energy.
+        """
+        gam = self.gamma
+        gam1 = gam - 1.
+    
+        rhoL = pdataL[0]
+        uL = unL = pdataL[1]
+        pL = pdataL[2]
+        rhoR = pdataR[0]
+        uR = unR = pdataR[1]
+        pR = pdataR[2]
+
+        cL2 = gam * pL / rhoL
+        cR2 = gam * pR / rhoR
+    
+        HL = cL2 / gam1 + 0.5 * uL**2
+        HR = cR2 / gam1 + 0.5 * uR**2
+
+        sL = np.sqrt(cL2)
+        sR = np.sqrt(cR2)
+        
+        epsilon = 1e-2  # to smooth the eigenvalues
+
+        # Calculate left and right eigenvalues
+        rho,a,u,H = rhoL, sL, uL, HL
+        eigenvalues = np.zeros_like(pdataL)
+        eigenvalues[0,:] = u-a
+        eigenvalues[1,:] = u
+        eigenvalues[2,:] = u+a
+        lbda_plus    = (eigenvalues + np.sqrt(eigenvalues*eigenvalues + epsilon**2))*0.5
+
+        rho,a,u,H   = rhoR, sR, uR, HR
+        eigenvalues = np.zeros_like(pdataR)
+        eigenvalues[0,:] = u-a
+        eigenvalues[1,:] = u
+        eigenvalues[2,:] = u+a
+        lbda_minus  = (eigenvalues - np.sqrt(eigenvalues*eigenvalues + epsilon**2))*0.5
+
+        # 1 - F+ (flux from left state)
+        Fplus = np.zeros_like(pdataL)
+        Fplus[0,:] = rhoL / (2 * gam) * (lbda_plus[0,:] + 2 * (gam - 1) * lbda_plus[1,:] + lbda_plus[2,:])
+        Fplus[1,:] = rhoL / (2 * gam) * ((uL - np.sqrt(cL2)) * lbda_plus[0,:] + 2 * (gam - 1) * uL * lbda_plus[1,:] + (uL + np.sqrt(cL2)) * lbda_plus[2,:])
+        Fplus[2,:] = rhoL / (2 * gam) * ((HL - uL * np.sqrt(cL2)) * lbda_plus[0,:] + (gam - 1) * uL**2 * lbda_plus[1,:] + (HL + uL * np.sqrt(cL2)) * lbda_plus[2,:])
+    
+        # 2 - F- (flux from right state)
+        Fminus = np.zeros_like(pdataL)
+        Fminus[0] = rhoR / (2 * gam) * (lbda_minus[0] + 2 * (gam - 1) * lbda_minus[1] + lbda_minus[2])
+        Fminus[1] = rhoR / (2 * gam) * ((uR - np.sqrt(cR2)) * lbda_minus[0] + 2 * (gam - 1) * uR * lbda_minus[1] + (uR + np.sqrt(cR2)) * lbda_minus[2])
+        Fminus[2] = rhoR / (2 * gam) * ((HR - uR * np.sqrt(cR2)) * lbda_minus[0] + (gam - 1) * uR**2 * lbda_minus[1] + (HR + uR * np.sqrt(cR2)) * lbda_minus[2])
+    
+        # 3 - Sum F+ and F- to get the total flux through the interface
+        F = Fplus + Fminus
+    
+        Frho = F[0]
+        Frhou = F[1]
+        FrhoE = F[2]
+    
+        return [Frho, Frhou, FrhoE]
+
+    ###########################################################################
+    @_numfluxdict.register()
+    def numflux_vanleer(self, pdataL, pdataR, dir=None):
+        """
+        Computes intercell fluxes using the Van Leer method.
+    
+        Parameters:
+            pdataL: tuple of left cell state variables (rhoL, uL, pL, cL)
+            pdataR: tuple of right cell state variables (rhoR, uR, pR, cR)
+            dir: Direction (optional, placeholder for multi-dimensional cases)
+    
+        Returns:
+            Frho, Frhou, FrhoE: Flux components
+        """
+
+        gamma = self.gamma
+        G8 = (gamma - 1)
+        G7 = (gamma - 1) / 2
+        
+        rhoL, uL, pL = pdataL
+        rhoR, uR, pR = pdataR
+
+        cL = np.sqrt(gamma * pL / rhoL)
+        cR = np.sqrt(gamma * pR / rhoR)
+
+        machL = uL / cL
+        machR = uR / cR
+
+        physicalL = np.array([
+            rhoL*uL,
+            rhoL*uL**2 + pL,
+            rhoL*uL*(0.5*uL**2 + cL**2/G8),
+        ])
+        physicalR = np.array([
+            rhoR*uR,
+            rhoR*uR**2 + pR,
+            rhoR*uR*(0.5*uR**2 + cR**2/G8),
+        ])
+        subplus = np.array([
+            0.25*rhoL*cL*(1. + machL)**2,
+            0.25*rhoL*cL*(1. + machL)**2 * 2*cL/gamma*(G7*machL + 1.),
+            0.25*rhoL*cL*(1. + machL)**2 * 2*cL**2/(gamma**2 - 1.)*(G7*machL + 1.)**2,
+        ])
+        subminus = np.array([
+            -0.25*rhoR*cR*(1. - machR)**2,
+            -0.25*rhoR*cR*(1. - machR)**2 * 2*cR/gamma*(G7*machR - 1.),
+            -0.25*rhoR*cR*(1. - machR)**2 * 2*cR**2/(gamma**2 - 1.)*(G7*machR - 1.)**2,
+        ])
+
+        # Each split flux becomes the full physical flux when all
+        # characteristics point in its upwind direction.
+        Fplus = np.where(machL >= 1., physicalL,
+                         np.where(machL <= -1., 0., subplus))
+        Fminus = np.where(machR <= -1., physicalR,
+                          np.where(machR >= 1., 0., subminus))
+
+        Frho = Fplus[0] + Fminus[0]
+        Frhou = Fplus[1] + Fminus[1]
+        FrhoE = Fplus[2] + Fminus[2]
+    
+        return [Frho, Frhou, FrhoE]
+
+    ###########################################################################
+    @_numfluxdict.register()
+    def numflux_ausm(self, pdataL, pdataR, dir=None):
+        """
+        Computes the intercell flux using the Liou-Steffen scheme.
+        Stability: 0 < CFL Coefficient < 1.0
+        Parameters:
+            pdataL: List containing left state variables [rho, u, p]
+            pdataR: List containing right state variables [rho, u, p]
+            dir: Direction (optional, not used in 1D implementation)
+    
+        Returns:
+            List containing fluxes for mass, momentum, and energy [Frho, Frhou, FrhoE]
+        """
+        gam = self.gamma
+
+        rhoL, uL, pL = pdataL
+        rhoR, uR, pR = pdataR
+
+        g8 = gam - 1.
+
+        cL = np.sqrt(gam * pL / rhoL)
+        cR = np.sqrt(gam * pR / rhoR)
+        machL = uL / cL
+        machR = uR / cR
+
+        machL_plus = np.where(abs(machL) <= 1.0, 0.25 * (machL + 1.0) ** 2, 0.5 * (machL + abs(machL)))
+        presL_plus = np.where(abs(machL) <= 1.0, 0.5 * pL * (1.0 + machL), np.where(machL > 0., pL, 0.))
+
+        machR_minus = np.where(abs(machR) <= 1.0, -0.25 * (machR - 1.0) ** 2, 0.5 * (machR - abs(machR)))
+        presR_minus = np.where(abs(machR) <= 1.0, 0.5 * pR * (1.0 - machR), np.where(machR < 0., pR, 0.))
+
+        mach_interface = machL_plus + machR_minus
+        pres_interface = presL_plus + presR_minus
+
+        HE_L = 0.5 * uL ** 2 + cL ** 2 / g8
+        HE_R = 0.5 * uR ** 2 + cR ** 2 / g8
+    
+        Frho = np.where(mach_interface >= 0.0, mach_interface * rhoL * cL, mach_interface * rhoR * cR)
+        Frhou = np.where(mach_interface >= 0.0, mach_interface * rhoL * cL * uL + pres_interface, mach_interface * rhoR * cR * uR + pres_interface)
+        FrhoE = np.where(mach_interface >= 0.0, mach_interface * rhoL * cL * HE_L, mach_interface * rhoR * cR * HE_R)
+    
+        return [Frho, Frhou, FrhoE]
+
+###############################################################################
     def timestep(self, data, dx, condition):
         "computation of timestep with conservative data"
         #        dt = CFL * dx / ( |u| + c )
@@ -448,11 +627,12 @@ class nozzle(euler1d):
 
     def __init__(self, sectionlaw, gamma=1.4, source=None):
         nozsrc = [ self.src_mass, self.src_mom, self.src_energy ]
-        allsrc = nozsrc # init all sources to nozzle sources
+        allsrc = nozsrc.copy() # init all sources to nozzle sources
         if source: # additional sources ?
             for i,isrc in enumerate(source):
                 if isrc:
-                    allsrc[i] = lambda x,q: isrc(x,q)+nozsrc[i](x,q)
+                    nozzle_source = nozsrc[i]
+                    allsrc[i] = lambda x, q, extra=isrc, base=nozzle_source: extra(x, q) + base(x, q)
         euler1d.__init__(self, gamma=gamma, source=allsrc)
         self.sectionlaw = sectionlaw
         self._bcdict.merge(nozzle._bcdict)
@@ -609,4 +789,3 @@ class euler2d(euler):
 if __name__ == "__main__":
     import doctest
     doctest.testmod()
-
