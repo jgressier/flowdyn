@@ -238,6 +238,53 @@ class timemodel(_coreiterative):
         self.reset(itstart=max(f.it, 0))  # reset cputime and nit
         return self._solve(f, condition, tsave, stop, flush, monitors, directives)
 
+    @staticmethod
+    def _validated_solve_inputs(condition, tsave, stop):
+        """Validate solver inputs and return normalized save times."""
+        if not np.isscalar(condition) or not np.isfinite(condition) or condition <= 0.0:
+            raise ValueError("condition must be a positive finite scalar")
+        tsave = np.asarray(tsave, dtype=float)
+        if np.any(~np.isfinite(tsave)) or np.any(np.diff(tsave) < 0.0):
+            raise ValueError("tsave must contain finite, non-decreasing times")
+        if stop is not None:
+            unknown = set(stop) - {'tottime', 'maxit'}
+            if unknown:
+                raise ValueError(f"unknown stopping criteria: {', '.join(sorted(unknown))}")
+        return tsave
+
+    @staticmethod
+    def _stopping_criteria(tsave, stop):
+        """Combine the final save time with explicit stopping criteria."""
+        criteria = {'tottime': tsave[-1]} if len(tsave) > 0 else {}
+        if stop is not None:
+            criteria.update(stop)
+        if not criteria:
+            raise ValueError("missing stopping criteria")
+        return criteria
+
+    @staticmethod
+    def _first_save_index(current_time, tsave):
+        """Return the first requested save time not preceding the current state."""
+        return int(np.searchsorted(tsave, current_time, side='left'))
+
+    def _save_if_due(self, results, isave, tsave, mindtloc, verbose):
+        """Save an interpolated integration state when the next step crosses a save time."""
+        if isave >= len(tsave) or self.Qn.time + mindtloc < tsave[isave]:
+            return isave
+        saved = self.Qn.copy()
+        self.step(saved, tsave[isave] - self.Qn.time)
+        saved.it = self._itstart + self._nit
+        results.append(saved)
+        if verbose:
+            print("save state at it {:5d} and time {:6.2e}".format(self._nit, saved.time))
+        return isave + 1
+
+    @staticmethod
+    def _append_flush_data(alldata, qdata):
+        """Append one state to arrays accumulated for file output."""
+        for index, values in enumerate(qdata):
+            alldata[index] = np.vstack((alldata[index], values))
+
     def _solve(self, f, condition, tsave, stop, flush, monitors, directives):
         """Integrate a field using the configured time-stepping method.
 
@@ -253,72 +300,39 @@ class timemodel(_coreiterative):
         Returns:
             Solution fields corresponding to ``tsave``.
         """
-        if not np.isscalar(condition) or not np.isfinite(condition) or condition <= 0.0:
-            raise ValueError("condition must be a positive finite scalar")
-        tsave = np.asarray(tsave, dtype=float)
-        if np.any(~np.isfinite(tsave)) or np.any(np.diff(tsave) < 0.0):
-            raise ValueError("tsave must contain finite, non-decreasing times")
-        if stop is not None:
-            unknown = set(stop) - {'tottime', 'maxit'}
-            if unknown:
-                raise ValueError(f"unknown stopping criteria: {', '.join(sorted(unknown))}")
+        tsave = self._validated_solve_inputs(condition, tsave, stop)
         self._time = f.time
-        # directives
-        verbose = 'verbose' in directives.keys()
-        dtlocal = 'dtlocal' in directives.keys()
+        verbose = 'verbose' in directives
+        dtlocal = 'dtlocal' in directives
         if verbose and dtlocal:
             print("- dtlocal on")
-        #
         self.condition = condition
-        # default stopping criterion
-        stopcrit = {'tottime': tsave[-1]} if len(tsave) > 0 else {}
-        if stop is not None:
-            stopcrit.update(stop)
-        if not stopcrit:
-            raise ValueError("missing stopping criteria")
-        # default monitors
+        stopcrit = self._stopping_criteria(tsave, stop)
         monitors = {**self.monitors, **monitors}
-        # initialization before loop
         self.Qn = f.copy()
-        if flush:
-            alldata = [d for d in self.Qn.data]
+        alldata = [data for data in self.Qn.data] if flush else None
         results = field.fieldlist()
         start = myclock()
-        isave, nsave = 0, len(tsave)
-        # loop testing all ending criteria
-        checkend = self._check_end(stopcrit)
+        isave = self._first_save_index(self.Qn.time, tsave)
+        advanced = False
         self._parse_monitors(monitors)
-        # find first time to save if exists
-        while (isave < nsave) and (self.Qn.time > tsave[isave]):
-            isave += 1
-        # MAIN LOOP
-        while not checkend:
+
+        while not self._check_end(stopcrit):
             dtloc = self.modeldisc.calc_timestep(self.Qn, condition)
-            mindtloc = min(dtloc)  # mindtloc = dtloc
-            Qnn = self.Qn.copy()
-            if isave < nsave:  # specific step to save result and go back to Qn
-                if self.Qn.time + mindtloc >= tsave[isave]:
-                    # compute smaller step with same integrator
-                    self.step(Qnn, tsave[isave] - self.Qn.time)
-                    Qnn.it = self._itstart + self._nit
-                    results.append(Qnn)
-                    if verbose:
-                        print("save state at it {:5d} and time {:6.2e}".format(self._nit, Qnn.time))
-                    isave += 1
-                    # step back to self.Qn
-                    Qnn = self.Qn.copy()
-            self.step(Qnn, dtloc if dtlocal else mindtloc)
-            self.Qn = Qnn
+            mindtloc = min(dtloc)
+            isave = self._save_if_due(results, isave, tsave, mindtloc, verbose)
+            next_state = self.Qn.copy()
+            self.step(next_state, dtloc if dtlocal else mindtloc)
+            self.Qn = next_state
+            advanced = True
             self._nit += 1
             self._time = self.Qn.time
             self._parse_monitors(monitors)
             if flush:
-                for i, q in zip(range(len(alldata)), self.Qn.data):
-                    alldata[i] = np.vstack((alldata[i], q))
-            checkend = self._check_end(stopcrit)
-            # save at least current state
-            if checkend and len(results) == 0:
-                results.append(self.Qn)
+                self._append_flush_data(alldata, self.Qn.data)
+
+        if advanced and len(results) == 0:
+            results.append(self.Qn)
         self._cputime = myclock() - start
         if flush:
             np.save(flush, alldata)
