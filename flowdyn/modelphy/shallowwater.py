@@ -1,25 +1,18 @@
 # -*- coding: utf-8 -*-
+"""Provide the one-dimensional shallow-water physical model.
+
+Initial conditions must use the primitive variables ``[h, h * u]``. Available
+numerical fluxes are centered, Rusanov, and HLL.
+
+Example:
+
+    >>> model = shallowwater.shallowwater1d()
+    >>> initial = [height, height * velocity]
+    >>> solution = field.fdata(model, mesh, initial)
+
+Note:
+    Gaétan Foucart originally authored this model in 2020.
 """
-    The ``shallowwater`` module of modelphy library
-    =========================
-
-    Provides the shallow water equations physical model
-
-    Initial conditions need to be pass in primitive variables,
-    i.e in [h_0, h_0*u_0].
-
-    Available numerical flux : centered, rusanov, HLL.
-    Availaible BC : inifite, symmetrical (not working).
-
-    :Example:
-        model = shallowwater.shallowwater1d()
-        w_init = [h0_vect, h0_vect*u0_vect]
-        field0  = field.fdata(model, mesh, w_init)
-
-    -------------------
-    Author : Gaétan Foucart (06/01/2020)
-
- """
 
 import numpy as np
 import flowdyn.modelphy.base as base

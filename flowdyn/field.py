@@ -1,7 +1,5 @@
 # -*- coding: utf-8 -*-
-"""module field
-
-"""
+"""Provide field containers for spatial and time-dependent solution data."""
 __all__ = ["fdata"]
 
 import numpy as np
@@ -15,15 +13,14 @@ except ImportError:
 # import mesh
 
 class fdata:
-    """define field: neq x nelem data
-      model : number of equations
-      mesh  : mesh
-      data  : data to initialize
+    """Store the equation data associated with a mesh and physical model.
 
     Args:
-
-    Returns:
-
+        model: Physical model defining the equations and component shapes.
+        mesh: Mesh on which the data are defined.
+        data: Initial conservative data, one entry per equation.
+        t: Physical time associated with the field.
+        it: Iteration number associated with the field.
     """
 
     def __init__(self, model, mesh, data=None, t=0.0, it=-1):
@@ -60,19 +57,16 @@ class fdata:
             #     self.data.append(np.zeros(nelem))
 
     def copy(self):
-        """ returns copy of current instance """
+        """Return an independent copy of the field data."""
         new = fdata(self.model, self.mesh, self.data, 
                 t=self.time, it=self.it)
         return new
 
     def set(self, f):
-        """set (as a reference) all members of a fielf to current field
+        """Replace all field members with values from another field.
 
         Args:
-          f: field
-
-        Returns:
-
+            f: Field whose values should be copied.
         """
         self.__init__(f.model, f.mesh, f.data,
                      t=f.time, it=f.it)
@@ -85,13 +79,14 @@ class fdata:
         self.it=it
 
     def interpol_t(self, f, t):
-        """create a new field time-interpolated between self and f
+        """Interpolate a new field between this field and another one.
 
         Args:
-            f (field): field to interpolate to
-            t (float): time to interpolate
+            f: Field defining the other interpolation endpoint.
+            t: Time at which to interpolate.
+
         Returns:
-            new interpolated field
+            The interpolated field.
         """
         new = self.copy()
         new.it = -1 # don't know how to define
@@ -102,13 +97,13 @@ class fdata:
         return new
 
     def diff(self, f):
-        """create a new field time-interpolated between self and f
+        """Compute the difference between this field and another one.
 
         Args:
-            f (field): field to interpolate to
-            t (float): time to interpolate
+            f: Field to subtract.
+
         Returns:
-            new interpolated field
+            A new field containing the data and time differences.
         """
         new = self.copy()
         new.it = -1
@@ -118,13 +113,13 @@ class fdata:
         return new
 
     def zero_datalist(self, newdim=None):
-        """returns a list of numpy.array with the same shape of self.data, possibly resizes to dim if provided
+        """Create zero arrays matching the shapes of the field components.
 
         Args:
-          newdim:  (Default value = None)
+            newdim: Optional replacement for the last dimension.
 
         Returns:
-
+            A list of zero-filled NumPy arrays.
         """
         if newdim:
             datalist = [0 for d in self.data]
@@ -137,30 +132,30 @@ class fdata:
         return datalist
 
     def isnan(self):
-        """check nan valies is all solution field"""
+        """Return whether any solution component contains a NaN value."""
         return any([np.any(np.isnan(d)) for d in self.data])
 
     def phydata(self, name):
-        """returns the numpy array of given physical name, according to self.model
+        """Return the physical variable identified by a model-defined name.
 
         Args:
-          name: name of physical data, available in model.list_var()
+            name: Variable name exposed by ``model.list_var()``.
 
         Returns:
-
+            The requested physical data array.
         """
         return self.model.nameddata(name, self.data)
 
     def plot(self, name, style="o", axes=plt):
-        """plot named physical date along x axis of internal mesh
+        """Plot a physical variable along the mesh x-axis.
 
         Args:
-          name: name of physical data, available in model.list_var()
-          style:  (Default value = 'o')
-          axes: specify optional axes system (Default value = plt)
+            name: Variable name exposed by ``model.list_var()``.
+            style: Matplotlib line style.
+            axes: Matplotlib plotting object or axes.
 
         Returns:
-
+            Matplotlib line objects created by the plot operation.
         """
         return axes.plot(self.mesh.centers(), self.phydata(name), style)
     
@@ -169,52 +164,52 @@ class fdata:
         return axes.plot(xx[0:self.mesh.nx], self.phydata(name)[0:self.mesh.nx], style)    
 
     def semilogy(self, name, style="o", axes=plt):
-        """plot named physical date along x axis of internal mesh
+        """Plot a physical variable with a logarithmic y-axis.
 
         Args:
-          name: name of physical data, available in model.list_var()
-          style:  (Default value = 'o')
-          axes: specify optional axes system (Default value = plt)
+            name: Variable name exposed by ``model.list_var()``.
+            style: Matplotlib line style.
+            axes: Matplotlib plotting object or axes.
 
         Returns:
-
+            Matplotlib line objects created by the plot operation.
         """
         return axes.semilogy(self.mesh.centers(), self.phydata(name), style)
 
     def average(self, name):
-        """Computes average named data
+        """Compute the cell-volume-weighted average of a physical variable.
 
         Args:
-          name: name of physical data, available in model.list_var()
+            name: Variable name exposed by ``model.list_var()``.
 
-        Returns: average (cell volume weighted)
-
+        Returns:
+            The cell-volume-weighted average.
         """
         return self.mesh.average(self.phydata(name))
            
     def stats(self, name):
-        """Computes average and variance of named data
+        """Compute the average and variance of a physical variable.
 
         Args:
-          name: name of physical data, available in model.list_var()
+            name: Variable name exposed by ``model.list_var()``.
 
         Returns:
-
+            A tuple containing the cell-volume-weighted average and variance.
         """
         avg = self.mesh.average(self.phydata(name))
         var = self.mesh.average((self.phydata(name) - avg) ** 2)
         return avg, var
         
     def contour(self, name, style=None, axes=None):
-        """draw contour lines from 2d data
+        """Draw contour lines for two-dimensional physical data.
 
         Args:
-          name:
-          style:  (Default value = {})
-          axes:  (Default value = plt)
+            name: Variable name exposed by ``model.list_var()``.
+            style: Reserved for plot styling compatibility.
+            axes: Matplotlib axes. The current axes are used when omitted.
 
         Returns:
-
+            The generated Matplotlib contour set.
         """
         if axes is None: axes=plt.gca()
         xx, yy = self.mesh.centers()
@@ -225,15 +220,15 @@ class fdata:
             self.phydata(name).reshape((self.mesh.ny, self.mesh.nx)))
 
     def contourf(self, name, style=None, axes=None):
-        """draw flooded contour from 2d data
+        """Draw filled contours for two-dimensional physical data.
 
         Args:
-          name:
-          style:  (Default value = {})
-          axes:  (Default value = plt)
+            name: Variable name exposed by ``model.list_var()``.
+            style: Reserved for plot styling compatibility.
+            axes: Matplotlib axes. The current axes are used when omitted.
 
         Returns:
-
+            The generated Matplotlib contour set.
         """
         if axes is None: axes=plt.gca()
         # TODO must check this is a 2D mesh
@@ -246,26 +241,17 @@ class fdata:
         )
 
     def set_plotdata(self, line, name):
-        """apply data to line object (often for animations)
+        """Apply current field data to an existing Matplotlib line.
 
         Args:
-          line:
-          name:
-
-        Returns:
-
+            line: Matplotlib line object to update.
+            name: Variable name exposed by ``model.list_var()``.
         """
         line.set_data(self.mesh.centers(), self.phydata(name))
         return
 
 class fieldlist():
-    """define field list: result of solver integration
-        can be handled as a list object but add some specific functions
-    Args:
-
-    Returns:
-
-    """
+    """Store an ordered collection of fields produced by time integration."""
     statsfuncs = {'min': np.min, 'max': np.max }
 
     def __init__(self):

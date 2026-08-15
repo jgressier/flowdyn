@@ -1,18 +1,4 @@
-"""
-    The ``modeldisc`` module
-    =========================
- 
-    Provides ...
- 
-    :Example:
-  
-    Available functions
-    -------------------
- 
-    Provides Ti/Ts Pi/Ps ratios from Mach number and reversed functions.
-    Specific heat ratio `gamma` is optionnal and can be specified in the functions itself
-    or using aerokit.common.defaultgas module
- """
+"""Provide finite-volume spatial discretizations for Flowdyn models."""
 
 import math
 from copy import copy as shallow_copy
@@ -100,8 +86,7 @@ class base():
                 
 # -----------------------------------------------------------------------------------
 class fvm1d(base):
-    """
-    """
+    """Implement a one-dimensional finite-volume discretization."""
     def __init__(self, model, mesh, num, numflux=None, bcL=None, bcR=None):
         base.__init__(self, model, mesh, num, numflux, bcL, bcR)
             

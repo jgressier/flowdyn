@@ -1,19 +1,11 @@
 # -*- coding: utf-8 -*-
-"""
-    The ``convection`` module of modelphy library
-    =========================
+"""Provide the scalar linear-convection physical model.
 
-    Provides convection model
-
-    :Example:
+Example:
 
     >>> model(2.).numflux([10.],[50.])
     [20.0]
-
-    Available functions
-    -------------------
-
- """
+"""
 
 import flowdyn.modelphy.base as base
 
@@ -66,4 +58,3 @@ class model(base.model):
 if __name__ == "__main__":
     import doctest
     doctest.testmod()
-

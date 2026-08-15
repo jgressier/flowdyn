@@ -35,7 +35,7 @@ myclock = time.process_time # remove test since minimum version is 3.7
 
 
 class fakemodel:
-    """ """
+    """Provide the minimal model interface used by stability tests."""
 
     def __init__(self):
         self.neq = 1
@@ -43,26 +43,26 @@ class fakemodel:
 
 
 class fakemesh:
-    """ """
+    """Provide the minimal mesh interface used by stability tests."""
 
     def __init__(self):
         self.ncell = 1
 
 
 class fakedisc:
-    """ """
+    """Provide a scalar discretization used to evaluate propagators."""
 
     def __init__(self, z):
         self.z = z
 
     def rhs(self, f):
-        """
+        """Compute the scalar right-hand side for a test field.
 
         Args:
-          f:
+            f: Field for which to compute the right-hand side.
 
         Returns:
-
+            A one-component residual list.
         """
         return [f.data[0] * self.z]
 
@@ -76,7 +76,7 @@ class _coreiterative:
         self.reset()
 
     def reset(self, itstart=0):
-        """ """
+        """Reset iteration counters and accumulated CPU time."""
         self._cputime = 0.0
         self._nit = 0
         self._itstart = itstart
@@ -108,7 +108,7 @@ class _coreiterative:
         )
 
 class timemodel(_coreiterative):
-    """ """
+    """Provide common services for explicit and implicit time integrators."""
     __default_monitor_freq = 10
 
     def __init__(self, mesh, modeldisc, monitors=None):
@@ -122,45 +122,39 @@ class timemodel(_coreiterative):
             'data_average': self.mon_dataavg }
 
     def calcrhs(self, field):
-        """compute RHS with a call to modeldisc function
+        """Compute and store the spatial residual.
 
         Args:
-          field:
-
-        Returns: residual/rhs as self.residual
+            field: Field for which to compute the residual.
         """
         self.residual = self.modeldisc.rhs(field)
 
     def step(self, f, dtloc):
-        """virtual method for one step integration
+        """Advance a field by one time step.
 
         Args:
-          f: field to compute 
-          dt: time array or scalar
+            f: Field to update in place.
+            dtloc: Scalar or local time-step array.
 
-        Returns:
-            returns dQ/dt 
+        Raises:
+            NotImplementedError: Always, unless a derived integrator implements the method.
         """
         raise NotImplementedError("step must be implemented by a time integrator")
 
     def add_res(self, f, dt, subtimecoef=1.0):
-        """
+        """Apply the current residual to a field.
 
         Args:
-          f:
-          dt:
-          subtimecoef:  (Default value = 1.0)
-
-        Returns:
-
+            f: Field to update in place.
+            dt: Scalar or local time-step array.
+            subtimecoef: Fraction of the time step represented by this stage.
         """
         f.time += np.min(dt) * subtimecoef
         for i in range(f.neq):
             f.data[i] += dt * self.residual[i]  # time can be scalar or np.array
 
     def _check_end(self, stop):
-        """
-        """
+        """Return whether any configured stopping criterion has been reached."""
         check_end = {}
         for key, value in stop.items():
             if key=='tottime':
@@ -187,16 +181,18 @@ class timemodel(_coreiterative):
 
     def solve_legacy(self, f, condition, tsave, 
             stop=None, flush=None, monitors=None):
-        """Solve dQ/dt=RHS(Q,t)
+        """Integrate a field using the legacy solver loop.
 
         Args:
-          f: initial field
-          condition: CFL number
-          tsave: array/list of time to save
-          flush:  (Default value = None)
+            f: Initial field.
+            condition: CFL number.
+            tsave: Times at which to save a solution.
+            stop: Optional stopping criteria.
+            flush: Optional path for flushed solution data.
+            monitors: Optional monitor directives.
 
         Returns:
-          list of solution fields (size of tsave)
+            Solution fields corresponding to ``tsave``.
         """
         monitors = {} if monitors is None else monitors
         self.reset() # reset cputime and nit
@@ -229,7 +225,7 @@ class timemodel(_coreiterative):
 
     def solve(self, f, condition, tsave=None,
             stop=None, flush=None, monitors=None, directives=None):
-        """ """
+        """Integrate a field and return solutions at the requested times."""
         tsave = [] if tsave is None else tsave
         monitors = {} if monitors is None else monitors
         directives = {} if directives is None else directives
@@ -239,7 +235,7 @@ class timemodel(_coreiterative):
 
     def restart(self, f, condition, tsave=None,
             stop=None, flush=None, monitors=None, directives=None):
-        """ """
+        """Restart integration from an existing field."""
         tsave = [] if tsave is None else tsave
         monitors = {} if monitors is None else monitors
         directives = {} if directives is None else directives
@@ -247,16 +243,19 @@ class timemodel(_coreiterative):
         return self._solve(f, condition, tsave, stop, flush, monitors, directives)
 
     def _solve(self, f, condition, tsave, stop, flush, monitors, directives):
-        """Solve dQ/dt=RHS(Q,t)
+        """Integrate a field using the configured time-stepping method.
 
         Args:
-          f: initial field
-          condition: CFL number
-          tsave: array/list of time to save
-          flush:  (Default value = None)
+            f: Initial field.
+            condition: CFL number.
+            tsave: Times at which to save a solution.
+            stop: Optional stopping criteria.
+            flush: Optional path for flushed solution data.
+            monitors: Monitor directives.
+            directives: Solver-control directives.
 
         Returns:
-          list of solution fields (size of tsave)
+            Solution fields corresponding to ``tsave``.
         """
         if not np.isscalar(condition) or not np.isfinite(condition) or condition <= 0.:
             raise ValueError("condition must be a positive finite scalar")
@@ -356,13 +355,13 @@ class timemodel(_coreiterative):
             mon.append(it=self.totnit(), time=self._time, value=value)
 
     def propagator(self, z):
-        """computes scalar complex propagator of one time step
+        """Compute the scalar complex propagator of one time step.
 
         Args:
-          z:
+            z: Complex stability-plane coordinate.
 
         Returns:
-
+            The scalar amplification factor.
         """
         # save actual modeldisc
         saved_model = self.modeldisc
@@ -384,17 +383,14 @@ class timemodel(_coreiterative):
 # --------------------------------------------------------------------
 
 class explicit(timemodel):
-    """ """
+    """Implement the forward-Euler time integrator."""
 
     def step(self, field, dtloc):
-        """implement 1-step explicit (Euler) method
+        """Advance a field by one forward-Euler step.
 
         Args:
-          field: base field for RHS computation
-          dtloc: time step, either scalar or array
-
-        Returns: computes RHS and add it to field
-
+            field: Field to update in place.
+            dtloc: Scalar or local time-step array.
         """
         self.calcrhs(field)
         self.add_res(field, dtloc)
@@ -402,7 +398,7 @@ class explicit(timemodel):
 
 
 class forwardeuler(explicit):  # alias of explicit
-    """ """
+    """Provide a descriptive alias for the explicit Euler integrator."""
 
     pass
 
@@ -413,13 +409,9 @@ class forwardeuler(explicit):  # alias of explicit
 
 
 class rkmodel(timemodel):
-    """generic implementation classical Runge-Kutta method
-       needs specification of Butcher array from derived class
+    """Implement a generic Runge-Kutta method.
 
-    Args:
-
-    Returns:
-
+    Derived classes must define a Butcher array.
     """
     def __init__(self, mesh, modeldisc, monitors=None):
         timemodel.__init__(self, mesh, modeldisc, monitors)
@@ -436,13 +428,11 @@ class rkmodel(timemodel):
             raise TypeError("bad implementation of RK model in "+self.__class__.__name__+": Butcher array is missing")
 
     def step(self, field, dtloc):
-        """
+        """Advance a field by one Runge-Kutta time step.
 
         Args:
-          field:
-          dtloc:
-
-        Returns:
+            field: Field to update in place.
+            dtloc: Scalar or local time-step array.
         """
         prhs = []
         pfield = field.copy()
@@ -465,17 +455,14 @@ class rkmodel(timemodel):
 
 
 class rk2(timemodel):
-    """ """
+    """Implement the second-order Runge-Kutta method."""
 
     def step(self, field, dtloc):
-        """
+        """Advance a field by one second-order Runge-Kutta step.
 
         Args:
-          field:
-          dtloc:
-
-        Returns:
-
+            field: Field to update in place.
+            dtloc: Scalar or local time-step array.
         """
         pfield = field.copy()
         self.calcrhs(pfield)
@@ -519,16 +506,9 @@ class rk3_heun(rkmodel):
 # --------------------------------------------------------------------
 
 class LSrkmodelHH(timemodel):
-    """generic implementation of LOW-STORAGE Runge-Kutta method
+    """Implement the Hu-Hussaini low-storage Runge-Kutta method.
 
-    Hu and Hussaini (JCP, 1996) method needs p-1 coefficients (_beta)
-    needs specification of Butcher array from derived class
-        $ for 1<=s<=p, Qs = Q0 + dt * _beta_s RHS(Q_{s-1}) $
-
-    Args:
-
-    Returns:
-
+    Derived classes must provide the ``_beta`` coefficients.
     """
     def __init__(self, mesh, modeldisc, monitors=None):
         timemodel.__init__(self, mesh, modeldisc, monitors)
@@ -543,13 +523,11 @@ class LSrkmodelHH(timemodel):
             raise TypeError("bad implementation of RK model in "+self.__class__.__name__+": LSRK array is missing")
 
     def step(self, field, dtloc):
-        """
+        """Advance a field by one low-storage Runge-Kutta step.
 
         Args:
-          field:
-          dtloc:
-
-        Returns:
+            field: Field to update in place.
+            dtloc: Scalar or local time-step array.
         """
         pfield = field.copy()
         for beta in self._beta:
@@ -579,39 +557,32 @@ class lsrk4(LSrkmodelHH):
 
 
 class implicitmodel(timemodel):
-    """generic class for implicit models
-    needs specific implementation of step method for derived classes
-    TODO: define keywords for inversion method
-    TODO: define options, maxit, residuals, save local convergence, condition number
+    """Provide common operations for implicit time integrators.
 
-    Args:
-
-    Returns:
-
+    Derived classes must implement the time-stepping method.
     """
 
     def step(self, field, dtloc):
-        """
+        """Advance a field by one implicit time step.
 
         Args:
-          field:
-          dtloc:
+            field: Field to update in place.
+            dtloc: Scalar or local time-step array.
 
-        Returns:
-
+        Raises:
+            NotImplementedError: Always, unless a derived class implements the method.
         """
         raise NotImplementedError("not implemented: virtual implicit class")
 
     def calc_jacobian(self, field, epsdiff=1.0e-6):
-        """jacobian matrix dR/dQ of dQ/dt=R(Q) is computed as successive columns by finite difference of R(Q+dQ)
-            ordering is ncell x neq (neq is the fast index)
+        """Compute the residual Jacobian using finite differences.
 
         Args:
-          field:
-          epsdiff:  (Default value = 1.e-6)
+            field: Field at which to evaluate the Jacobian.
+            epsdiff: Relative finite-difference perturbation.
 
         Returns:
-
+            The Jacobian matrix, ordered with the equation index varying fastest.
         """
         if (field.model.islinear == 1) and (hasattr(self, "jacobian_use")):
             return
@@ -638,17 +609,14 @@ class implicitmodel(timemodel):
         return self.jacobian
 
     def solve_implicit(self, field, dtloc, invertion=np.linalg.solve, theta=1.0, xi=0):
-        """
+        """Solve the linearized implicit update system.
 
         Args:
-          field:
-          dtloc:
-          invertion:  (Default value = np.linalg.solve)
-          theta:  (Default value = 1.)
-          xi:  (Default value = 0)
-
-        Returns:
-
+            field: Field associated with the current residual.
+            dtloc: Scalar or local time-step array.
+            invertion: Linear-system solver.
+            theta: Weight applied to the current Jacobian.
+            xi: Weight applied to the previous residual.
         """
         ""
         diag = np.repeat(
@@ -670,14 +638,11 @@ class implicit(implicitmodel):
     """make an Euler implicit or backward Euler step: Qn+1 - Qn = Rn+1"""
 
     def step(self, field, dtloc):
-        """
+        """Advance a field by one backward-Euler step.
 
         Args:
-          field:
-          dtloc:
-
-        Returns:
-
+            field: Field to update in place.
+            dtloc: Scalar or local time-step array.
         """
         self.calc_jacobian(field)
         self.calcrhs(field)  # compute and define self.residual
@@ -687,7 +652,7 @@ class implicit(implicitmodel):
 
 
 class backwardeuler(implicit):
-    """ """
+    """Provide a descriptive alias for the implicit Euler integrator."""
 
     pass
 
@@ -696,14 +661,11 @@ class trapezoidal(implicitmodel):
     """make an 2nd order (centered) Crank-Nicolson step: Qn+1 - Qn = .5*(Rn + Rn+1)"""
 
     def step(self, field, dtloc):
-        """
+        """Advance a field by one trapezoidal step.
 
         Args:
-          field:
-          dtloc:
-
-        Returns:
-
+            field: Field to update in place.
+            dtloc: Scalar or local time-step array.
         """
         self.calc_jacobian(field)
         self.calcrhs(field)
@@ -713,29 +675,22 @@ class trapezoidal(implicitmodel):
 
 
 class cranknicolson(trapezoidal):
-    """ """
+    """Provide a descriptive alias for the trapezoidal integrator."""
     pass
 
 
 class gear(trapezoidal):
-    """make an 2nd order backward step (Gear): (3Qn+1 - 4Qn + Qn-1)/3 = 2/3* Rn+1
-        Using Rn+1 = Rn + A*(Qn+1-Qn), linearized form is (3I-2A)(Qn+1-Qn)=2Rn+(Qn-Qn-1)
+    """Implement the second-order backward differentiation formula.
 
-    Args:
-
-    Returns:
-
+    The method uses ``(3 Qn+1 - 4 Qn + Qn-1) / 3 = 2 Rn+1 / 3``.
     """
 
     def step(self, field, dtloc):
-        """
+        """Advance a field by one Gear/BDF2 time step.
 
         Args:
-          field:
-          dtloc:
-
-        Returns:
-
+            field: Field to update in place.
+            dtloc: Scalar or local time-step array.
         """
         if not hasattr(
             self, "_lastresidual"

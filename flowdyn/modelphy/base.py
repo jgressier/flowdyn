@@ -1,21 +1,13 @@
 # -*- coding: utf-8 -*-
-"""
-    The ``base`` module of modelphy library
-    =========================
+"""Provide base classes and registration helpers for physical models.
 
-    Provides virtual class for all other model
-
-    :Example:
+Example:
 
     >>> import flowdyn.modelphy.base as modelbase
     >>> model = modelbase.model(name='test', neq=1)
     >>> print(model.neq, model.equation)
     1 test
-
-    Available functions
-    -------------------
-
- """
+"""
 
 class methoddict():
     """decorator to register decorated method as specific and tagged in the class model

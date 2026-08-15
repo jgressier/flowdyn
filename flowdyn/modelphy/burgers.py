@@ -1,21 +1,13 @@
 # -*- coding: utf-8 -*-
-"""
-    The ``burgers`` module of modelphy library
-    =========================
+"""Provide the scalar Burgers-equation physical model.
 
-    Provides Burgers model
-
-    :Example:
+Example:
 
     >>> import flowdyn.modelphy.burgers as burg
     >>> model = burg.model()
     >>> print(model.neq, model.equation)
     1 burgers
-
-    Available functions
-    -------------------
-
- """
+"""
 
 import numpy as np
 import flowdyn.modelphy.base as base
@@ -78,4 +70,3 @@ class model(base.model):
 if __name__ == "__main__":
     import doctest
     doctest.testmod()
-

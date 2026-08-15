@@ -1,22 +1,14 @@
 # -*- coding: utf-8 -*-
-"""
-    The ``euler`` module of modelphy library
-    =========================
+"""Provide one- and two-dimensional Euler physical models.
 
-    Provides Euler model
-
-    :Example:
+Example:
 
     >>> import aerokit.aero.Isentropic as Is
     >>> Is.TiTs_Mach(1.)
     1.2
     >>> Is.TiTs_Mach(2., gamma=1.6)
     2.2
-
-    Available functions
-    -------------------
-
- """
+"""
 
 import numpy as np
 #import math
@@ -303,16 +295,17 @@ class euler(base.model):
     ###########################################################################
     @_numfluxdict.register()
     def numflux_stegerwarming(self, pdataL, pdataR, direction=None):
-        """
-        Compute intercell flux according to the Steger-Warming method.
-        Stability: 0 < CFL Coefficient < 1.0
-        Parameters:
-        - pdataL: Left state data [rhoL, uL, pL].
-        - pdataR: Right state data [rhoR, uR, pR].
-        - direction: Direction (not used in this implementation).
-    
+        """Compute the Steger-Warming intercell flux.
+
+        The stable CFL range is ``0 < CFL < 1``.
+
+        Args:
+            pdataL: Left primitive state ``[rho, u, p]``.
+            pdataR: Right primitive state ``[rho, u, p]``.
+            direction: Face direction. It is unused by the 1D implementation.
+
         Returns:
-        - [Frho, Frhou, FrhoE]: Flux components for density, momentum, and energy.
+            Flux components for density, momentum, and energy.
         """
         gam = self.gamma
         gam1 = gam - 1.
@@ -374,16 +367,15 @@ class euler(base.model):
     ###########################################################################
     @_numfluxdict.register()
     def numflux_vanleer(self, pdataL, pdataR, direction=None):
-        """
-        Computes intercell fluxes using the Van Leer method.
-    
-        Parameters:
-            pdataL: tuple of left cell state variables (rhoL, uL, pL, cL)
-            pdataR: tuple of right cell state variables (rhoR, uR, pR, cR)
-            direction: Direction (optional, placeholder for multi-dimensional cases)
-    
+        """Compute the Van Leer intercell flux.
+
+        Args:
+            pdataL: Left primitive state ``[rho, u, p]``.
+            pdataR: Right primitive state ``[rho, u, p]``.
+            direction: Face direction. It is unused by the 1D implementation.
+
         Returns:
-            Frho, Frhou, FrhoE: Flux components
+            Flux components for density, momentum, and energy.
         """
 
         gamma = self.gamma
@@ -436,16 +428,17 @@ class euler(base.model):
     ###########################################################################
     @_numfluxdict.register()
     def numflux_ausm(self, pdataL, pdataR, direction=None):
-        """
-        Computes the intercell flux using the Liou-Steffen scheme.
-        Stability: 0 < CFL Coefficient < 1.0
-        Parameters:
-            pdataL: List containing left state variables [rho, u, p]
-            pdataR: List containing right state variables [rho, u, p]
-            direction: Direction (optional, not used in 1D implementation)
-    
+        """Compute the Liou-Steffen AUSM intercell flux.
+
+        The stable CFL range is ``0 < CFL < 1``.
+
+        Args:
+            pdataL: Left primitive state ``[rho, u, p]``.
+            pdataR: Right primitive state ``[rho, u, p]``.
+            direction: Face direction. It is unused by the 1D implementation.
+
         Returns:
-            List containing fluxes for mass, momentum, and energy [Frho, Frhou, FrhoE]
+            Flux components for density, momentum, and energy.
         """
         gam = self.gamma
 

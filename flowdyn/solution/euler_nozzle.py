@@ -12,13 +12,14 @@ import aerokit.aero.nozzle as nz
 import aerokit.common.defaultgas as defg
 
 class nozzle():
-    """ Define a nozzle
+    """Define a quasi-one-dimensional nozzle solution.
 
-    :param model: define a `modelphy.euler` model, needs the gamma coefficient
-    :param section: array of section law
-    :param NPR: NPR value (>1); if None (default), can be set with nozzle.set_NPR(NPR)
-    :param ref_rttot: additional definition of r*Ttot to complete state (default 1.)
-    :param scale_ps: arbitrary scaling of static (and associated total) pressure (default 1. at the outlet)
+    Args:
+        model: Euler physical model, including its heat-capacity ratio.
+        section: Nozzle cross-sectional area distribution.
+        NPR: Nozzle pressure ratio. It can be assigned later with ``set_NPR``.
+        ref_rttot: Reference total value of ``r * T`` used to complete the state.
+        scale_ps: Scaling applied to static and total pressures.
     """
 
     def __init__(self, model, section, NPR=None, ref_rttot=1., scale_ps=1.):
@@ -37,10 +38,10 @@ class nozzle():
         return
 
     def set_NPR(self, NPR):
-        """ Define Nozzle Pressure Ratio (inlet Ptot over outlet Ps) for this case
+        """Set the nozzle pressure ratio for this solution.
 
-        :param NPR: NPR value (>1)
-
+        Args:
+            NPR: Ratio of inlet total pressure to outlet static pressure.
         """
         self.NPR = NPR
         defg.set_gamma(self._gam)
@@ -74,15 +75,15 @@ class nozzle():
         return
 
     def Mach(self):
-        """ """
+        """Return the Mach-number distribution."""
         return self._M
 
     def Ptot(self):
-        """ """
+        """Return the total-pressure distribution."""
         return self._Ptot
 
     def Ps(self):
-        """ """
+        """Return the static-pressure distribution."""
         return self._Ps
 
     def primdata(self):
@@ -96,13 +97,11 @@ class nozzle():
         return [rho, u, p]
         
     def consdata(self):
-        """
-        """
+        """Return the conservative nozzle solution."""
         return self.model.prim2cons(self.primdata())
 
     def fdata(self, mesh):
-        """
-        """
+        """Return the conservative nozzle solution as a Flowdyn field."""
         qcons = self.consdata()
         return field.fdata(self.model, mesh, qcons)
 

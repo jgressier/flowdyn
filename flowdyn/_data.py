@@ -1,16 +1,5 @@
 # -*- coding: utf-8 -*-
-"""
-    The ``_data`` module 
-    =========================
-
-    Provides scalar and vector computations from qdata as a multi component ndarray
-
-    :Example:
-
-    Available functions
-    -------------------
-
- """
+"""Provide scalar and vector operations for multicomponent field arrays."""
 
 import numpy as np
 
@@ -31,4 +20,3 @@ def _vec_dot_vec(v1: np.ndarray, v2: np.ndarray):
 
 def datavector(ux: np.ndarray, uy: np.ndarray, uz: np.ndarray = None) -> np.ndarray:
     return np.vstack([ux, uy]) if uz is None else np.vstack([ux, uy, uz])
-
