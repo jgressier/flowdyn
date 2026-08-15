@@ -8,6 +8,88 @@ import flowdyn.field as field
 from flowdyn.xnum  import *
 import flowdyn.integration as integ
 
+EULER_FLUXES = tuple(sorted(euler.euler1d()._numfluxdict.dict))
+UPWIND_FLUXES = ("hlle", "hllc", "stegerwarming", "vanleer", "ausm")
+
+
+class TestEulerFlux:
+    model = euler.euler1d()
+
+    def physical_flux(self, pdata):
+        rho, velocity, pressure = pdata
+        enthalpy = (self.model.gamma*pressure
+                    / (rho*(self.model.gamma-1.)) + .5*velocity**2)
+        return np.array([
+            rho*velocity,
+            rho*velocity**2 + pressure,
+            rho*velocity*enthalpy,
+        ])
+
+    @pytest.mark.parametrize("flux", EULER_FLUXES)
+    def test_consistency_with_physical_flux(self, flux):
+        """Every numerical flux recovers the physical flux for equal states."""
+        pdata = [
+            np.ones(5),
+            np.array([-2., -.5, 0., .5, 2.]),
+            np.ones(5),
+        ]
+
+        result = np.asarray(self.model.numflux(flux, pdata, pdata))
+
+        np.testing.assert_allclose(result, self.physical_flux(pdata),
+                                   atol=1.e-12)
+
+    @pytest.mark.parametrize("flux", UPWIND_FLUXES)
+    @pytest.mark.parametrize("velocity", [-3., 3.])
+    def test_full_upwinding_for_supersonic_flow(self, flux, velocity):
+        """A fully supersonic flux depends only on the upstream state."""
+        left = [np.array([1.]), np.array([velocity]), np.array([1.])]
+        right = [np.array([.5]), np.array([velocity]), np.array([.7])]
+        upstream = left if velocity > 0. else right
+
+        result = np.asarray(self.model.numflux(flux, left, right))
+
+        # Steger-Warming applies an epsilon=1e-2 eigenvalue smoothing.
+        np.testing.assert_allclose(result, self.physical_flux(upstream),
+                                   rtol=1.e-5, atol=1.e-5)
+
+class TestEulerHelpers:
+    def test_euler1d_derived_primitive_data(self):
+        model = euler.euler1d()
+        pdata = [np.array([2.]), np.array([3.]), np.array([5.])]
+
+        rho, normal_velocity, velocity, sound_speed_squared, enthalpy = (
+            model._derived_fromprim(pdata, dir=None)
+        )
+
+        np.testing.assert_allclose(rho, pdata[0])
+        np.testing.assert_allclose(normal_velocity, pdata[1])
+        np.testing.assert_allclose(velocity, pdata[1])
+        np.testing.assert_allclose(sound_speed_squared, [3.5])
+        np.testing.assert_allclose(enthalpy, [13.25])
+
+    def test_nozzle_combines_geometry_and_user_sources(self):
+        section = lambda x: 1. + x
+        extra_sources = [
+            lambda x, q: np.ones_like(x),
+            lambda x, q: 2.*np.ones_like(x),
+            lambda x, q: 3.*np.ones_like(x),
+        ]
+        model = euler.nozzle(section, source=extra_sources)
+        meshsim = mesh.unimesh(ncell=4)
+        model.initdisc(meshsim)
+        qdata = [2.*np.ones(4), 3.*np.ones(4), 10.*np.ones(4)]
+
+        geometry_sources = [
+            model.src_mass(meshsim.centers(), qdata),
+            model.src_mom(meshsim.centers(), qdata),
+            model.src_energy(meshsim.centers(), qdata),
+        ]
+        for source, geometry, extra in zip(model.source, geometry_sources, [1., 2., 3.]):
+            np.testing.assert_allclose(source(meshsim.centers(), qdata), geometry + extra)
+        np.testing.assert_allclose(model.massflow(qdata), qdata[1]*section(meshsim.centers()))
+
+
 class euler_w_mesh():
     mesh100 = mesh.unimesh(ncell=100, length=1.)
     mesh50  = mesh.unimesh(ncell=50, length=1.)

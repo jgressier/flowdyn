@@ -81,6 +81,19 @@ class Test_densitypulse():
         assert rhoavg == pytest.approx(1.408796) # mass conservation
         assert rhovar == pytest.approx(9.05e-4, rel=.01)
 
+def test_supersonic_inlet_angle():
+    model = euler.euler2d()
+    direction = np.array([[-1., -1.], [0., 0.]])
+    data = [np.ones(2), np.zeros((2, 2)), np.ones(2)]
+    params = {'ptot': 2.8, 'rttot': 1., 'p': 1., 'angle': 30.}
+
+    density, velocity, pressure = model.bc_insup(direction, data, params)
+
+    assert np.all(density > 0.)
+    np.testing.assert_allclose(velocity[1]/velocity[0], np.tan(np.deg2rad(30.)))
+    np.testing.assert_allclose(pressure, 1.)
+
+
 class TestStraightDuct2d():
 
     def case_solver(self, nx, ny, xnum, flux, bcL, bcR):
