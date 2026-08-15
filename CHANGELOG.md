@@ -34,7 +34,6 @@ pip show flowdyn
 
 #### Fixed
 
-
 ### [1.3.1](https://pypi.org/project/flowdyn/) (2022-03-03)
 
 #### new features

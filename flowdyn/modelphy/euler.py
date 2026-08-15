@@ -15,7 +15,13 @@ import numpy as np
 # import math
 # from numpy.lib.function_base import _angle_dispatcher
 import flowdyn.modelphy.base as base
-from flowdyn._data import datavector, _sca_mult_vec, _vec_dot_vec, _vecmag, _vecsqrmag
+from flowdyn._data import datavector as _datavector
+from flowdyn._data import _sca_mult_vec, _vec_dot_vec, _vecmag, _vecsqrmag
+
+
+def datavector(ux, uy, uz=None):
+    """Build a vector-data array while preserving the historical Euler API."""
+    return _datavector(ux, uy, uz)
 
 # ===============================================================
 # implementation of MODEL class

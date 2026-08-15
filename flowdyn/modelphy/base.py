@@ -11,7 +11,7 @@ Example:
 
 
 class methoddict:
-    """decorator to register decorated method as specific and tagged in the class model"""
+    """Register decorated model methods under short names."""
 
     def __init__(self, items=None, pref=""):  # pref = prefix to be stripped off the method's name
         if isinstance(items, str):  # if only the prefix is given as argument

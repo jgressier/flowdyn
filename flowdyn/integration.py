@@ -115,6 +115,7 @@ class timemodel(_coreiterative):
     __default_monitor_freq = 10
 
     def __init__(self, mesh, modeldisc, monitors=None):
+        """Initialize a time integrator for a mesh and spatial discretization."""
         _coreiterative.__init__(self)
         self.mesh = mesh
         self.modeldisc = modeldisc

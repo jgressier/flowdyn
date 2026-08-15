@@ -13,6 +13,7 @@ class mesh1d(meshbase.virtualmesh):
     "class defining a uniform mesh: ncell and length"
 
     def __init__(self, ncell=100, length=1.0, x0=0.0):
+        """Initialize a uniform one-dimensional mesh."""
         if not isinstance(ncell, (int, np.integer)) or ncell <= 0:
             raise ValueError("ncell must be a positive integer")
         if not np.isfinite(length) or length <= 0.0:
@@ -156,6 +157,7 @@ class refinedmesh(mesh1d):
     "class defining a mesh with 2 uniform parts and a cell ratio"
 
     def __init__(self, ncell=100, length=1.0, ratio=2.0, nratioa=1, nratiob=1):
+        """Initialize a two-region mesh with a prescribed cell-size ratio."""
         mesh1d.__init__(self, ncell, length)
         dx1 = (nratioa + nratiob) * length / ((nratioa + ratio * nratiob) * ncell)
         # dx2 = ratio*dx1
@@ -171,6 +173,7 @@ class morphedmesh(mesh1d):
     "class defining a mesh with a morphing function: ncell and length"
 
     def __init__(self, ncell=100, length=1.0, x0=0.0, morph=lambda x: x):
+        """Initialize a one-dimensional mesh transformed by a mapping function."""
         mesh1d.__init__(self, ncell, length)
         self.xf = morph(np.linspace(0.0, length, ncell + 1) + x0)
         self.xc = self.calc_centers()

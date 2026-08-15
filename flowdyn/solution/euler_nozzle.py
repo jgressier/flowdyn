@@ -24,7 +24,7 @@ class nozzle:
     """
 
     def __init__(self, model, section, NPR=None, ref_rttot=1.0, scale_ps=1.0):
-
+        """Initialize the nozzle solution from its model and area distribution."""
         self.model = model
         self._gam = self.model.gamma
         self.section = section
@@ -90,7 +90,7 @@ class nozzle:
         return self._Ps
 
     def primdata(self):
-        """computes list of rho, u, p data"""
+        """Return the density, velocity, and static-pressure distributions."""
         p = self._scale_ps * self._Ps
         rt = self._ref_rttot / Is.TiTs_Mach(self._M, gamma=self._gam)
         rho = p / rt

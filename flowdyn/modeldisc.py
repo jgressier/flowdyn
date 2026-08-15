@@ -21,6 +21,7 @@ class base:
     """
 
     def __init__(self, model, mesh, num, numflux=None, bcL=None, bcR=None):
+        """Initialize a spatial discretization and validate its configuration."""
         if not hasattr(num, 'interp_face'):
             raise TypeError("num must provide an interp_face method")
         self.model = model

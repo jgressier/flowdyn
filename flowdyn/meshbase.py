@@ -16,6 +16,7 @@ class virtualmesh:
     """
 
     def __init__(self, mesh_type='virtual', **kwargs):
+        """Initialize a virtual mesh with a dimension or topology label."""
         # Keep the historical ``type=`` spelling working during the 2.0 transition.
         if 'type' in kwargs:
             if mesh_type != 'virtual':
