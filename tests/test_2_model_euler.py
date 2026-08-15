@@ -5,7 +5,7 @@ import flowdyn.mesh  as mesh
 import flowdyn.modelphy.euler as euler
 import flowdyn.modeldisc as modeldisc
 import flowdyn.field as field
-from flowdyn.xnum  import *
+from flowdyn.xnum import extrapol1, minmod, muscl
 import flowdyn.integration as integ
 
 EULER_FLUXES = tuple(sorted(euler.euler1d()._numfluxdict.dict))
@@ -59,7 +59,7 @@ class TestEulerHelpers:
         pdata = [np.array([2.]), np.array([3.]), np.array([5.])]
 
         rho, normal_velocity, velocity, sound_speed_squared, enthalpy = (
-            model._derived_fromprim(pdata, dir=None)
+            model._derived_fromprim(pdata, direction=None)
         )
 
         np.testing.assert_allclose(rho, pdata[0])

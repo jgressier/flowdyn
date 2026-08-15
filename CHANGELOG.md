@@ -16,12 +16,23 @@ pip show flowdyn
 
 ## Versions
 
-### [1.3.x](https://pypi.org/project/flowdyn/) (2022-xx-xx)
+### [2.0.0](https://pypi.org/project/flowdyn/) (2022-xx-xx) - Unreleased
 
 #### new features
 
 - local time step through `directives` option in `integration.solve`
 - `new stats_solutions()` function for solution lists (main and max)
+
+#### Changed
+
+- require Python 3.8 or newer; Python 3.7 is no longer supported
+- make API-boundary validation fail early with descriptive `ValueError` or
+  `TypeError` exceptions for invalid meshes, fields, solver inputs,
+  reconstruction sizes, boundary conditions, and registered method names
+- collect coverage once in the canonical Python 3.12 Matplotlib comparison
+  job while retaining functional testing across all supported Python versions
+
+#### Fixed
 
 ### [1.3.1](https://pypi.org/project/flowdyn/) (2022-03-03)
 

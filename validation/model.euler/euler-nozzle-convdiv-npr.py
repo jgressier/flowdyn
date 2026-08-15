@@ -9,8 +9,7 @@ import matplotlib.pyplot as plt
 import numpy as np 
 
 import flowdyn.mesh as mesh
-from flowdyn.field import *
-from flowdyn.xnum  import *
+from flowdyn.xnum import muscl, vanleer
 import flowdyn.integration as tnum
 import flowdyn.modelphy.euler as euler
 import flowdyn.modeldisc      as modeldisc
@@ -78,4 +77,3 @@ fsol[0].plot(name, 'bo', ax[2])
 fref.plot(name, 'k-', ax[2])
 #fig.savefig(name+'.png', bbox_inches='tight')
 plt.show()
-

@@ -4,14 +4,15 @@ test integration methods
 """
 
 import time
-from pylab import *
+from matplotlib.pyplot import clf, figure, legend, plot, show
+from numpy import linspace, pi, sign, sin
 
 import flowdyn.mesh  as mesh
 import flowdyn.modelphy.convection as conv
 import flowdyn.modeldisc as modeldisc
 import flowdyn.field as field
-from flowdyn.xnum  import *
-from flowdyn.integration import *
+from flowdyn.xnum import extrapol3
+from flowdyn.integration import rk3ssp
 
 mlength = 1.0
 mesh50  = mesh.unimesh(ncell=50, length=mlength)

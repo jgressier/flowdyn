@@ -44,6 +44,16 @@ class Test_densitypulse():
         error = np.sum(np.abs(data))
         assert error < 1.e-12
 
+    def test_invalid_face_orientation(self):
+        solver, finit = self.case_solver(2, 2, xn.extrapol2d1(), 'hlle')
+        previous_residual = solver.modeldisc.rhs(finit)
+        solver.modeldisc.mesh._bcfaces_orientation['left'] = 'invalid'
+
+        with pytest.raises(ValueError, match="unknown face orientation"):
+            solver.modeldisc.rhs(finit)
+
+        assert solver.modeldisc.residual is previous_residual
+
     def test_centered(self):
         solver, finit = self.case_solver(50, 50, xn.extrapol2d1(), 'centered')
         endtime = 5.
@@ -101,19 +111,6 @@ class TestStraightDuct2d():
         solver = integ.rk3ssp(meshsim, rhs)
         finit = rhs.fdata_fromprim([ 1., [0.8, 0.], 1. ]) # rho, (u,v), p
         return solver, finit
-
-    def test_flow_sub(self):
-        endtime = 100.
-        cfl     = 1.5
-        bcL = { 'type': 'insub',  'ptot': 1.4, 'rttot': 1. }
-        bcR = { 'type': 'outsub', 'p': 1. }
-        solver, finit = self.case_solver(20, 5, xn.extrapol2d1(), 'hlle', bcL, bcR)
-        fsol = solver.solve(finit, cfl, [endtime])
-        assert not fsol[-1].isnan()
-        mach_th = np.sqrt(((bcL['ptot']/bcR['p'])**(1./3.5)-1.)/.2)
-        error = np.sqrt(np.sum((fsol[-1].phydata('mach')-mach_th)**2)/fsol[-1].nelem)/mach_th 
-        print(fsol[-1].phydata('mach'), mach_th)
-        assert error < 1.e-8
 
     def test_flow_sub(self):
         endtime = 100.

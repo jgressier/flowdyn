@@ -9,9 +9,8 @@ import matplotlib.pyplot as plt
 
 import flowdyn.mesh  as mesh
 import flowdyn.modelphy.convection as cmodel
-from flowdyn.field import *
-from flowdyn.xnum  import *
-from flowdyn.integration import *
+from flowdyn.xnum import extrapol1, extrapol2, extrapol3
+from flowdyn.integration import implicit
 import flowdyn.modeldisc as modeldisc
 
 

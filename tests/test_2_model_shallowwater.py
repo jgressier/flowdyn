@@ -6,7 +6,7 @@ import flowdyn.mesh  as mesh
 import flowdyn.modelphy.shallowwater as shw
 import flowdyn.modeldisc as modeldisc
 import flowdyn.field as field
-from flowdyn.xnum  import *
+from flowdyn.xnum import minmod, muscl
 import flowdyn.integration as integ
 
 # initial functions
