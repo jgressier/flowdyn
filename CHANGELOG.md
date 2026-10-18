@@ -22,6 +22,8 @@ pip show flowdyn
 
 - local time step through `directives` option in `integration.solve`
 - `new stats_solutions()` function for solution lists (main and max)
+- `fieldlist.xtcontour()` and `fieldlist.xtcontourf()` space-time plotting helpers
+- HLLE and HLLC numerical fluxes for one-dimensional Euler computations
 
 #### Changed
 
@@ -31,8 +33,16 @@ pip show flowdyn
   reconstruction sizes, boundary conditions, and registered method names
 - collect coverage once in the canonical Python 3.12 Matplotlib comparison
   job while retaining functional testing across all supported Python versions
+- publish packaging metadata through `pyproject.toml` and replace the former
+  Travis configuration with GitHub Actions, CodeQL, and Codecov workflows
+- add documentation examples for Euler convergence and acoustic interfaces
 
 #### Fixed
+
+- preserve the requested integration output before the first time step and
+  reset monitor outputs on a fresh `solve()` call while retaining them on
+  `restart()`
+- correct the L2 average used by residual monitoring
 
 ### [1.3.1](https://pypi.org/project/flowdyn/) (2022-03-03)
 
