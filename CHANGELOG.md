@@ -23,7 +23,8 @@ pip show flowdyn
 - local time step through `directives` option in `integration.solve`
 - `new stats_solutions()` function for solution lists (main and max)
 - `fieldlist.xtcontour()` and `fieldlist.xtcontourf()` space-time plotting helpers
-- HLLE and HLLC numerical fluxes for one-dimensional Euler computations
+- three one-dimensional Euler numerical fluxes: Steger--Warming
+  (`stegerwarming`), Van Leer (`vanleer`), and Liou--Steffen AUSM (`ausm`)
 
 #### Changed
 
@@ -36,6 +37,7 @@ pip show flowdyn
   reset monitor outputs on a fresh `solve()` call while retaining them on
   `restart()`
 - correct the L2 average used by residual monitoring
+- restrict `euler2d` to its 2d `centered` and `hlle` fluxes
 
 ### [1.3.1](https://pypi.org/project/flowdyn/) (2022-03-03)
 

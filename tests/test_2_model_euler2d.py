@@ -14,6 +14,18 @@ import flowdyn.xnum  as xn
 
 class Test_densitypulse():
 
+    def test_uses_only_directional_2d_fluxes(self):
+        model = euler.euler2d()
+        assert set(model._numfluxdict.dict) == {'centered', 'centeredflux', 'hlle'}
+        state = [np.ones(3), np.vstack((np.ones(3), 2. * np.ones(3))), np.ones(3)]
+        direction = np.array([[1.0], [0.0]])
+        default_flux = model.numflux(None, state, state, direction)
+        hlle_flux = model.numflux('hlle', state, state, direction)
+        for default, hlle in zip(default_flux, hlle_flux):
+            np.testing.assert_allclose(default, hlle)
+        with pytest.raises(ValueError, match='available fluxes: centered, centeredflux, hlle'):
+            model.numflux('hllc', state, state, direction)
+
     def case_solver(self, nx, ny, xnum, flux):
         meshsim  = mesh2d.unimesh(nx, ny)
         bcper = { 'type': 'per' }

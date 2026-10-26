@@ -754,7 +754,13 @@ class euler2d(euler):
         self.shape = [1, 2, 1]
         self._bcdict.merge(euler2d._bcdict)
         self._vardict.merge(euler2d._vardict)
-        self._numfluxdict.merge(euler2d._numfluxdict)
+        # Do not inherit 1D fluxes from ``euler``: they use scalar velocity
+        # algebra and are not valid for a face normal in two dimensions.
+        self._numfluxdict = euler2d._numfluxdict.copy()
+
+    def numflux(self, name, pdataL, pdataR, direction=None):
+        """Evaluate a directional 2D flux, defaulting to the robust HLLE flux."""
+        return super().numflux('hlle' if name is None else name, pdataL, pdataR, direction)
 
     def _derived_fromprim(self, pdata, direction):
         """
