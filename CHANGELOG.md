@@ -16,7 +16,7 @@ pip show flowdyn
 
 ## Versions
 
-### [2.0.0](https://pypi.org/project/flowdyn/) (2022-xx-xx) - Unreleased
+### [1.4.0](https://pypi.org/project/flowdyn/) (2026-10-26) - Unreleased
 
 #### new features
 
@@ -28,14 +28,7 @@ pip show flowdyn
 #### Changed
 
 - require Python 3.8 or newer; Python 3.7 is no longer supported
-- make API-boundary validation fail early with descriptive `ValueError` or
-  `TypeError` exceptions for invalid meshes, fields, solver inputs,
-  reconstruction sizes, boundary conditions, and registered method names
-- collect coverage once in the canonical Python 3.12 Matplotlib comparison
-  job while retaining functional testing across all supported Python versions
-- publish packaging metadata through `pyproject.toml` and replace the former
-  Travis configuration with GitHub Actions, CodeQL, and Codecov workflows
-- add documentation examples for Euler convergence and acoustic interfaces
+- improve early `ValueError` or `TypeError` exceptions for invalid parameters or data type
 
 #### Fixed
 
