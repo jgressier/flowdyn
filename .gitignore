@@ -9,6 +9,7 @@ __pycache__/
 .python-version
 
 # build
+build
 dist
 site
 poetry.lock
@@ -36,3 +37,6 @@ Untitled*.ipynb
 # Visual Studio Code
 .vscode
 .DS_Store
+
+# other
+*.h5

@@ -9,7 +9,7 @@ import numpy as np
 
 from flowdyn.mesh  import unimesh
 #from flowdyn.field import *
-from flowdyn.xnum  import *
+from flowdyn.xnum import extrapol3, muscl, vanalbada
 from flowdyn.integration import rk3ssp
 import flowdyn.modelphy.euler as euler
 import flowdyn.modeldisc      as modeldisc

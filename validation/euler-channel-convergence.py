@@ -9,7 +9,7 @@ import numpy as np
 
 from flowdyn.mesh  import unimesh
 #from flowdyn.field import *
-from flowdyn.xnum  import *
+from flowdyn.xnum import minmod, muscl
 import flowdyn.integration as tnum
 import flowdyn.modelphy.euler as euler
 import flowdyn.modeldisc      as modeldisc

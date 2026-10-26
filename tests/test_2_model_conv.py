@@ -5,8 +5,8 @@ import flowdyn.mesh  as mesh
 import flowdyn.modelphy.convection as conv
 import flowdyn.modeldisc as modeldisc
 import flowdyn.field as field
-from flowdyn.xnum  import *
-from flowdyn.integration import *
+from flowdyn.xnum import extrapol1, extrapol2, extrapol3, minmod, muscl, vanalbada
+from flowdyn.integration import cranknicolson, explicit, implicit, rk2, rk3ssp
 
 mesh100 = mesh.unimesh(ncell=100, length=1.)
 mesh50  = mesh.unimesh(ncell=50, length=1.)
@@ -73,3 +73,22 @@ def test_numscheme():
         fsol = solver.solve(finit, cfl, [endtime])
         assert not fsol[-1].isnan()
         assert fsol[-1].average('q') < 1.e-12
+
+
+def test_rhs_pipeline_does_not_use_stale_intermediates():
+    """Ensure each residual evaluation derives all temporaries from its input field."""
+    finit = field.fdata(mymodel, mesh50, [init_sinperk(mesh50, k=3)])
+    rhs = modeldisc.fvm(mymodel, mesh50, extrapol1())
+    expected = [component.copy() for component in rhs.rhs(finit)]
+
+    rhs.qdata = [np.full(mesh50.ncell, np.nan)]
+    rhs.pdata = [np.full(mesh50.ncell, np.nan)]
+    rhs.grad = [np.full(mesh50.ncell + 1, np.nan)]
+    rhs.pL = rhs.pR = [np.full(mesh50.ncell + 1, np.nan)]
+    rhs.flux = [np.full(mesh50.ncell + 1, np.nan)]
+    rhs.residual = [np.full(mesh50.ncell, np.nan)]
+
+    actual = rhs.rhs(finit)
+
+    np.testing.assert_allclose(actual, expected)
+    assert not np.isnan(rhs.pdata[0]).any()

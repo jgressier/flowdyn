@@ -4,14 +4,15 @@ test integration methods
 """
 
 #import time
-from pylab import *
+from matplotlib.pyplot import figure, grid, legend, plot, show
+from numpy import linspace, pi, sign, sin
 
-from flowdyn.mesh  import *
+from flowdyn.mesh import unimesh
 import flowdyn.modelphy.convection as convection
 import flowdyn.modeldisc as modeldisc
-from flowdyn.field import *
-from flowdyn.xnum  import *
-from flowdyn.integration import *
+from flowdyn.field import fdata
+from flowdyn.xnum import extrapol3
+from flowdyn.integration import rk2, rk3ssp, rk4
 
 mesh100 = unimesh(ncell=100, length=1.)
 mesh50  = unimesh(ncell=50, length=1.)
@@ -74,4 +75,3 @@ for t in range(1,len(tsave)):
 legend(labels, loc='upper left',prop={'size':10})
 fig.savefig('conv-time1.png', bbox_inches='tight')
 show()
-

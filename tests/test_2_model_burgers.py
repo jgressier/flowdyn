@@ -3,7 +3,7 @@ import flowdyn.mesh  as mesh
 import flowdyn.modelphy.burgers as burgers
 import flowdyn.modeldisc as modeldisc
 import flowdyn.field as field
-from flowdyn.xnum  import *
+from flowdyn.xnum import minmod, muscl
 import flowdyn.integration as integ
 
 class Test_Burgers():
@@ -90,4 +90,3 @@ class Test_Burgers():
         solver = tnum(thismesh, rhs)
         fsol = solver.solve(thiscons, cfl, [endtime])
         assert not fsol[-1].isnan()
-

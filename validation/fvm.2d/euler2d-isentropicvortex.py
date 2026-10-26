@@ -8,7 +8,6 @@ import matplotlib.pyplot as plt
 import numpy as np 
 
 import flowdyn.mesh2d as mesh2d
-from flowdyn.field import *
 import flowdyn.xnum as xn 
 import flowdyn.integration as tn
 import flowdyn.modelphy.euler as euler
@@ -59,11 +58,11 @@ fsol = solver.solve(finit, cfl, [endtime])
 solver.show_perf()
 
 # Figure / Plot
-vars = ['pressure', 'density']#, 'mach']
-nvars = len(vars)
+plot_variables = ['pressure', 'density']#, 'mach']
+nvars = len(plot_variables)
 fig, ax = plt.subplots(ncols=nvars, figsize=(10*nvars-2,6))
 fig.suptitle('Isentropic Vortex: ')
-for i, varname in enumerate(vars):
+for i, varname in enumerate(plot_variables):
     ax[i].set_title(varname)
     #grid(linestyle='--', color='0.5')
     #finit.plot(name, 'k-.')

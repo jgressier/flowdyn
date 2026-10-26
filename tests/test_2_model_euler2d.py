@@ -14,6 +14,18 @@ import flowdyn.xnum  as xn
 
 class Test_densitypulse():
 
+    def test_uses_only_directional_2d_fluxes(self):
+        model = euler.euler2d()
+        assert set(model._numfluxdict.dict) == {'centered', 'centeredflux', 'hlle'}
+        state = [np.ones(3), np.vstack((np.ones(3), 2. * np.ones(3))), np.ones(3)]
+        direction = np.array([[1.0], [0.0]])
+        default_flux = model.numflux(None, state, state, direction)
+        hlle_flux = model.numflux('hlle', state, state, direction)
+        for default, hlle in zip(default_flux, hlle_flux):
+            np.testing.assert_allclose(default, hlle)
+        with pytest.raises(ValueError, match='available fluxes: centered, centeredflux, hlle'):
+            model.numflux('hllc', state, state, direction)
+
     def case_solver(self, nx, ny, xnum, flux):
         meshsim  = mesh2d.unimesh(nx, ny)
         bcper = { 'type': 'per' }
@@ -43,6 +55,16 @@ class Test_densitypulse():
                  finit.phydata('velocity_x')**2 + finit.phydata('velocity_y')**2)
         error = np.sum(np.abs(data))
         assert error < 1.e-12
+
+    def test_invalid_face_orientation(self):
+        solver, finit = self.case_solver(2, 2, xn.extrapol2d1(), 'hlle')
+        previous_residual = solver.modeldisc.rhs(finit)
+        solver.modeldisc.mesh._bcfaces_orientation['left'] = 'invalid'
+
+        with pytest.raises(ValueError, match="unknown face orientation"):
+            solver.modeldisc.rhs(finit)
+
+        assert solver.modeldisc.residual is previous_residual
 
     def test_centered(self):
         solver, finit = self.case_solver(50, 50, xn.extrapol2d1(), 'centered')
@@ -74,6 +96,19 @@ class Test_densitypulse():
         assert rhoavg == pytest.approx(1.408796) # mass conservation
         assert rhovar == pytest.approx(9.05e-4, rel=.01)
 
+def test_supersonic_inlet_angle():
+    model = euler.euler2d()
+    direction = np.array([[-1., -1.], [0., 0.]])
+    data = [np.ones(2), np.zeros((2, 2)), np.ones(2)]
+    params = {'ptot': 2.8, 'rttot': 1., 'p': 1., 'angle': 30.}
+
+    density, velocity, pressure = model.bc_insup(direction, data, params)
+
+    assert np.all(density > 0.)
+    np.testing.assert_allclose(velocity[1]/velocity[0], np.tan(np.deg2rad(30.)))
+    np.testing.assert_allclose(pressure, 1.)
+
+
 class TestStraightDuct2d():
 
     def case_solver(self, nx, ny, xnum, flux, bcL, bcR):
@@ -88,19 +123,6 @@ class TestStraightDuct2d():
         solver = integ.rk3ssp(meshsim, rhs)
         finit = rhs.fdata_fromprim([ 1., [0.8, 0.], 1. ]) # rho, (u,v), p
         return solver, finit
-
-    def test_flow_sub(self):
-        endtime = 100.
-        cfl     = 1.5
-        bcL = { 'type': 'insub',  'ptot': 1.4, 'rttot': 1. }
-        bcR = { 'type': 'outsub', 'p': 1. }
-        solver, finit = self.case_solver(20, 5, xn.extrapol2d1(), 'hlle', bcL, bcR)
-        fsol = solver.solve(finit, cfl, [endtime])
-        assert not fsol[-1].isnan()
-        mach_th = np.sqrt(((bcL['ptot']/bcR['p'])**(1./3.5)-1.)/.2)
-        error = np.sqrt(np.sum((fsol[-1].phydata('mach')-mach_th)**2)/fsol[-1].nelem)/mach_th 
-        print(fsol[-1].phydata('mach'), mach_th)
-        assert error < 1.e-8
 
     def test_flow_sub(self):
         endtime = 100.

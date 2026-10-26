@@ -1,0 +1,5 @@
+# Allow normal pytest assertions while retaining B101 checks elsewhere
+assert_used:
+  skips:
+    - "*/test_*.py"
+    - "*/tests/*.py"

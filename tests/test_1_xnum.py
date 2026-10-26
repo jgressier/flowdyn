@@ -4,8 +4,14 @@ import flowdyn.mesh  as mesh
 import flowdyn.modelphy.convection as conv
 import flowdyn.modeldisc as modeldisc
 import flowdyn.field as field
-from flowdyn.xnum  import *
-from flowdyn.integration import *
+from flowdyn.xnum import extrapol1, minmod, muscl, superbee, vanalbada, vanleer
+from flowdyn.integration import rk3ssp
+
+
+def test_reconstruction_rejects_mesh_data_size_mismatch():
+    lmesh = mesh.unimesh(ncell=4)
+    with pytest.raises(ValueError, match="mesh has 4 cells"):
+        extrapol1().interp_face(lmesh, [np.ones(3)])
 
 
 @pytest.mark.parametrize("limiter", [minmod, vanalbada, vanleer, superbee])
@@ -43,4 +49,3 @@ class Test_limiter_conv():
         #varref = { }
         assert avg == pytest.approx(0., abs=1.e-12)
         #assert var == pytest.approx(.0042, rel=1.e-2)
-

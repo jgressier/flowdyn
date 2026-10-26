@@ -1,5 +1,4 @@
-flowdyn
------
+# flowdyn
 
 [![PyPi Version](https://img.shields.io/pypi/v/flowdyn.svg?style=flat)](https://pypi.org/project/flowdyn)
 [![PyPI pyversions](https://img.shields.io/pypi/pyversions/flowdyn.svg?style=flat)](https://pypi.org/pypi/flowdyn/)
@@ -11,7 +10,6 @@ flowdyn
 [![GitHub stars](https://img.shields.io/github/stars/jgressier/flowdyn.svg?style=flat&logo=github&label=Stars&logoColor=white)](https://github.com/jgressier/flowdyn)
 [![PyPi downloads](https://img.shields.io/pypi/dm/flowdyn.svg?style=flat)](https://pypistats.org/packages/flowdyn)
 [![codecov](https://img.shields.io/codecov/c/github/jgressier/flowdyn.svg?style=flat)](https://codecov.io/gh/jgressier/flowdyn)
-[![lgtm](https://img.shields.io/lgtm/grade/python/github/jgressier/flowdyn.svg?style=flat)](https://lgtm.com/projects/g/jgressier/flowdyn/)
 
 ### Documentation and examples
 
@@ -22,6 +20,7 @@ flowdyn
 ### Features
 
 Current version includes
+
 * 1D scalar models: linear convection, Burgers
 * 1D model: inviscid compressible flow (Euler), section law effects with source terms
 * 1st to 3rd order linear extrapolation, 2nd order MUSCL extrapolation

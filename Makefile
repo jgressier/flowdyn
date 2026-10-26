@@ -1,61 +1,69 @@
-SRC := .
-PKG := flowdyn
+# Project commands use the active Python environment; no Poetry is required.
+PYTHON ?= python
+PIP := $(PYTHON) -m pip
+PYTEST := $(PYTHON) -m pytest
+MKDOCS := $(PYTHON) -m mkdocs
+BUILD := $(PYTHON) -m build
+TWINE := $(PYTHON) -m twine
 
-#env:
-#	mkvirtualenv --python=$(which python3.7) $(PKG)
+.DEFAULT_GOAL := help
 
-.PHONY: help
-help: ## print this help
-	@echo "\n$$(poetry version): use target ; available Makefile following targets"
-	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' Makefile | sort | awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-16s\033[0m %s\n", $$1, $$2}'
+.PHONY: help install install-dev install-doc test test-mpl coverage lint docs-serve docs-build build publish clean clean-notebooks clean-all install_dev cov_run serve clean_notebooks clean_all
 
-.PHONY: install
-install: ## install minimum required packages and flowdyn to local
-	pip install -r $(SRC)/requirements.txt
-	pip install $(SRC)
+help: ## show available commands
+	@$(PYTHON) --version
+	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | sort | awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-16s\033[0m %s\n", $$1, $$2}'
 
-install_dev: install ## install package for development and testing
-	pip install -r $(SRC)/requirements-dev.txt
-	pip install -r $(SRC)/docs/requirements.txt
+install: ## install Flowdyn from this checkout
+	$(PIP) install .
 
-poetry.lock: pyproject.toml
-	poetry update
+install-dev: ## install Flowdyn and development dependencies in editable mode
+	$(PIP) install --editable '.[dev]'
 
-check_pyproject: ## check all requirements are defined in pyproject.toml
-	cat requirements.txt | grep -E '^[^# ]' | cut -d= -f1 | xargs -n 1 poetry add
-	cat requirements-dev.txt | grep -E '^[^# ]' | cut -d= -f1 | xargs -n 1 poetry add -D
-	cat docs/requirements.txt | grep -E '^[^# ]' | cut -d= -f1 | xargs -n 1 poetry add -D
+install-doc: ## install Flowdyn and documentation dependencies in editable mode
+	$(PIP) install --editable '.[doc]'
+	$(PIP) install -r docs/requirements.txt
 
-test: install_dev ## run tests with pytest
-	pytest
+test: ## run the test suite
+	$(PYTEST)
 
-poetry_test:  ## run tests with poetry run pytest
-	poetry update
-	poetry run pytest
+test-mpl: ## run Matplotlib image-regression tests
+	$(PYTEST) --mpl --mpl-generate-summary=html
 
-serve:
-	poetry run mkdocs serve
+coverage: ## run tests and write coverage.xml
+	$(PYTEST) --cov=flowdyn --cov-report=xml
 
-build: ## build package
-	poetry build
+lint: ## report Flake8 findings (syntax errors remain fatal)
+	$(PYTHON) -m flake8 flowdyn tests --count --select=E9,F63,F7,F82 --show-source --statistics
+	$(PYTHON) -m flake8 flowdyn tests --count --exit-zero --statistics
 
-publish: build ## package publishing to pypi with poetry
-	poetry publish
+docs-serve: install-doc ## serve the MkDocs site locally
+	$(MKDOCS) serve
 
-cov_run:
-	poetry run pytest --cov-report=xml
+docs-build: install-doc ## build the MkDocs site
+	$(MKDOCS) build
 
-cov_publish: .codecov_token
-	CODECOV_TOKEN=$$(cat .codecov_token)  bash <(curl -s https://codecov.io/bash)
+build: ## build source and wheel distributions
+	$(PIP) install build
+	$(BUILD)
 
-clean: ## clean all unnecessary files
-	find . -name "__pycache__" -exec rm -rf {} +
-	find . -name ".mypy_cache" -exec rm -rf {} +
-	find . -name ".pytest_cache" -exec rm -rf {} +
-	find . -name ".coverage" -exec rm -f {} +
-	find . -name ".ipynb_checkpoints" -exec rm -f {} +
+publish: build ## upload existing distributions to PyPI (requires credentials)
+	$(PIP) install twine
+	$(TWINE) upload dist/*
 
-clean_notebooks: ## remove ouputs in Jupyter notebooks files
-	find lessons -name \*.ipynb -exec python3 scripts/remove_output.py {} +
+clean: ## remove Python test, coverage, and documentation build artefacts
+	find . -type d \( -name '__pycache__' -o -name '.mypy_cache' -o -name '.pytest_cache' \) -prune -exec rm -rf {} +
+	find . -type f \( -name '.coverage' -o -name 'coverage.xml' \) -delete
+	rm -rf build dist htmlcov mpl-results
 
-clean_all: clean_notebooks clean ## run clean and clean_notebooks
+clean-notebooks: ## clear notebook outputs from lessons
+	find lessons -name '*.ipynb' -exec $(PYTHON) scripts/remove_output.py {} +
+
+clean-all: clean clean-notebooks ## remove all generated local artefacts
+
+# Compatibility aliases for the previous snake_case targets.
+install_dev: install-dev
+cov_run: coverage
+serve: docs-serve
+clean_notebooks: clean-notebooks
+clean_all: clean-all

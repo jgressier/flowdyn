@@ -5,17 +5,27 @@ Created on Fri May 10 15:42:29 2013
 @author: j.gressier
 """
 
-#import sys
-#import math
+# import sys
+# import math
 import numpy as np
 
-class virtualmesh():
+
+class virtualmesh:
     """
     virtual class for a domain and its mesh
     """
 
-    def __init__(self, type='virtual'):
-        self._type = type
+    def __init__(self, mesh_type='virtual', **kwargs):
+        """Initialize a virtual mesh with a dimension or topology label."""
+        # Keep the historical ``type=`` spelling working during the 2.0 transition.
+        if 'type' in kwargs:
+            if mesh_type != 'virtual':
+                raise TypeError("mesh type specified more than once")
+            mesh_type = kwargs.pop('type')
+        if kwargs:
+            unexpected = next(iter(kwargs))
+            raise TypeError(f"unexpected keyword argument {unexpected!r}")
+        self._type = mesh_type
 
     def nbfaces(self):
         "returns number of faces"

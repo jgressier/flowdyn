@@ -8,9 +8,10 @@ import matplotlib.pyplot as plt
 import numpy as np 
 from scipy.optimize import fsolve 
 
-from flowdyn.mesh  import *
-from flowdyn.field import *
-from flowdyn.xnum  import *
+from flowdyn.mesh import unimesh
+from flowdyn.field import fdata
+from flowdyn.xnum import muscl
+from numpy import cos, pi, sign, sin
 import flowdyn.integration as integ
 import flowdyn.modelphy.burgers as burgers
 import flowdyn.modeldisc        as modeldisc

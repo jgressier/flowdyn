@@ -1,15 +1,11 @@
 # -*- coding: utf-8 -*-
-"""module monitors
+"""Provide monitors for iterative time integration.
 
-This module implements generic monotoring of iterative integration. Specific
-implementation is done in `flowdyn.integration`. A monitor directive is passed to `*.solve`
-integration as a dictionary with its own parameters. A `monitor class`
-is returned with 'output' key.
+Specific monitor implementations are configured by :mod:`flowdyn.integration`.
 
 Example:
-
-        $ python example_google.py
-
+    Pass a monitor directive to an integrator's ``solve`` method. The directive's
+    ``output`` entry then contains the resulting :class:`monitor` instance.
 """
 
 try:
@@ -21,12 +17,13 @@ except ImportError:
 # class monitor
 
 
-class monitor():
-    """ """
+class monitor:
+    """Store sampled values and their iteration and time coordinates."""
+
     def __init__(self, name):
         self._name = name
         self.reset()
-        
+
     def name(self):
         """get monitor name"""
         return self._name
@@ -37,22 +34,19 @@ class monitor():
         self._value = []
 
     def append(self, it, time, value):
-        """add it, time, value to monitor
+        """Append a sampled value to the monitor.
 
         Args:
-          it: 
-          time: 
-          value: 
-
-        Returns:
-
+            it: Iteration number of the sample.
+            time: Physical time of the sample.
+            value: Monitored value.
         """
         self._it.append(it)
         self._time.append(time)
         self._value.append(value)
 
     def lastratio(self):
-        return self._value[-1]/self._value[0]
+        return self._value[-1] / self._value[0]
 
     def plot_it(self, ax=plt, **kwargs):
         ax.plot(self._it, self._value, **kwargs)

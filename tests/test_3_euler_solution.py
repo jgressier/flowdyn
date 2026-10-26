@@ -7,7 +7,7 @@ import flowdyn.solution.euler_riemann as solR
 import flowdyn.solution.euler_nozzle  as solN
 import flowdyn.modeldisc as modeldisc
 import flowdyn.field as field
-from flowdyn.xnum  import *
+from flowdyn.xnum import minmod, muscl, vanalbada, vanleer
 import flowdyn.integration as integ
 
 #meshsim = mesh.unimesh(ncell=200, length=10., x0=-4.)

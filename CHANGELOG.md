@@ -16,6 +16,29 @@ pip show flowdyn
 
 ## Versions
 
+### [1.4.0](https://pypi.org/project/flowdyn/) (2026-10-26) - Unreleased
+
+#### new features
+
+- local time step through `directives` option in `integration.solve`
+- `new stats_solutions()` function for solution lists (main and max)
+- `fieldlist.xtcontour()` and `fieldlist.xtcontourf()` space-time plotting helpers
+- three one-dimensional Euler numerical fluxes: Steger--Warming
+  (`stegerwarming`), Van Leer (`vanleer`), and Liou--Steffen AUSM (`ausm`)
+
+#### Changed
+
+- require Python 3.8 or newer; Python 3.7 is no longer supported
+- improve early `ValueError` or `TypeError` exceptions for invalid parameters or data type
+
+#### Fixed
+
+- preserve the requested integration output before the first time step and
+  reset monitor outputs on a fresh `solve()` call while retaining them on
+  `restart()`
+- correct the L2 average used by residual monitoring
+- restrict `euler2d` to its 2d `centered` and `hlle` fluxes
+
 ### [1.3.1](https://pypi.org/project/flowdyn/) (2022-03-03)
 
 #### new features
